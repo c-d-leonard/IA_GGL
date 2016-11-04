@@ -1,0 +1,301 @@
+\documentclass[onecolumn,amsmath,aps,fleqn, superscriptaddress]{revtex4}
+ 
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{epsfig}
+\usepackage{subfigure}
+\usepackage{mathrsfs}
+\usepackage{longtable}
+\usepackage{enumerate} 
+\usepackage{multirow}
+\usepackage{color}
+
+\usepackage[usenames,dvipsnames]{xcolor}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks = true,
+    citecolor = {MidnightBlue},
+    linkcolor = {BrickRed},
+    urlcolor = {BrickRed}
+}
+
+\newcommand{\be}{\begin{eqnarray}}
+\newcommand{\ee}{\end{eqnarray}}
+
+\allowdisplaybreaks[1]
+ 
+\begin{document}
+
+\title{Derivation of $\gamma_{\rm IA}$ for the case of not only excess galaxies being intrinsically aligned}
+
+\author{Danielle Leonard}
+
+\maketitle
+
+\section{Attempt 1: October 19,2016}
+
+{\bf (WRONG - SKIP TO SECTION \ref{sec:oct26} FOR AN UPDATED DERIVATION.)}
+
+Blazek et al. 2012 (1204.2264) derive an expression for $\Delta \Sigma(r_p)$ and $\bar{\gamma}_{\rm IA}(r_p)$ (the average intrinsic alignment contribution to the shear per excess galaxy). They take the assumption that only excess galaxies contribute to the intrinsic alignment signal. The following is an attempt to derive similar expressions dropping that assumption. Instead, we will assume that any source galaxies within some line-of-sight separation of the lens galaxy is subject to intrinsic alignments. The aspects of the expression which change are:
+\begin{itemize}
+\item{the boost factor}
+\item{the bias to the lensing signal due to photo-z's}
+\item{solving for an IA-related term (Section 4.1 of Blazek et al. 2012)}
+\end{itemize}
+
+
+\subsection*{The boost factor}
+Start with equation 3.4 of Blazek et al. 2012. This is reproduced here for reference:
+\begin{equation}
+\widetilde{\Delta \Sigma}(r_p) = \frac{B(r_p) \sum\limits_{j}^{\rm lens} \tilde{w}_j \tilde{\Sigma}_{c,j} \tilde{\gamma}_j}{\sum\limits_{j}^{\rm lens} \tilde{w}_j}.
+\label{Blazek3pt4}
+\end{equation}
+$B(r_p)$ as given here is the boost factor:
+\begin{equation}
+B(r_p) = \frac{\sum\limits_{j}^{\rm lens}\tilde{w}_j}{\sum\limits_{j}^{\rm rand} \tilde{w}_j}.
+\label{Blazek3pt6}
+\end{equation}
+
+The form of the boost factor relies on the assumption that only excess galaxies contribute to the intrinsic alignment signal. The lensing contribution to the observed $\tilde\gamma_j$ is only non-zero for non-excess (`rand') source galaxies, and so the boost factor as given in equation \ref{Blazek3pt6} renormalizes the observed $\Delta \Sigma$ to account for this suppression.
+
+However, we don't want to make the assumption that only excess galaxies are affected by intrinsic alignments. Instead, we will assume that any source galaxies within a certain line-of-sight separation of the lens galaxy is subject to IA. The result is that the boost factor is modified:
+\begin{equation}
+\bar{B}(r_p) = \frac{\sum\limits_{j}^{\rm lens}\tilde{w}_j}{\sum\limits_{j}^{\rm far} \tilde{w}_j}
+\label{modboost}
+\end{equation}
+where we will use `far' to designate pairs in which the lens and source galaxies are further separated than this relevant line-of-sight distance, and `close' to indicate pairs in which the lens and source are within this distance of each other.
+
+Because the new form of the boost factor requires a cut in photometric redshifts, a bias may be introduced from photometric redshift errors. ({\it Q: I don't know how this bias would be corrected for, since I assume we wouldn't expect to have access to a representative subsample with spectroscopic for the source galaxies}). Let's call this bias $b_{\bar{B}}$ and let $c_{\bar{B}} = b_{\bar B}^{-1}$. So equation 3.4 of Blazek et al. becomes:
+\begin{equation}
+\widetilde{\Delta \Sigma}(r_p) = \frac{c_{\bar B} \bar{B}(r_p) \sum\limits_{j}^{\rm lens} \tilde{w}_j \tilde{\Sigma}_{c,j} \tilde{\gamma}_j}{\sum\limits_{j}^{\rm lens} \tilde{w}_j}.
+\label{update3pt4}
+\end{equation}
+
+
+\subsection*{Photo-z bias}
+Next consider the bias to the lensing signal from photometric redshifts (strictly from the difference between the true and observed values of $\Sigma_c$). With the above modification to the boost factor, equation 3.7 in Blazek 2012 is given by
+\begin{equation}
+\frac{\widetilde{\Delta \Sigma}_{\rm IA = 0}}{\Delta \Sigma} = \frac{c_{\bar B} \bar{B}(r_p) \sum\limits^{\rm lens}_{j} \tilde{w}_j \tilde{\Sigma}_{c,j} \Sigma_{c,j}^{-1}}{\sum\limits^{\rm lens}_{j} \tilde{w}_j} = b_z+1.
+\label{update3pt7}
+\end{equation}
+The game here is to try to get the sums to be over `random-source' pairs instead of lens-source pairs. This allows the photo-z bias to be calculated using source calibration sets from `fixed areas of the sky unassociated with the lenses'. ({\it Q: Does this mean that you use a source sample that is selected in the same way as the main source sample but that might be on totally different areaa of the sky?}) Blazek et al. first simplify the numerator:
+\begin{equation}
+\sum\limits_{j}^{\rm lens} w_j \tilde{\Sigma}_{c,j} \Sigma_{c,j}^{-1} = \sum\limits_{j}^{\rm excess} w_j \tilde{\Sigma}_{c,j} \Sigma_{c,j}^{-1} + \sum\limits_{j}^{\rm rand} w_j \tilde{\Sigma}_{c,j} \Sigma_{c,j}^{-1} \approx \sum\limits_{j}^{\rm rand} w_j \tilde{\Sigma}_{c,j} \Sigma_{c,j}^{-1}.
+\label{split}
+\end{equation}
+This is because excess galaxies are assumed to be at or very near the lens redshift, so $\Sigma_{c,j}^{-1}\approx0$. This is still true with our modified assumption - excess galaxies are still at the lens redshift. We also expect that certain `random-source' pairs will contribute very little to the sum (those for which sources are close in redshift to the random point'). Regardless, we can still use this:
+\begin{equation}
+\frac{\widetilde{\Delta \Sigma}_{\rm IA = 0}}{\Delta \Sigma} = \frac{c_{\bar B} \bar{B}(r_p) \sum\limits^{\rm rand}_{j} \tilde{w}_j \tilde{\Sigma}_{c,j} \Sigma_{c,j}^{-1}}{\sum\limits^{\rm lens}_{j} \tilde{w}_j} = \bar{b}_z+1
+\label{update3pt7v2}
+\end{equation}
+
+We also want the denominator to be a sum over random-source pairs. The only way I can think to do this is to include the previous version of the boost, from equation \ref{Blazek3pt6}:
+\begin{equation}
+\frac{\widetilde{\Delta \Sigma}_{\rm IA = 0}}{\Delta \Sigma} = \frac{c_{\bar B} \bar{B}(r_p) \sum\limits^{\rm rand}_{j} \tilde{w}_j \tilde{\Sigma}_{c,j} \Sigma_{c,j}^{-1}}{B(r_p)\sum\limits^{\rm rand}_{j} \tilde{w}_j} = b_z+1.
+\label{update3pt7v3}
+\end{equation}
+{{\it Q: Is it okay to use source calibration sets from a different area of the sky here, even though the boosts don't cancel?}
+
+Setting $\bar{c}_z = (1+\bar{b}_z)$, we get a modified version of Blazek et al.'s equation 3.9:
+
+\begin{equation}
+\Delta\Sigma(r_p) = \bar{c}_z \left[\widetilde{\Delta \Sigma} - \frac{c_{\bar B}\bar{B}(r_p) \sum\limits_{j}^{\rm lens} \tilde{w}_j \tilde{\Sigma}_{c,j}\gamma^{\rm IA}_j }{\sum\limits_{j}^{\rm lens} \tilde{w}_j}\right].
+\label{update3pt9}
+\end{equation}
+
+\subsection*{Solving for the IA-related term}
+
+The final step is to use the set-up of having two source samples to solve for two unknows: $\Delta \Sigma$ and an IA-related term. In Blazek et al. 2012, this term is $\bar{\gamma}_{\rm IA}(r_p)$: the average contribution to shear from intrinsic alignments {\it per excess source galaxy}. Because we are dropping the assumption that only excess galaxies contribute to intrinsic alignments, we will solve for a slightly different IA term.
+
+The goal is to take equation \ref{update3pt9} and simplify the second bracketed term such that this new IA term is easily solved for. In the case of Blazekt et al. 2012, this is done via the following:
+\begin{equation}
+\sum\limits_{j}^{\rm lens} w_j \tilde{\Sigma}_{c,j} \gamma^{\rm IA}_j = \sum\limits_{j}^{\rm excess} w_j \tilde{\Sigma}_{c,j} \gamma^{\rm IA}_j + \sum\limits_{j}^{\rm rand} w_j \tilde{\Sigma}_{c,j} \gamma^{\rm IA}_j \approx \sum\limits_{j}^{\rm excess} w_j \tilde{\Sigma}_{c,j} \gamma^{\rm IA}_j,
+\label{splitIAexcess}
+\end{equation}
+making the assumption that only excess galaxies contribute to IA. The is further simplified via the fact that photo-z errors are large enough that $\gamma_{\rm IA}^j$ is uncorrelated with $\tilde{\Sigma}_{c,j}$. This allows:
+\begin{equation}
+\sum\limits_{j}^{\rm lens} w_j \tilde{\Sigma}_{c,j} \gamma^{\rm IA}_j \approx \bar{\gamma}_{\rm IA}(r_p)\sum\limits_{j}^{\rm excess} w_j \tilde{\Sigma}_{c,j}.
+\label{splitIAexcess}
+\end{equation}
+
+However, we don't want to assume that only excess galaxies contribute to IA. I can think of two options. 
+
+{\it Q: Are either of these options reasonable?}
+
+\subsubsection*{Split by line-of-sight distance}
+
+The first option is to proceed in the same way as above but instead of splitting by `excess' and `random', split by `close' and `far' as above. Making the same assumption of large photo-z errrors ({\it Q: Is this an assumption we can make for the surveys we are interested in?}), we get:
+\begin{equation}
+\sum\limits_{j}^{\rm lens} w_j \tilde{\Sigma}_{c,j} \gamma^{\rm IA}_j \approx \bar{\gamma}^{\rm C}_{\rm IA}(r_p)\langle \tilde{\Sigma}_c\rangle_{\rm C} (r_p)
+\label{splitIAclose}
+\end{equation}
+where we have defined:
+\begin{equation}
+\langle \tilde{\Sigma}_c\rangle_{\rm C} (r_p) = \frac{\sum\limits_{j}^{\rm close} \tilde{w}_j \tilde{\Sigma}_{c,j}}{\sum\limits_{j}^{\rm close} \tilde{w}_j}
+\label{Sigmaclose}
+\end{equation}
+and $\bar{\gamma}^{\rm C}_{\rm IA}(r_p)$ is the average intrinsic alignment shear contribution per galaxy within some line-of-sight separation from the lens. This method explicitly invokes the assumption that we want, and results in an intrinsic alignment related quantity to be measured which is theoretically more similar to what has been done in Blazek et al. 2012. However, there will be bias introduced here because of photo-z errors which will affect which sources-lens pairs are labeled as `close'. I don't know how to account for this bias and I won't attempt to here, so the solution involving this method is missing this.
+
+In this case, equation 4.3 of Blazek et al. 2012 becomes 
+\begin{equation}
+\Delta \Sigma(r_p) = \bar{c}_z\left[\widetilde{\Delta \Sigma}(r_p) - c_{\bar B} (\bar{B}(r_p)-1) \bar{\gamma}_{\rm IA}^{\rm C}(r_p) \langle \tilde{\Sigma}_c\rangle_{\rm C} (r_p) \right].
+\label{deltasigma_splitLOS}
+\end{equation}
+
+Assuming two source samples with different redshift bins, a and b, we get:
+\begin{equation}
+\Delta\Sigma= \frac{\bar{c}_z^a \bar{c}_z^b\left(\widetilde{\Delta \Sigma}^bc_{\bar B}^a(\bar{B}^a-1)\langle \tilde{\Sigma_c}\rangle_{\rm C}^a - \widetilde{\Delta \Sigma}^ac_{\bar B}^b(\bar{B}^b-1)\langle \tilde{\Sigma_c}\rangle_{\rm C}^b\right)}{c_{\bar B}^a (\bar{B}_a-1)\bar{c}_z^a\langle \tilde{\Sigma_c} \rangle_{\rm C}^a - c_{\bar B}^b (\bar{B}_b-1)\bar{c}_z^b\langle \tilde{\Sigma_c} \rangle_{\rm C}^b}
+\label{Deltasigma_sol_splitLOS}
+\end{equation}
+
+\begin{equation}
+\bar{\gamma}^{\rm C}_{\rm IA}(r_p) = \frac{\bar{c}_z^a \widetilde{\Delta\Sigma}^a - \bar{c}_z^a \widetilde{\Delta\Sigma}^a}{c_{\bar B}^a (\bar{B}^a-1)\bar{c}_z^a \langle \tilde{\Sigma_c}\rangle_{\rm C}^a - c_{\bar B}^b (\bar{B}^b-1)\bar{c}_z^b \langle \tilde{\Sigma_c}\rangle_{\rm C}^b}
+\label{gamma_sol_splitLOS}
+\end{equation}
+
+
+\subsubsection*{Don't split}
+
+The second option is not to split the sample at all, and to write:
+\begin{equation}
+\sum\limits_{j}^{\rm lens} w_j \tilde{\Sigma}_{c,j} \gamma^{\rm IA}_j \approx \bar{\gamma}^{\rm L}_{\rm IA}(r_p)\langle \tilde{\Sigma}_c\rangle_{\rm L} (r_p)
+\label{nosplit}
+\end{equation}
+with 
+\begin{equation}
+\langle \tilde{\Sigma}_c\rangle_{\rm L} (r_p) = \frac{\sum\limits_{j}^{\rm lens} \tilde{w}_j \tilde{\Sigma}_{c,j}}{\sum\limits_{j}^{\rm lens} \tilde{w}_j}.
+\label{Sigmalens}
+\end{equation}
+
+The crucial point here, though, is that $\bar{\gamma}^{\rm L}_{\rm IA}(r_p)$ is the contribution of intrinsic alignments to the shear averaged over all lens-source pairs. I expect this quantity would be a much lower signal, and would be qualitatively different than what is given in Blazek et al. The benefit, though, is that we do not introduce additional bias.
+
+In this case, equation 4.3 in Blazekt et al. becomes:
+\begin{equation}
+\Delta \Sigma(r_p) = \bar{c}_z\left[\widetilde{\Delta \Sigma}(r_p) - c_{\bar B} \bar{B}(r_p) \bar{\gamma}_{\rm IA}^{\rm L}(r_p) \langle \tilde{\Sigma}_c\rangle_{\rm L} (r_p) \right]
+\label{deltasigma_nosplit}
+\end{equation}
+
+and assuming source samples a and b we get:
+\begin{equation}
+\Delta\Sigma= \frac{\bar{c}_z^a \bar{c}_z^b\left(\widetilde{\Delta \Sigma}^bc_{\bar B}^a\bar{B}^a\langle \tilde{\Sigma_c}\rangle_{\rm L}^a - \widetilde{\Delta \Sigma}^ac_{\bar B}^b\bar{B}^b\langle \tilde{\Sigma_c}\rangle_{\rm L}^b\right)}{c_{\bar B}^a \bar{B}_a\bar{c}_z^a\langle \tilde{\Sigma_c} \rangle_{\rm L}^a - c_{\bar B}^b \bar{B}_b\bar{c}_z^b\langle \tilde{\Sigma_L} \rangle_{\rm C}^b}
+\label{Deltasigma_sol_splitLOS}
+\end{equation}
+
+\begin{equation}
+\bar{\gamma}^{\rm L}_{\rm IA}(r_p) = \frac{\bar{c}_z^a \widetilde{\Delta\Sigma}^a - \bar{c}_z^a \widetilde{\Delta\Sigma}^a}{c_{\bar B}^a \bar{B}^a\bar{c}_z^a \langle \tilde{\Sigma_c}\rangle_{\rm C}^a - c_{\bar B}^b \bar{B}^b\bar{c}_z^b \langle \tilde{\Sigma_c}\rangle_{\rm C}^b}
+\label{gamma_sol_splitLOS}
+\end{equation}
+
+\subsection*{What's wrong with the above derivation?}
+
+\begin{itemize}
+\item{The boost factor doesn't change in the assumed way, because source galaxies forming part of the smooth dNdz should be included, even if they are close to the lens. They are still lensed, if only a small amount, and the low level of lensing is accounted for via the factors of critical density.}
+\item{Because the boost doesn't change, there is no additional factor of bias on the boost.}
+\item{The suggestions of splitting pairs by `close-far' or just not splitting aren't `wrong', they just probably aren't as nice as splitting in a different way, discussed below in Section \ref{sec:oct26}}.
+\end{itemize}
+
+\section{Attempt 2: October 26, 2016}
+\label{sec:oct26}
+
+({\it Notes on a second attempt at deriving the expressions for $\bar{\gamma}_{\rm IA}(r_p)$ and $\Delta \Sigma(r_p)$, dropping the assumption that only excess source galaxies contribute to intrinsic alignments.})
+
+Because the boost factor $B(r_p)$ is actually unaffected by changing the assumption about which galaxies are affected by IA, we can start with equation 3.9 from Blazek et al.:
+\begin{equation}
+\Delta\Sigma(r_p) = c_z \left[\widetilde{\Delta \Sigma} - \frac{B(r_p) \sum\limits_{j}^{\rm lens} \tilde{w}_j \tilde{\Sigma}_{c,j}\gamma^{\rm IA}_j }{\sum\limits_{j}^{\rm lens} \tilde{w}_j}\right].
+\label{Blazek3pt9}
+\end{equation}
+(The true value of $\Delta \Sigma$ is equal to the measured $\Delta \Sigma$, minus the intrinsic-alignments contribution to this measured $\Delta \Sigma$, all scaled by a factor accounting for the photo-z bias.)
+
+Our assumption about which galaxies are affected by IA impacts the way we simplify the intrinsic-alignment-related term in equation \ref{Blazek3pt9}. For clarity, let's work just with this term and call it $D(r_p)$ (arbitrary name):
+\begin{equation}
+D(r_p) = \frac{B(r_p) \sum\limits_{j}^{\rm lens} \tilde{w}_j \tilde{\Sigma}_{c,j}\gamma^{\rm IA}_j }{\sum\limits_{j}^{\rm lens} \tilde{w}_j}.
+\label{IAterm}
+\end{equation}
+
+We want to rewrite the sum in the numerator, accounting for the fact that some galaxy pairs contribute no IA signal:
+\begin{align}
+\sum\limits_{j}^{\rm lens} \tilde{w}_j \tilde{\Sigma}_{c,j} \gamma^{\rm IA}_j &= \sum\limits_{j}^{\rm excess} \tilde{w}_j \tilde{\Sigma}_{c,j} \gamma^{\rm IA}_j + \sum\limits_{j}^{\rm rand-close} \tilde{w}_j \tilde{\Sigma}_{c,j} \gamma^{\rm IA}_j + \sum\limits_{j}^{\rm rand-far} \tilde{w}_j \tilde{\Sigma}_{c,j} \gamma^{\rm IA}_j \nonumber \\ &\approx \sum\limits_{j}^{\rm excess} \tilde{w}_j \tilde{\Sigma}_{c,j} \gamma^{\rm IA}_j + \sum\limits_{j}^{\rm rand-close} \tilde{w}_j \tilde{\Sigma}_{c,j} \gamma^{\rm IA}_j.
+\label{splitIArand}
+\end{align}
+The lens-source pairs are split into `excess', `rand-close' and `rand-far': 
+\begin{itemize}
+\item{`rand-close' denotes the case in which lenses are distributed randomly according to their distribution, and sources are within a certain fixed photo-z separation of lenses.} 
+\item{`rand-far' is the complementary set which comprises pairs with larger photo-z separation.}
+\end{itemize}
+We assume that the `rand-far' source galaxies are not subject to IA. (There is a potential bias introduced by the fact that we may mis-allocate random-source pairs into `rand-close' or `rand-far' due to photo-z errors on the sources; more on this later.)
+
+With equation \ref{splitIArand}, the IA-term becomes:
+\begin{equation}
+D(r_p) = \frac{B(r_p) \left(\sum\limits_{j}^{\rm excess} \tilde{w}_j \tilde{\Sigma}_{c,j} \gamma^{\rm IA}_j + \sum\limits_{j}^{\rm rand-close} \tilde{w}_j \tilde{\Sigma}_{c,j} \gamma^{\rm IA}_j\right)}{\sum\limits_{j}^{\rm lens} \tilde{w}_j}.
+\label{IAterm_2}
+\end{equation}
+
+As before, the individual $\gamma^{\rm IA}_j$ values are expected to be uncorrelated with $\tilde{\Sigma}_{c,j}$ due to large photo-z errors, so we can work in terms of $\bar{\gamma}^{\rm IA}(r_p)$, which is the average IA contribution to shear per contributing source-lens pair. We then have:
+\begin{equation}
+D(r_p) = \frac{B(r_p) \bar{\gamma}^{\rm IA}(r_p)\left(\sum\limits_{j}^{\rm excess} \tilde{w}_j \tilde{\Sigma}_{c,j}+ \sum\limits_{j}^{\rm rand-close} \tilde{w}_j \tilde{\Sigma}_{c,j}\right)}{\sum\limits_{j}^{\rm lens} \tilde{w}_j}.
+\label{IAterm_3}
+\end{equation}
+
+In order to write equation \ref{IAterm_3} in a similar form to equation 4.3 of Blazek et al. 2012, we would like have an analogous quantity to $\langle \tilde{\Sigma}_c\rangle_{\rm ex}$. To achieve this, we must manipulate equation \ref{IAterm_3} such that $\left(\sum\limits_{j}^{\rm excess} \tilde{w}_j + \sum\limits_{j}^{\rm rand-close} \tilde{w}_j\right)$ is in the denominator. Using the definition of the boost factor, it can be shown that:
+\begin{equation}
+\sum\limits_{j}^{\rm lens} \tilde{w}_j = \frac{B(r_p)}{B(r_p)-1+F(r_p)} \left(\sum\limits_{j}^{\rm excess} \tilde{w}_j + \sum\limits_{j}^{\rm rand-close} \tilde{w}_j\right)
+\label{lens_weights_expand}
+\end{equation}
+where we have defined:
+\begin{equation}
+F(r_p) = \frac{\sum\limits^{\rm rand-close}_{j} \tilde{w}_j}{\sum\limits^{\rm rand(all)}_{j} \tilde{w}_j}
+\label{Frp}
+\end{equation}
+for convenience. The result is that the IA term $D(r_p)$ becomes:
+\begin{equation}
+D(r_p)=\frac{\left(B(r_p)-1 +F(r_p)\right)\bar{\gamma}^{\rm IA}(r_p)\left(\sum\limits_{j}^{\rm excess} \tilde{w}_j \tilde{\Sigma}_{c,j}+ \sum\limits_{j}^{\rm rand-close} \tilde{w}_j \tilde{\Sigma}_{c,j}\right)}{\sum\limits_{j}^{\rm excess} \tilde{w}_j + \sum\limits_{j}^{\rm rand-close} \tilde{w}_j}.
+\label{IAterm_4}
+\end{equation}
+We now define:
+\begin{equation}
+\langle \tilde{\Sigma}_c\rangle_{\rm IA} (r_p) = \frac{\sum\limits_{j}^{\rm excess} \tilde{w}_j \tilde{\Sigma}_{c,j}+ \sum\limits_{j}^{\rm rand-close} \tilde{w}_j \tilde{\Sigma}_{c,j}}{\sum\limits_{j}^{\rm excess} \tilde{w}_j + \sum\limits_{j}^{\rm rand-close} \tilde{w}_j} = \frac{\sum\limits_{j}^{\rm lens} \tilde{w}_j \tilde{\Sigma}_{c,j}- \sum\limits_{j}^{\rm rand-far} \tilde{w}_j \tilde{\Sigma}_{c,j}}{\sum\limits_{j}^{\rm lens} \tilde{w}_j - \sum\limits_{j}^{\rm rand-far} \tilde{w}_j}
+\label{SigmaIA}
+\end{equation}
+such that we can write:
+\begin{equation}
+D(r_p)=\left[B(r_p)-1 +F(r_p)\right]\bar{\gamma}^{\rm IA}(r_p)\langle \tilde{\Sigma}_c\rangle_{\rm IA} (r_p).
+\label{IAterm_5}
+\end{equation}
+
+The IA term is then re-inserted into equation \ref{Blazek3pt9} to get:
+\begin{equation}
+\Delta\Sigma(r_p) = c_z \left[\widetilde{\Delta \Sigma} - \left[B(r_p)-1 +F(r_p)\right]\bar{\gamma}^{\rm IA}(r_p)\langle \tilde{\Sigma}_c\rangle_{\rm IA} (r_p)\right].
+\label{Blazek3pt9_v2}
+\end{equation}
+
+Allowing then the source sample to be split by redshift into subsamples $a$ and $b$ as in Blazek et al. 2012, expressions can be found for $\Delta \Sigma(r_p)$ and $\bar{\gamma}_{\rm IA}(r_p)$ which are similar to those in that paper:
+\begin{equation}
+\Delta\Sigma= \frac{c_z^a c_z^b\left(\widetilde{\Delta \Sigma}^b(B^a-1+F^a)\langle \tilde{\Sigma}_c\rangle_{\rm IA}^a - \widetilde{\Delta \Sigma}^a(B^b-1+F^b)\langle \tilde{\Sigma}_c\rangle_{\rm IA}^b\right)}{(B^a-1+F^a)c_z^a\langle \tilde{\Sigma}_c \rangle_{\rm IA}^a - (B^b-1+F^b)c_z^b\langle \tilde{\Sigma}_c \rangle_{\rm IA}^b}
+\label{Deltasigma_sol_oct26}
+\end{equation}
+
+\begin{equation}
+\bar{\gamma}^{\rm IA} = \frac{c_z^a \widetilde{\Delta\Sigma}^a - c_z^b \widetilde{\Delta\Sigma}^b}{(B^a-1+F^a)c_z^a \langle \tilde{\Sigma_c}\rangle_{\rm IA}^a -(B^b-1+F^b)c_z^b \langle \tilde{\Sigma_c}\rangle_{\rm IA}^b}
+\label{gamma_sol_oct26}
+\end{equation}
+
+(Arguments $r_p$ have been suppressed for clarity.)
+
+\subsubsection*{Bias from incorrectly allocating pairs to `rand-close' and `rand-far'}
+
+As mentioned above, there could be a bias introduced as a result of the fact that we would use source photo-z's to allocate pairs to `rand-close' and `rand-far'. For example, if source galaxies have photo-z's which are systematically low, there could be a non-negligible portion of rand-close pairs which should in reality be categorized as rand-far. Galaxies which physically do not contribute to IA are counted as contributing, such that when $\bar{\gamma}_{\rm IA}$ is averaged over contributing lens-source pairs, its value may be biased low. The opposite could happen if source galaxy photo-z's are systematically high. The terms in equations \ref{Deltasigma_sol_oct26} and \ref{gamma_sol_oct26} that this affects directly are $\langle \tilde{\Sigma}_c\rangle_{\rm IA} (r_p)$ and $F(r_p)$.
+
+I am not sure how to account for this. Perhaps we could measure $\langle \tilde{\Sigma}_c\rangle_{\rm IA} (r_p)$ and $F(r_p)$ using a representative subsample of sources for which we have spectroscopic redshifts, or calibrate against such as subsample in some way. But, if I recall correctly, we are not sure we will have this for, e.g., LSST. Is this a case where we will have to add an allowance for a possible systematic error when predicting constraints, or is there some better way to handle this? 
+
+
+
+
+
+
+
+%-------------------------------------------------------------------------------
+
+
+%-------------------------------------------------------------------------------
+
+\end{document}
