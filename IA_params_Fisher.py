@@ -13,6 +13,15 @@ beta_fid	=	-0.73
 e_rms_a = 	0.2
 e_rms_b	=	0.2
 
+# The signal to noise - necessary for estimating sigma_e
+S_to_N = 15.
+
+# The photometric redshift error given a Gaussian photo_z model
+sigz=0.08
+ 
+# The factor by which the boost is proportional to the projected correlation function
+Boost_prop = 0.05
+
 # The number of lenses in the lens sample per square DEGREE
 n_l 	= 	8.7
 
@@ -39,7 +48,7 @@ alpha 	= 	2.338
 #beta 	= 	1.5
 #zm 	= 	0.5  #0.4
 zs	=	0.303
-zpts	=	200  # Number of points in the z vector at which we are evaluating dNdz
+zpts	=	1000  # Number of points in the z vector at which we are evaluating dNdz
 
 
 # The width of the redshift slice which begins at the lens and ends at the top of sample a
@@ -52,12 +61,15 @@ zeff 	= 	0.32
 zmin 	=	0.0
 zmax 	= 	3.0
 
+# The maximum separation from a lens to consider part of `rand-close', in Mpc/h
+close_cut = 100 # Mpc/h
+
 # Location of file for plot showing 1 sigma error bars on gamma_IA
 plotfile =	'./Nakajima_nofz.pdf'
 
 # Speed of light in units of m/s
 c=2.99792458*10**(8)
-G = 
+#G = 
 
 # Cosmological parameters:
 Nnu	=	3.046    # Massless neutrinos
