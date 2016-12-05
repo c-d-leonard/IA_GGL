@@ -237,13 +237,25 @@ $\langle \tilde{\Sigma}_c\rangle_{\rm IA}(r_p)$ is given as:
 \end{equation}
 (This depends on $r_p$ because the `lens' sums incorporate excess galaxies, which are more likely to be present nearer the lens.)
 
-The sums in the denominator can be computed via the expression given in equation \ref{randint_w}, for appropriate choice of limits on the source redshift integral. The sum over `rand' in the numerator is given by:
+The sums in the denominator can be computed via the expression given in equation \ref{randint_w}, for appropriate choice of limits on the source redshift integral. The sum over `rand-far' in the numerator is given by:
 \begin{equation}
-\int_{z^l_{\rm min}}^{z^l_{\rm max}}dz^l \frac{dN^l}{dz^l} \int_{z^s_{\rm min}(z^l)}^{z^s_{\rm max}(z^l)}dz^s \frac{dN^s}{dz^s} \frac{1}{\Sigma_c(z^l , z^s) b^{\Sigma}(z^s,z^l) (e_{\rm rms}^2 + \sigma_e(z^s)^2)}.
+\int_{z^l_{\rm min}}^{z^l_{\rm max}}dz^l \frac{dN^l}{dz^l} \int_{z^s_{\rm min}(z^l)}^{z^s_{\rm max}(z^l)}dz^s \frac{dN^s}{dz^s} \frac{1}{\Sigma_c(z^l , z^s) b^{\Sigma}(z^s,z^l) (e_{\rm rms}^2 + \sigma_e(z^s)^2)}
 \label{randint_wSig}
 \end{equation}
+with appropriately chosen $z^s_{\rm min}(z^l)$ and $z^s_{\rm max}(z^l)$. 
 
-{\bf I think I need to calculate the sum over `lens' in the numerator via some inclusion of the boost factor, but I'm not sure how. We can't just say that this term is 0 for excess galaxies, because of the fact that the $\Sigma_c$ of interest here is estimated, and therefore depends on photo-z. How to get this sum?}
+The other sum in the numerator, over lens, is a little more complicated. We can compute it by doing the following: `lens' is equal to `rand + excess'. We can compute the part of this sum which is over `rand' via equation \ref{randint_wSig}, again with appropriate $z^s_{\rm min}(z^l)$ and $z^s_{\rm max}(z^l)$. In order to account for the `excess' part of this sum, we must do the following:
+\begin{enumerate}
+\item{Get the value of $B(r_p)$. The fraction by which this exceeds unity is the fraction of excess galaxies.}
+\item{Assume that all the excess galaxies are in a Dirac Delta function at the lens redshift.}
+\item{Incorporate a model by which these galaxies are smeared out by photo-z errors, $b(z_{ph}, z_{sp})$.}
+\end{enumerate}
+
+The resultant expression for the `excess' galaxies, which should be added to that for the `rand' galaxies to obtain the correct expression for `lens', is (?):
+\begin{equation}
+(B(r_p)-1) \int_{z_{\rm min}^l}^{z_{\rm max}^l} dz_l \frac{dN^l}{dz^l}\int_{z_{\rm min}^s}^{z_{\rm max}^s} dz^s p_z(z^s, z^l, \alpha) \frac{1}{\Sigma_c(z^l, z^s)(\sigma_e^2 +e_{\rm rms}^2)}
+\end{equation}
+where $p_z(z^s, z^l, \alpha)$ is the probability of a galaxy with true redshift $z^l$ being found at photometric source redshift $z^s$. $\alpha$ are other parameters relevant to this probability distribution. It is important that the assumed form for $p_z(z^s, z^l, \alpha)$ is consistent with the form of $b^\Sigma(z^s, z^l)$ (these are not independent).
 
 \subsection*{$c_z$}
 
@@ -254,7 +266,7 @@ b_z+1 = \frac{B(r_p) \sum\limits^{\rm lens}_{j} \tilde{w}_j \tilde{\Sigma}_{c,j}
 \end{equation}
 We already have the denominator (equation \ref{randint_w}). The numerator can be written as:
 \begin{equation}
-\int_{z^l_{\rm min}}^{z^l_{\rm max}}dz^l \frac{dN^l}{dz^l} \int_{z^s_{\rm min}(z^l)}^{z^s_{\rm max}(z^l)}dz^s \frac{dN^s}{dz^s} b^\Sigma(z^s, z^l)
+\int_{z^l_{\rm min}}^{z^l_{\rm max}}dz^l \frac{dN^l}{dz^l} \int_{z^s_{\rm min}(z^l)}^{z^s_{\rm max}(z^l)}dz^s \frac{dN^s}{dz^s}  \frac{1}{\Sigma_c(z^l , z^s)^2 b^{\Sigma}(z^s,z^l) (e_{\rm rms}^2 + \sigma_e(z^s)^2)}
 \label{photoz}
 \end{equation}
 
@@ -263,12 +275,36 @@ We already have the denominator (equation \ref{randint_w}). The numerator can be
 \widetilde{\Delta \Sigma}&= \frac{B(r_p) \sum\limits_{j}^{\rm lens} \tilde{w}_j \tilde{\Sigma}_{c,j} \Sigma_{c,j} \Delta \Sigma + B(r_p) \sum\limits_{j}^{\rm lens} \tilde{w}_j \tilde{\Sigma}_{c,j} \gamma^{\rm IA}_j }{\sum\limits_{j}^{\rm lens} \tilde{w}_j} = \frac{\left(\sum\limits_{j}^{\rm rand} \tilde{w}_j \tilde{\Sigma}_{c,j} \Sigma_{c,j}\right) \Delta \Sigma + \sum\limits_{j}^{\rm lens} \tilde{w}_j \tilde{\Sigma}_{c,j} \gamma^{\rm IA}_j }{\sum\limits_{j}^{\rm rand} \tilde{w}_j} \nonumber \\&= (1+b_z) \Delta \Sigma + \frac{\sum\limits_{j}^{\rm lens} \tilde{w}_j \tilde{\Sigma}_{c,j} \gamma^{\rm IA}_j }{\sum\limits_{j}^{\rm rand} \tilde{w}_j} 
 \label{deltasigma}
 \end{align}
-The first term of the above is computed using equation \ref{photozbias} and $\Delta \Sigma$ from theory. The denominator of the second term can be calculated using equation \ref{randint_w}. The numerator of the second term presents the same issue as mentioned above: {\bf how do we use the boost to get the `excess' contribution to this term?}. 
+The first term of the above is computed using equation \ref{photozbias} and $\Delta \Sigma$ from theory. 
 
-Regardless of how we do this, we can expect to pick a fiducial, non-zero form for $\bar{\gamma}^{\rm IA}$. We will pick the nonlinear alignment model for this purpose. 
+$\Delta \Sigma$ from theory is given by:
+\begin{equation}
+\Delta \Sigma = \rho_c \Omega_M(z=0)b \int \Delta \frac{(\bar{\chi}_l+\Delta) a(\bar{\chi}_l)}{\bar{\chi}_l a(\bar{\chi}_l+\Delta)} \int_{\bar{\chi}_l+\Delta}^{\chi_H}d\chi_s W(\chi_s) \frac{(\chi_s - \bar{\chi}_l-\Delta)}{(\chi_s-\bar{\chi}_l)}\left[\frac{2}{R^2}\int_0^{R}dR' R' \xi(R', \Delta) - \xi(R, \Delta)\right]
+\label{DS_the}
+\end{equation}
+
+The denominator of the second term can be calculated using equation \ref{randint_w}. The numerator of the second term is calculated in the same manner as used in the calculation of $\langle \tilde{\Sigma}_c\rangle_{\rm IA} (r_p)$. First, split the sum over all lens-source pairs into a sum over lens-excess and one over lens-rand:
+\begin{equation}
+\sum\limits_{j}^{\rm lens} \tilde{w}_j \tilde{\Sigma}_{c,j} \gamma^{\rm IA}_j  = \sum\limits_{j}^{\rm excess} \tilde{w}_j \tilde{\Sigma}_{c,j} \gamma^{\rm IA}_j  + \sum\limits_{j}^{\rm rand} \tilde{w}_j \tilde{\Sigma}_{c,j} \gamma^{\rm IA}_j 
+\label{splitIA}
+\end{equation}
+The second term on the right hand side of the above can be calculated using an integral over the usual $dN / dz_s$:
+\begin{equation}
+\int dz_s \frac{dN}{dz_s} b(z_s, z_l) \Sigma_c(z_s, z_l) \gamma^{\rm IA}(z_s, z_l, r_p)
+\label{rand_IA}
+\end{equation}
+where $\gamma^{\rm IA}(z_s, z_l, r_p)$ is computed from some model of intrinsic alignments. 
+
+The first term on the right hand side is computed in the same manner as for $\langle \tilde{\Sigma}_c\rangle_{\rm IA} (r_p)$:
+\begin{equation}
+(B(r_p)-1) \int d\tilde{z}_s p_z(\tilde{z}_s, z_l, \alpha) \Sigma_C(\tilde{z}_s, z_l) \gamma^{\rm IA}(r_p, \tilde{z}_s, z_l)
+\label{excess_IA}
+\end{equation}
+
+We need a model for $\gamma^{\rm IA}$. 
 
 \subsection*{$\bar{\gamma}^{\rm IA}(r_p)$}
-Given the above, we can compute a fiducial value for $\bar{\gamma}^{\rm IA}(r_p)$ by combining the quantities described.
+Given the above, we can compute a fiducial value for $\bar{\gamma}^{\rm IA}(r_p)$ by combining the quantities described. 
 
 
 

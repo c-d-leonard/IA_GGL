@@ -1,0 +1,137 @@
+\documentclass[onecolumn,amsmath,aps,fleqn, superscriptaddress]{revtex4}
+ 
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{epsfig}
+\usepackage{subfigure}
+\usepackage{mathrsfs}
+\usepackage{longtable}
+\usepackage{enumerate} 
+\usepackage{multirow}
+\usepackage{color}
+
+\usepackage[usenames,dvipsnames]{xcolor}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks = true,
+    citecolor = {MidnightBlue},
+    linkcolor = {BrickRed},
+    urlcolor = {BrickRed}
+}
+
+\newcommand{\be}{\begin{eqnarray}}
+\newcommand{\ee}{\end{eqnarray}}
+
+\allowdisplaybreaks[1]
+ 
+\begin{document}
+
+\title{Intrinsic alignments from different shape measurement techniques}
+
+\author{Danielle Leonard}
+
+\maketitle
+
+\section{Observable: averaged tangential shear}
+
+Goal: Derive the correct expressions for solving for $\gamma_{\rm IA}$ from two different shape measurement methods, taking into account all the same things that are accounted for in the Blazek et al. type expression.
+
+From Rachel's notes, we have:
+\begin{equation}
+\langle \delta_g^i \hat{g}^j\rangle(r_p) - \langle \delta_g^i \hat{g}^{\prime,j}\rangle(r_p) = (1-a_j)\langle \delta_g^i \gamma_{IA}^j\rangle(r_p)
+\label{gen_2pt}
+\end{equation}
+where $i$ labels the lens bin, $j$ labels the source bin, and a prime indicates a different shape measurement to get the reduced shear $g$.
+
+We want to specify to use the averaged tangential shear about a lens galaxy as our two-point function ({\it why use this and not $\Delta \Sigma$}?). Assume all shears below are tangential. Write:
+\begin{align}
+\tilde{\gamma}(r_p) &= \frac{B(r_p) \sum\limits_{k}^{\rm lens} \tilde{w}_k \tilde{\gamma}_k}{\sum\limits_{k}^{\rm lens} \tilde{w}_k} = \frac{B(r_p) \sum\limits_{k}^{\rm lens} \tilde{w}_k \left(\gamma^l(r_p) + \gamma_{IA}^k\right)}{\sum\limits_{k}^{\rm lens} \tilde{w}_k} \nonumber \\ 
+\tilde{\gamma}'(r_p) &= \frac{B(r_p) \sum\limits_{k}^{\rm lens} \tilde{w}_k \tilde{\gamma}_k}{\sum\limits_{k}^{\rm lens} \tilde{w}_k} = \frac{B(r_p) \sum\limits_{k}^{\rm lens} \tilde{w}_k \left(\gamma^l(r_p) + a_k\gamma_{IA}^k\right)}{\sum\limits_{k}^{\rm lens} \tilde{w}_k}
+\label{full_both}
+\end{align}
+
+Subtract these as in equation \ref{gen_2pt} to get:
+\begin{equation}
+\tilde{\gamma}(r_p) - \tilde{\gamma}'(r_p) = \frac{B(r_p) \sum\limits_{k}^{\rm lens} \tilde{w}_k \gamma_{IA}^k}{\sum\limits_{k}^{\rm lens} \tilde{w}_k} - \frac{B(r_p) \sum\limits_{k}^{\rm lens} \tilde{w}_k a_k\gamma_{IA}^k}{\sum\limits_{k}^{\rm lens} \tilde{w}_k}
+\label{subtract_gammat}
+\end{equation}
+
+Now, we make the assumption that we can pull an average per-contributing-galaxy value of $\gamma_{IA}(r_p)$ and $a$ out of the sums. We then need to split up the sums so that we keep only the parts that contribute to intrinsic alignments, as in the same calculation for the Blazek et al. 2012 formalism. We write:
+\begin{equation}
+\sum\limits_{k}^{\rm lens} \tilde{w}_k \gamma_{IA}^k = \gamma_{IA}(r_p) \left[ \sum\limits_{k}^{\rm excess} \tilde{w}_k + \sum\limits_{k}^{\rm rand-close} \tilde{w}_k\right] 
+\label{pull_gamma}
+\end{equation}
+and similarly for the case with $a$. From previous calculations for the Blazek et al. case, we know that:
+\begin{equation}
+\sum\limits_{k}^{\rm lens} \tilde{w}_k = \frac{B(r_p)}{B(r_p)-1+F} \left(\sum\limits_{k}^{\rm excess} \tilde{w}_k + \sum\limits_{k}^{\rm rand-close} \tilde{w}_k\right)
+\label{lens_weights_expand}
+\end{equation}
+where we have defined:
+\begin{equation}
+F = \frac{\sum\limits^{\rm rand-close}_{k} \tilde{w}_k}{\sum\limits^{\rm rand(all)}_{k} \tilde{w}_k}.
+\label{Frp}
+\end{equation}
+
+With this in mind, equation \ref{subtract_gammat} becomes:
+\begin{equation}
+\gamma_{IA}(r_p)(1-a) = \frac{\tilde{\gamma}(r_p) - \tilde{\gamma}'(r_p)}{(B(r_p)-1+F)}
+\label{gammaIA_sol}
+\end{equation}
+
+The above result demonstrates that as in the case of the Blazek 2012 formalism, we need to worry about dividing quantities with errors. We expect the error on the numerator and denominator to be uncorrelated (the numerator is dominated by shape-noise while the error on the denominator is sourced from large-scale structure), but we still need to be concerned about the fact that should we need the covariance in $r_p$ bins, this is a more non-trivial thing to compute. (The variance can be obtained from the basic propagation of errors formula).
+
+To estimate the statistical error on the left hand side of equation \ref{gammaIA_sol}, we can use the expression:
+\begin{equation}
+\frac{\sigma^2(\gamma^{\rm IA}(r_p)(1-a))}{(\gamma^{\rm IA}(r_p)(1-a))^2} = \frac{\sigma^2(\tilde{\gamma}(r_p) - \tilde{\gamma}(r_p)^\prime)}{(\tilde{\gamma}(r_p) - \tilde{\gamma}(r_p)^\prime)^2} + \frac{\sigma^2(B(r_p)-1+F)}{(B(r_p)-1+F)^2}
+\label{error_gt}
+\end{equation}
+
+The things to remember when computing the above are that:
+\begin{itemize}
+\item{The numerator of the first term on the right hand side should be computed allowing for correlation in the shape noise between both measurement methods.}
+\item{The denominator of the first term on the right hand side requires a choice of $a$ to be computed. What should be chosen? Some fiducial value from Singh et al. 2016?}
+\end{itemize}
+
+\subsection*{Caveats to the above}
+\begin{itemize}
+\item{I have assumed that the weights in this case (where we are calculating the average tangential shear instead of $\Delta \Sigma$) are independent of photometric redshift. I'm not sure if this is right. If the weights depend on photometric redshift, we need to compute a photometric redshift bias similar to the Blazek et al. 2012 case.}
+\end{itemize}
+
+\section*{Observable: $\Delta \Sigma$}
+
+Instead of considering the averaged tangential shear as the two-point function in equation \ref{gen_2pt}, we could use $\Delta \Sigma$. It seems from a brief lit review that people have been using $\Delta \Sigma$ pretty exclusively for lensing since having access to any kind of redshift information, so maybe we should be using this here as well.
+
+Using $\Delta \Sigma$ for the observable, equation \ref{subtract_gammat} becomes
+\begin{equation}
+\tilde{\Delta \Sigma}(r_p) - \tilde{\Delta \Sigma}'(r_p) = \frac{B(r_p) \sum\limits_{k}^{\rm lens} \tilde{\Sigma}_c^k\tilde{w}_k \gamma_{IA}^k}{\sum\limits_{k}^{\rm lens} \tilde{w}_k} - \frac{B(r_p) \sum\limits_{k}^{\rm lens} \tilde{\Sigma}_c^k \tilde{w}_k a_k\gamma_{IA}^k}{\sum\limits_{k}^{\rm lens} \tilde{w}_k}
+\label{subtract_deltaS}
+\end{equation}
+
+Following the same logic as above, we then find:
+\begin{equation}
+\gamma_{IA}(r_p)(1-a) = \frac{\tilde{\Delta \Sigma}(r_p) - \tilde{\Delta \Sigma}'(r_p)}{\langle \Sigma_c^{\rm IA}\rangle (B(r_p)-1+F)}
+\label{gammaIA_sol_DS}
+\end{equation}
+where $\langle \Sigma_c^{\rm IA}\rangle$ is defined as in the Blazek et al. 2012 case.
+
+To estimate the statistical errors on the left hand side in this case, the required expression is:
+\begin{equation}
+\frac{\sigma^2(\gamma^{\rm IA}(r_p)(1-a))}{(\gamma^{\rm IA}(r_p)(1-a))^2} = \frac{\sigma^2(\tilde{\Delta \Sigma}(r_p) - \tilde{\Delta \Sigma}(r_p)^\prime)}{(\tilde{\Delta \Sigma}(r_p) - \tilde{\Delta \Sigma}(r_p)^\prime)^2} + \frac{\sigma^2(B(r_p)-1+F)}{(B(r_p)-1+F)^2}
+\label{error_DS}
+\end{equation}
+Note that unlike in the case of the Blazek et al. 2012 formalism, $\langle \Sigma_c^{\rm IA}\rangle$ has canceled out of the expression for statistical error. 
+
+As in the case of using tangential shear as the observable, remember to account for correlation between the two shape noises and to somehow select an $a$ value for computing the denominator of the first term on the right hand side.
+
+\section*{Questions}
+\begin{enumerate}
+\item{Should we be using $\Delta \Sigma$ or averaged tangential shear as the observable?}
+\item{If $\gamma_t$, what should be done about the weights? Are they the same as in the $\Delta \Sigma$ case?}
+\item{What fiducial value can be picked for a? Something from Singh et al. 2016?}
+\end{enumerate}
+%-------------------------------------------------------------------------------
+
+
+%-------------------------------------------------------------------------------
+
+\end{document}
