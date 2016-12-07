@@ -9,9 +9,21 @@ par     =       [A, beta]
 A_fid   =       0.059
 beta_fid        =       -0.73
 
+# The separation in Mpc/h within which we consider source galaxies could be subject to intrinsic alingments
+close_cut = 100
+
 # The rms ellipticity of sample a and b.
 e_rms_a = 	0.2
 e_rms_b	=	0.3
+
+# The signal to noise - necessary for estimating sigma_e
+S_to_N = 15.
+
+# Error on photo z
+sigz=0.08
+
+# The proportionality factor of the model for the boost (the value of the boost at 1 Mpc/h separation):
+Boost_prop = 0.1
 
 # The number of lenses in the lens sample per square DEGREE
 n_l     =       8.7

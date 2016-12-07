@@ -3,9 +3,12 @@
 import numpy as np
 import scipy
 import scipy.integrate
+import scipy.interpolate
 import matplotlib.pyplot as plt
 
 ########## FUNCTIONS ##########
+
+####### SET UP & BASICS #######
 
 def setup_rp_bins(rmin, rmax, nbins):
 	""" Sets up the bins of projected radius """
@@ -26,18 +29,46 @@ def rp_bins_mid(rp_edges):
 
         return bin_centers
 
+def com(z_):
+	""" Gets the comoving distance in units of Mpc/h at a given redshift. """
 
-def com(z_, H_, OmC_, OmB_, OmR_, OmN_):
-        """ Gets the comoving distance in units of Mpc/h at a given redshift. """
+	OmL = 1. - pa.OmC - pa.OmB - pa.OmR - pa.OmN
 
-        OmL_ = 1. - OmC_ - OmB_ - OmR_ - OmN_
+	def chi_int(z):
+		return 1. / (pa.H0 * ( (pa.OmC+pa.OmB)*(1+z)**3 + OmL + (pa.OmR+pa.OmN) * (1+z)**4 )**(0.5))
 
-        def chi_int(z):
-                return 1. / (H_ * ( (OmC_+OmB_)*(1+z)**3 + OmL_ + (OmR_+OmN_) * (1+z)**4 )**(0.5))
+	if hasattr(z_, "__len__"):
+		chi=np.zeros((len(z_)))
+		for zi in range(0,len(z_)):
+			chi[zi] = scipy.integrate.quad(chi_int,0,z_[zi])[0]
+	else:
+		chi = scipy.integrate.quad(chi_int, 0, z_)[0]
 
-        chi = scipy.integrate.quad(chi_int, 0, z_)[0]
+	return chi
 
-        return chi
+def z_interpof_com():
+	""" Returns an interpolating function which can give z as a function of comoving distance. """
+
+	z_vec = scipy.linspace(0., 2100., 100000) # This hardcodes that we don't care about anything over z=2100
+
+	com_vec = com(z_vec)
+
+	z_of_com = scipy.interpolate.interp1d(com_vec, z_vec)
+
+	return	z_of_com
+
+def get_z_close(z_l, cut_MPc_h):
+	""" Gets the z above z_l which is the highest z at which we expect IA to be present for that lens. cut_Mpc_h is that separation in Mpc/h."""
+
+	com_l = com(z_l) # Comoving distance to z_l, in Mpc/h
+
+	tot_com = com_l + cut_MPc_h
+
+	# Convert tot_com back to a redshift.
+
+	z_cl = z_of_com(tot_com)
+
+	return z_cl
 
 def get_areas(bins, z_eff):
         """ Gets the area of each projected radial bin, in square arcminutes. z_eff = effective lens redshift. """
@@ -48,7 +79,7 @@ def get_areas(bins, z_eff):
                 areas_mpch[i] =  np.pi * (bins[i+1]**2 - bins[i]**2)
 
         #Comoving distance out to effective lens redshift in Mpc/h
-        chi_eff = com(z_eff, pa.H0, pa.OmC, pa.OmB, pa.OmR, pa.OmN)
+        chi_eff = com(z_eff)
 
         # Areas in square arcminutes (466560000 / pi = sqAM in a sphere)
         areas_sqAM = areas_mpch * (466560000. / np.pi) / (3 * np.pi * chi_eff**2)
@@ -103,6 +134,183 @@ def get_perbin_N_ls(rp_bins_, zeff_, frac_, ns_, nl_, A):
 
         return N_ls_pbin
 
+####### GETTING ERRORS #########
+
+def sum_weights(z_l, z_min_s, z_max_s, erms, rp_bins_, rp_bin_c_):
+	""" Returns the sum over rand-source pairs of the estimated weights, in each projected radial bin. Pass different z_min_s and z_max_s to get rand-close, rand-far, and all-rand cases."""
+	
+	(z_s, dNdz_s) = get_NofZ(pa.alpha, pa.zs, z_min_s, z_max_s, pa.zpts)
+	
+	SigC_t = get_SigmaC_theory(z_s,	z_l)
+
+	b_Sig = get_bSigma(z_s, z_l)
+
+	sig_e = sigma_e(z_s, pa.S_to_N)
+
+	sum_ans = [0]*(len(rp_bins_)-1)
+	for i in range(0,len(rp_bins_)-1):
+		Integrand = dNdz_s  / (SigC_t**2 * b_Sig**2 * (erms**2*np.ones(len(z_s)) + sig_e**2))
+		sum_ans[i] = scipy.integrate.simps(Integrand, z_s)
+
+	return sum_ans
+
+def sigma_e(z_s_, s_to_n):
+	""" Returns a value for the model for the per-galaxy noise as a function of source redshift"""
+
+	# This is a dummy things for now
+	sig_e = 2. / s_to_n * np.ones(len(z_s_))
+
+	return sig_e
+
+def get_SigmaC_theory(z_s_, z_l_):
+	""" Returns the theoretical value of Sigma_c, the critcial surface mass density """
+
+	com_s = com(z_s_) 
+	com_l = com(z_l_) 
+
+	a_l = 1. / (z_l_ + 1.)
+
+	a_s = 1. / (z_s_ + 1.)
+
+	# This is missing a factor of c^2 / 4piG - I'm hoping this cancels everywhere? Check.
+	Sigma_c = (a_l * a_s * com_s) / ((a_s*com_s - a_l * com_l) * com_l)
+
+	return Sigma_c
+
+def get_bSigma(z_s_, z_l_):
+	
+	""" Returns the photo-z bias to the estimated critical surface density. In principle this is a model fit from the spectroscopic subsample of data. """
+
+	# This is a dummy return value for now
+	b_Sig = 1. * np.ones(len(z_s_))
+
+	return b_Sig
+
+def p_z(z_ph, z_sp, sigz):
+	""" Returns the probability of finding a photometric redshift z_ph given that the true redshift is z_sp. """
+	
+	# I'm going to use a Gaussian probability distribution here, but you could change that.
+	p_z_ = np.exp(-(z_ph - z_sp)**2 / (2.*sigz**2)) / (np.sqrt(2.*np.pi)*sigz)
+	
+	return p_z_
+
+def get_boost(rp_cents_, propfact):
+	""" Returns the boost factor in radial bins. propfact is a tunable parameter giving the proportionality constant by which boost goes like projected correlation function (= value at 1 Mpc/h). """
+
+	Boost = propfact *(rp_cents_)**(-0.8) + np.ones((len(rp_cents_))) # Empirical power law fit to the boost, derived from the fact that the boost goes like projected correlation function.
+
+	plot_quant_vs_rp(Boost, rp_cents_, './boost.png')
+
+	return Boost
+
+def get_F(z_l, z_close_max, z_max_samp, erms, rp_bins_, rp_bin_c):
+	""" Returns F (the weighted fraction of lens-source pairs from the smooth dNdz which are contributing to IA) """
+
+	# Sum over `rand-close'
+	numerator = sum_weights(z_l, z_l, z_close_max, erms, rp_bins_, rp_bin_c)
+
+	#Sum over all `rand'
+	denominator = sum_weights(z_l, z_l, z_max_samp, erms, rp_bins_, rp_bin_c)
+
+	F = np.asarray(numerator) / np.asarray(denominator)
+	
+	return F
+
+def get_Sig_IA(z_l, z_min_s, z_cut_IA, z_max_samp, erms, rp_bins_, rp_bin_c_, boost):
+	""" Returns the value of <\Sigma_c>_{IA} in radial bins """
+	
+	# There are four terms here. The two in the denominators are sums over randoms (or sums over lenses that can be written as randoms * boost), and these are already set up to calculate.
+	denom_rand_far = sum_weights(z_l, z_cut_IA, z_max_samp, erms, rp_bins_, rp_bin_c_)
+	denom_rand = sum_weights(z_l, z_l, z_max_samp, erms, rp_bins_, rp_bin_c_)
+	
+	# The two in the numerator require summing over weights and Sigma_C. 
+	
+	#For the sum over rand-far, this follows directly from the same type of expression as when summing weights:
+	(z_s, dNdz_s) = get_NofZ(pa.alpha, pa.zs, z_cut_IA, z_max_samp, pa.zpts)
+	SigC_t = get_SigmaC_theory(z_s,	z_l)
+	b_Sig = get_bSigma(z_s, z_l)
+	sig_e = sigma_e(z_s, pa.S_to_N)
+	
+	rand_far_num = [0]*(len(rp_bins_)-1)
+	for i in range(0,len(rp_bins_)-1):
+		Integrand = dNdz_s  / (SigC_t * b_Sig * (erms**2*np.ones(len(z_s)) + sig_e**2))
+		rand_far_num[i] = scipy.integrate.simps(Integrand, z_s)
+			
+	# The other numerator sum is itself the sum of (a sum over all randoms) and (a term which represents the a sum over excess). 
+	
+	# The rand part:
+	(z_s_all, dNdz_s_all) = get_NofZ(pa.alpha, pa.zs, z_l, z_max_samp, pa.zpts)
+	SigC_t_all = get_SigmaC_theory(z_s_all,	z_l)
+	b_Sig_all = get_bSigma(z_s_all, z_l)
+	sig_e_all = sigma_e(z_s_all, pa.S_to_N)
+	
+	rand_all_num = [0]*(len(rp_bins_)-1)
+	for i in range(0,len(rp_bins_)-1):
+		Integrand = dNdz_s_all  / (SigC_t_all * b_Sig_all * (erms**2*np.ones(len(z_s_all)) + sig_e_all**2))
+		rand_all_num[i] = scipy.integrate.simps(Integrand, z_s_all)
+	
+	#The excess part:
+	excess_num = [0]*(len(rp_bins_)-1)	
+	for i in range(0, len(rp_bins_)-1):
+			p_z_arr = p_z(z_s_all, z_l, pa.sigz)
+			Integrand = p_z_arr / (SigC_t_all * (sig_e_all**2 + erms**2 * np.ones(len(z_s_all))))
+			excess_num[i] = scipy.integrate.simps(Integrand, z_s_all)
+		
+	Sig_IA = ((np.asarray(boost)-1.)*np.asarray(excess_num) + np.asarray(rand_all_num) - np.asarray(rand_far_num)) / (np.asarray(boost)*np.asarray(denom_rand) - np.asarray(denom_rand_far))
+
+	return Sig_IA
+
+def get_Sig_all(z_l, z_min_s, z_max_samp, erms, rp_bins_, rp_bin_c_, boost):
+	""" Returns the value of <\Sigma_c>_{all} in radial bins """
+	
+	# The denominator is a sums over lenses that can be written as randoms * boost.
+	denom_rand = sum_weights(z_l, z_min_s, z_max_samp, erms, rp_bins_, rp_bin_c_)
+	
+	# The numerator requires summing over weights and Sigma_C, over randoms and excess. 
+	
+	# The rand part:
+	(z_s, dNdz_s) = get_NofZ(pa.alpha, pa.zs, z_min_s, z_max_samp, pa.zpts)
+	SigC_t = get_SigmaC_theory(z_s,	z_l)
+	b_Sig = get_bSigma(z_s, z_l)
+	sig_e = sigma_e(z_s, pa.S_to_N)
+	
+	rand_num = [0]*(len(rp_bins_)-1)
+	for i in range(0,len(rp_bins_)-1):
+		Integrand = dNdz_s  / (SigC_t * b_Sig * (erms**2*np.ones(len(z_s)) + sig_e**2))
+		rand_num[i] = scipy.integrate.simps(Integrand, z_s)
+	
+	#The excess part:
+	excess_num = [0]*(len(rp_bins_)-1)	
+	for i in range(0, len(rp_bins_)-1):
+			p_z_arr = p_z(z_s, z_l, pa.sigz)
+			Integrand = p_z_arr / (SigC_t * (sig_e**2 + erms**2 * np.ones(len(z_s))))
+			excess_num[i] = scipy.integrate.simps(Integrand, z_s)
+		
+	Sig_all = ((np.asarray(boost)-1.)*np.asarray(excess_num) + np.asarray(rand_num)) / (np.asarray(boost)*np.asarray(denom_rand))
+
+	return Sig_all
+
+def get_est_DeltaSig_diff(z_l, zSmax, z_close_, erms, rp_bins_, rp_cents_, a_):
+	""" Returns the value of est(Delta Sigma, method 1) - est(Delta Sigma, method 2) """
+	
+	boost = get_boost(rp_cents_, pa.Boost_prop)
+	F = get_F(z_l, z_close_, zSmax, erms, rp_bins_, rp_cents_)
+	gIA = get_fid_gIA(rp_cents_) # Nonlinear alignments model not yet included
+	SigIA = get_Sig_IA(z_l, zSmin, z_close_, zSmax, erms, rp_bins_, rp_cents_, boost)
+	
+	diff = gIA * (1-a) * SigIA * (boost -1 + F)
+	
+	return diff 
+
+def get_fid_gIA(rp_bins_c):
+	""" This function computes the fiducial value of gamma_IA in each projected radial bin."""
+	
+	# This needs to be updated to nonlinear alignment model.
+	
+	fidvals = pa.A_fid * np.asarray(rp_bins_c)**pa.beta_fid
+
+	return fidvals
+
 def setup_shapenoise_cov(e_rms, N_ls_pbin):
 	""" Returns a diagonal covariance matrix in bins of projected radius for a measurement dominated by shape noise. Elements are e_{rms}^2 / (N_ls) where N_ls is the number of l/s pairs relevant to each projected radius bin.""" 
 
@@ -119,7 +327,7 @@ def subtract_var(var_1, var_2, covar):
 
 	return var_diff
 
-def get_gammaIA_cov(Cov_1, Cov_2, sys1, covar):
+def get_gammaIA_diff_cov(Cov_1, Cov_2, sys1, covar):
 	""" Takes the covariance matrices of the constituent elements of gamma_{IA} and combines them to get the covariance matrix of gamma_{IA} in projected radial bins."""
 
 	gammaIA_diag = np.diag(np.zeros(len(np.diag(Cov_1))))
@@ -142,6 +350,8 @@ def get_fid_gIA(rp_bins_1):
 
 	return fidvals
 
+####### PLOTTING / OUTPUT #######
+
 def plot_variance(cov_1, fidvalues_1, bin_centers, filename):
 	""" Takes a covariance matrix, a vector of the fiducial values of the object in question, and the edges of the projected radial bins, and makes a plot showing the fiducial values and 1-sigma error bars from the diagonal of the covariance matrix. Outputs this plot to location 'filename'."""
 
@@ -158,6 +368,33 @@ def plot_variance(cov_1, fidvalues_1, bin_centers, filename):
         plt.savefig(filename)
 
 	return  
+
+def plot_quant_vs_rp(quant, rp_cent, file):
+	""" Plots any quantity vs the center of redshift bins"""
+
+	plt.figure()
+	plt.loglog(rp_cent, quant, 'ko')
+	plt.xlabel('$r_p$')
+	plt.tick_params(axis='both', which='major', labelsize=12)
+	plt.tick_params(axis='both', which='minor', labelsize=12)
+	plt.tight_layout()
+	plt.savefig(file)
+
+	return
+	
+def plot_quant_vs_quant(quant1, quant2, file):
+	""" Plots any quantity vs any other."""
+
+	plt.figure()
+	plt.loglog(quant1, quant2, 'ko')
+	plt.tick_params(axis='both', which='major', labelsize=12)
+	plt.tick_params(axis='both', which='minor', labelsize=12)
+	plt.tight_layout()
+	plt.savefig(file)
+
+	return
+
+######### FISHER STUFF ##########
 
 def par_derivs(params, rp_mid):
         """ Computes the derivatives of gamma_IA wrt the parameters of the IA model we care about constraining.
@@ -232,15 +469,41 @@ rp_cents	=	rp_bins_mid(rp_bins)
 # Set up the redshift distribution of sources
 (z, dNdz)	=	get_NofZ(pa.alpha,pa.zs, pa.zmin, pa.zmax, pa.zpts)
 
+# Set up a function to get z as a function of comoving distance
+z_of_com = z_interpof_com()
+
+# Get the redshift corresponding to the maximum separation from the effective lens redshift at which we assume IA may be present (pa.close_cut is the separation in Mpc/h)
+z_close = get_z_close(pa.zeff, pa.close_cut)
+
 # Get the fraction of dndZ which is in the source sample
 frac		=       get_z_frac(pa.zS_min, pa.zS_max, dNdz, z)
 
-# Get the number of lens source pairs for each source sample in projected radial bins
+# Get the number of lens source pairs for the source sample in projected radial bins
 N_ls_pbin	=	get_perbin_N_ls(rp_bins, pa.zeff, frac, pa.n_s, pa.n_l, pa.Area)
 
-# Get the covariance matrix in projected radial bins of Delta Sigma for samples a and b
+# Get the covariance matrix in projected radial bins of Delta Sigma for both shape measurement methods
 Cov_a		=	setup_shapenoise_cov(pa.e_rms_a, N_ls_pbin)
 Cov_b		=	setup_shapenoise_cov(pa.e_rms_b, N_ls_pbin)
+
+# TESTING COMPONENTS THAT ARE BEING ADDED:
+Boost = get_boost(rp_cents, pa.Boost_prop)
+#F_a = get_F(pa.zeff, z_close, pa.zS_max, pa.e_rms_a, rp_bins, rp_cents)
+#F_b = get_F(pa.zeff, z_close, pa.zS_max, pa.e_rms_b, rp_bins, rp_cents)
+#b_Sig = get_bSigma(z, pa.zeff)
+#p_ = p_z(z, pa.zeff, pa.sigz)
+#sige = sigma_e(z, pa.S_to_N)
+#Sigc_th = get_SigmaC_theory(z, pa.zeff)
+#Sig_IA_a = get_Sig_IA(pa.zeff, pa.zS_min, z_close, pa.zS_max, pa.e_rms_a, rp_bins, rp_cents, Boost)
+#Sig_IA_b = get_Sig_IA(pa.zeff, pa.zS_min, z_close, pa.zS_max, pa.e_rms_b, rp_bins, rp_cents, Boost)
+#cov = get_gammaIA_diff_cov(Cov_a, Cov_b, pa.sys_sigc, pa.covar_DSig)
+#Sig_all_a = get_Sig_all(pa.zeff, pa.zS_min, pa.zS_max, pa.e_rms_a, rp_bins, rp_cents, Boost)
+#Sig_all_b = get_Sig_all(pa.zeff, pa.zS_min, pa.zS_max, pa.e_rms_b, rp_bins, rp_cents, Boost)
+diffa = get_est_DeltaSig_diff(pa.zeff, pa.zSmax, z_close, pa.e_rms_a, rp_bins, rp_cents, pa.a)
+diffb = get_est_DeltaSig_diff(pa.zeff, pa.zSmax, z_close, pa.e_rms_b, rp_bins, rp_cents, pa.a)
+plot_quant_vs_rp(Sig_all_a, rp_cents, './Sigall_a.png')
+plot_quant_vs_rp(Sig_all_b, rp_cents, './Sigall_b.png')
+exit()
+
 
 # Combine the constituent covariance matrices to get the covariance matrix for gamma_IA in projected radial bins
 Cov_gIA		= 	get_gammaIA_cov(Cov_a, Cov_b, pa.sys_sigc, pa.covar_DSig)
@@ -250,6 +513,8 @@ fid_gIA		=	get_fid_gIA(rp_bins)
 
 # Output a plot showing the 1-sigma error bars on gamma_IA in projected radial bins
 plot_variance(Cov_gIA, fid_gIA, rp_cents, pa.plotfile)
+
+exit() # Below is Fisher stuff, don't worry about this yet
 
 # Get the parameter derivatives required to construct the Fisher matrix
 ders            =       par_derivs(pa.par, rp_cents)
