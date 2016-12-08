@@ -32,124 +32,78 @@
 
 \maketitle
 
-From Rachel's notes, we have:
-\begin{equation}
-\langle \delta_g^i \hat{g}^j\rangle(r_p) - \langle \delta_g^i \hat{g}^{\prime,j}\rangle(r_p) = (1-a_j)\langle \delta_g^i \gamma_{IA}^j\rangle(r_p)
-\label{gen_2pt}
-\end{equation}
-where $i$ labels the lens bin, $j$ labels the source bin, and a prime indicates a different shape measurement to get the reduced shear $g$.
+\paragraph*{Background} Different shape measurement methods are sensitive to different parts of the radial profile of a galaxy. In Singh et al. 2016, it appears as though the intrinsic alignment signals measured by these different methods are offset from one another by a constant. By measuring a correlation between galaxy position and shape with two different shape measurements, and subtracting these, you could get rid of the lensing signal and obtain a constraint on the scale-dependence of intrinsic alignments. This is useful for building intrinsic alignment models.
 
-For the two-point functions, we could either use the averaged tangential shear about lens galaxies, or we could use $\Delta \Sigma$. I'm not sure which is best so I'm going to do the math for both below.
+\paragraph*{Source sample} This method naturally allows us to loosen the standard assumption that only excess galaxies are subject to IA. We consider galaxies which form part of the smooth source distribution, but which are still physically close to a lens galaxy, to be impacted by intrinsic alignments as well. We assume a source sample which is defined by the requirement that the photo-z of a source galaxy is always within a certain cut-off separation of the lens galaxy in question. In the case of an effective redshift for the lenses, call this cut $z_{\rm cut}$.
 
-\section{Observable: averaged tangential shear}
-Specify first to use the averaged tangential shear about a lens galaxy as our two-point function. All shears here should be assumed to be tangential. Write:
+We write:
 \begin{align}
-\tilde{\gamma}(r_p) &= \frac{B(r_p) \sum\limits_{k}^{\rm lens} \tilde{w}_k \tilde{\gamma}_k}{\sum\limits_{k}^{\rm lens} \tilde{w}_k} = \frac{B(r_p) \sum\limits_{k}^{\rm lens} \tilde{w}_k \Sigma_{c,k}^{-1}\Delta\Sigma}{\sum\limits_{k}^{\rm lens} \tilde{w}_k}+\frac{B(r_p) \sum\limits_{k}^{\rm lens} \tilde{w}_k \gamma_{\rm IA}^k}{\sum\limits_{k}^{\rm lens} \tilde{w}_k} \nonumber \\ 
-\tilde{\gamma}'(r_p) &= \frac{B^\prime(r_p) \sum\limits_{k}^{\rm lens} \tilde{w}^\prime_k \tilde{\gamma}_k}{\sum\limits_{k}^{\rm lens} \tilde{w}^\prime_k} = \frac{B^\prime(r_p) \sum\limits_{k}^{\rm lens} \tilde{w}^\prime_k \Sigma_{c,k}^{-1}\Delta\Sigma}{\sum\limits_{k}^{\rm lens} \tilde{w}^\prime_k}+\frac{B^\prime(r_p) \sum\limits_{k}^{\rm lens} \tilde{w}^\prime_k a \gamma_{\rm IA}^k}{\sum\limits_{k}^{\rm lens} \tilde{w}^\prime_k} 
+\tilde{\gamma}(r_p) &= \frac{\sum\limits_{k}^{\rm lens} \tilde{w}_k \tilde{\gamma}_k}{\sum\limits_{k}^{\rm lens} \tilde{w}_k} = \frac{\sum\limits_{k}^{\rm lens} \tilde{w}_k \gamma_{\rm L}^k}{\sum\limits_{k}^{\rm lens} \tilde{w}_k}+\frac{\sum\limits_{k}^{\rm lens} \tilde{w}_k \gamma_{\rm IA}^k}{\sum\limits_{k}^{\rm lens} \tilde{w}_k} \nonumber \\ 
+\tilde{\gamma}'(r_p) &= \frac{\sum\limits_{k}^{\rm lens} \tilde{w}_k \tilde{\gamma}_k}{\sum\limits_{k}^{\rm lens} \tilde{w}_k} = \frac{\sum\limits_{k}^{\rm lens} \tilde{w}_k \gamma_{\rm L}^k}{\sum\limits_{k}^{\rm lens} \tilde{w}_k}+\frac{\sum\limits_{k}^{\rm lens} \tilde{w}_k a \gamma_{\rm IA}^k}{\sum\limits_{k}^{\rm lens} \tilde{w}_k} 
 \label{full_both}
 \end{align}
-Note that the weights and anything that depends on the weights are different between the two shape-measurement methods because of the different value of $e_{\rm rms}$ between the two methods. I don't know exactly what the weights should be in the case of averaged tangential shear as the observable, but I assume they depend on $e_{\rm rms}$.
+where all shear should be assumed to be tangential about the lens galaxy. When computing averaged tangential shear about a lens galaxy, the inverse-variance weights are:
+\begin{equation}
+\tilde{w}_k = \frac{1}{e_{\rm rms}^2 + (\sigma_e^k)^2}
+\label{weights}
+\end{equation}
 
-Subtract as in equation \ref{gen_2pt} to get:
+A couple of notes on equation \ref{full_both}:
+\begin{enumerate}
+\item{The optimal choice for the two-point function here is the averaged tangential shear rather than $\Delta \Sigma$. $\Delta \Sigma$ is ill-defined for source galaxies which are very near in redshift to the lens galaxy or in front of the lens galaxy. By definition $\Delta \Sigma$ will be ill-defined for much of our sample.}
+\item{The weights in equation \ref{full_both} are the same for both shape measurement methods. This is not an obvious thing to choose, because $e_{\rm rms}$ would be expected to vary between the methods. But, it's important to choose the weights the same so that lensing will cancel when we do the subtraction. Also, it turns out that because $e_{\rm rms}$ dominates over measurement error, choosing a non-optimal weight by changing $e_{\rm rms}$ has little effect on how optimal the weights are, because we are basically weighting every pair the same regardless. So, for the weights, we pick some $e_{\rm rms}$ which is between the values for the two shape measurement methods.}
+\item{The boost factor is not included in equation \ref{full_both}. This is because the point of the boost factor is that if you are trying to get a measurement of lensing by summing tangential shears, then you need the boost factor or else your measured signal will be low. But here, we are not trying to get the lensing signal. We are interested in the intrinsic alignment signal, and the lensing signal will cancel with or without the boost, so it is not necessary.}
+\end{enumerate}
+
+We subtract the above relationships for the two shape measurement methods to get:
 \begin{align}
-\tilde{\gamma}(r_p) - \tilde{\gamma}^\prime(r_p) &= \Delta \Sigma(r_p)\left[\frac{B(r_p) \sum\limits_{k}^{\rm lens} \tilde{w}_k \Sigma_{c,k}^{-1}}{\sum\limits_{k}^{\rm lens} \tilde{w}_k} - \frac{B^\prime(r_p) \sum\limits_{k}^{\rm lens} \tilde{w}^\prime_k \Sigma_{c,k}^{-1}}{\sum\limits_{k}^{\rm lens} \tilde{w}^\prime_k}\right] \nonumber \\ &+\gamma_{\rm IA}(r_p) \left[\frac{B(r_p) \left(\sum\limits_{k}^{\rm excess} \tilde{w}_k + \sum\limits_{k}^{\rm rand-close} \tilde{w}_k\right)}{\sum\limits_{k}^{\rm lens} \tilde{w}_k}-a\frac{B^\prime(r_p) \left(\sum\limits_{k}^{\rm excess} \tilde{w}^\prime_k  + \sum\limits_{k}^{\rm rand-close} \tilde{w}^\prime_k\right)}{\sum\limits_{k}^{\rm lens} \tilde{w}^\prime_k} \right]
+\tilde{\gamma}(r_p) - \tilde{\gamma}^\prime(r_p) &= \frac{\sum\limits_{k}^{\rm lens} \tilde{w}_k \gamma_{\rm IA}^k}{\sum\limits_{k}^{\rm lens} \tilde{w}_k} - \frac{\sum\limits_{k}^{\rm lens} \tilde{w}_k a \gamma_{\rm IA}^k}{\sum\limits_{k}^{\rm lens} \tilde{w}_k} 
 \label{subtract_gammat}
 \end{align}
+In principle, all the galaxies in our source sample contribute to intrinsic alignments, so we can consider an average per-galaxy contribution of $\gamma_{\rm IA}(r_p)$.
+\begin{equation}
+\tilde{\gamma}(r_p) - \tilde{\gamma}^\prime(r_p) = \gamma_{\rm IA}(r_p)(1-a).
+\label{subtract_gammat_simp}
+\end{equation}
+However, there is another factor here that we have not yet accounted for. Because we are assuming photometric redshifts for our sources, we will have source galaxies in our sample which are actually higher redshift than $z_{\rm cut}$. These galaxies will not be affected by intrinsic alignments. Therefore, if we apply equation \ref{subtract_gammat_simp} directly, we will estimate the intrinsic alignment signal to be too low. We need to apply a correction factor which accounts for this. 
 
-We have made the assumption that we can pull an average per-contributing-galaxy value of $\gamma_{IA}(r_p)$ out of the sums, and that excess galaxies as well as nearby galaxies from the smooth source sample (`rand-close') can contribute to intrinsic alignments. Using the same math as in the Blazek et al. 2012 case, we can equally write this as:  
-\begin{align}
-\tilde{\gamma}(r_p) - \tilde{\gamma}^\prime(r_p) &= \Delta \Sigma(r_p)\left[\frac{B(r_p) \sum\limits_{k}^{\rm lens} \tilde{w}_k \Sigma_{c,k}^{-1}}{\sum\limits_{k}^{\rm lens} \tilde{w}_k} - \frac{B^\prime(r_p) \sum\limits_{k}^{\rm lens} \tilde{w}^\prime_k \Sigma_{c,k}^{-1}}{\sum\limits_{k}^{\rm lens} \tilde{w}^\prime_k}\right] +\gamma_{\rm IA}(r_p) \left[(B(r_p)-1+F)-a(B^\prime(r_p)-1+F^\prime) \right]
-\label{subtract_gammat_2}
-\end{align}
-where we have used the fact that:
-\begin{equation}
-\sum\limits_{k}^{\rm lens} \tilde{w}_k = \frac{B(r_p)}{B(r_p)-1+F} \left(\sum\limits_{k}^{\rm excess} \tilde{w}_k + \sum\limits_{k}^{\rm rand-close} \tilde{w}_k\right)
-\label{lens_weights_expand}
-\end{equation}
-and we have defined:
-\begin{equation}
-F = \frac{\sum\limits^{\rm rand-close}_{k} \tilde{w}_k}{\sum\limits^{\rm rand(all)}_{k} \tilde{w}_k}.
-\label{Frp}
-\end{equation}
+\subsection*{Correction factor: inclusion of higher-z galaxies}
+We assume that we know the smooth distribution of source galaxies, $dN / dz$, to some reasonably high redshift, from a spectroscopic subsample. This may be difficult for future surveys, in which an inadequate spectroscopic subsample, especially at high redshifts, could result in systematic error. {\it We will need to account for this possible systematic error at some point.}
 
-If it is true that:
+Let the probability of labelling a galaxy with spectroscopic redshift $z_s$ as having photometric redshift $z_p$ be $p(z_s, z_p)$. {\it I think} the total weighted number of galaxies in the photo-z range between $z_l$ and $z_{\rm cut}$ is:
 \begin{equation}
-\frac{B(r_p) \sum\limits_{k}^{\rm lens} \tilde{w}_k \Sigma_{c,k}^{-1}}{\sum\limits_{k}^{\rm lens} \tilde{w}_k} \approx \frac{B^\prime(r_p) \sum\limits_{k}^{\rm lens} \tilde{w}^\prime_k \Sigma_{c,k}^{-1}}{\sum\limits_{k}^{\rm lens} \tilde{w}^\prime_k}
-\label{lens_req}
+N_{\rm tot} = \int_{z_l}^{z_{\rm cut}} dz_p \int_{z_l}^{z_{\rm max}} \frac{dN}{dz_s} p(z_s, z_p) \tilde{w}(z_p)
+\label{tot}
 \end{equation}
-and
+and the number of galaxies in the photo-z range between $z_l$ and $z_{\rm cut}$ which have $z_s$ above $z_{\rm cut}$ is:
 \begin{equation}
-(B(r_p)-1+F) \approx (B^\prime(r_p)-1+F^\prime)
-\label{ia_req}
+N_{\rm high} = \int_{z_l}^{z_{\rm cut}} dz_p \int_{z_{\rm cut}}^{z_{\rm max}} \frac{dN}{dz_s} p(z_s, z_p) \tilde{w}(z_p).
+\label{high}
 \end{equation}
-then we can simplify equation \ref{subtract_gammat_2} and solve for the IA contribution. {\it Is this true?} In this case, we have:
-\begin{equation}
-\gamma_{IA}(r_p)(1-a) = \frac{\tilde{\gamma}(r_p) - \tilde{\gamma}'(r_p)}{(B(r_p)-1+F)}
-\label{gammaIA_sol}
-\end{equation}
+In this case the weights are independent of redshift but they could in principle depend on redshift.
 
-The above result demonstrates that as in the case of the Blazek 2012 formalism, we need to worry about dividing quantities with errors. We expect the error on the numerator and denominator to be uncorrelated (the numerator is dominated by shape-noise while the error on the denominator is sourced from large-scale structure), but we still need to be concerned about the fact that should we need the covariance in $r_p$ bins, this is a more non-trivial thing to compute. (The variance can be obtained from the basic propagation of errors formula).
-
-To estimate the statistical error on the left hand side of equation \ref{gammaIA_sol}, we can use the expression:
+To correct for higher-z galaxies being included, we alter equation \ref{subtract_gammat_simp} as follows:
 \begin{equation}
-\frac{\sigma^2(\gamma^{\rm IA}(r_p)(1-a))}{(\gamma^{\rm IA}(r_p)(1-a))^2} = \frac{\sigma^2(\tilde{\gamma}(r_p) - \tilde{\gamma}(r_p)^\prime)}{(\tilde{\gamma}(r_p) - \tilde{\gamma}(r_p)^\prime)^2} + \frac{\sigma^2(B(r_p)-1+F)}{(B(r_p)-1+F)^2}
-\label{error_gt}
+\tilde{\gamma}(r_p) - \tilde{\gamma}^\prime(r_p) = \gamma_{\rm IA}(r_p)(1-a) \left(\frac{N_{\rm tot} - N_{\rm high}}{N_{\rm tot}}\right)
+\label{subtract_gammat_fac}
+\end{equation}
+which is trivially rearranged to solve for the IA term:
+\begin{equation}
+\gamma_{\rm IA}(r_p)(1-a) = \left(\tilde{\gamma}(r_p) - \tilde{\gamma}^\prime(r_p)\right) \left(\frac{N_{\rm tot}}{N_{\rm tot} - N_{\rm high}}\right)
+\label{IAsol}
 \end{equation}
 
-\subsection*{Caveats to the above}
-\begin{itemize}
-\item{I have assumed that the weights in this case (where we are calculating the average tangential shear instead of $\Delta \Sigma$) are independent of photometric redshift. I'm not sure if this is right. If the weights depend on photometric redshift, we need to compute a photometric redshift bias similar to the Blazek et al. 2012 case.}
-\end{itemize}
-
-\section*{Observable: $\Delta \Sigma$}
-
-Instead of considering the averaged tangential shear as the two-point function in equation \ref{gen_2pt}, we could use $\Delta \Sigma$. It seems from a brief lit review that people have been using $\Delta \Sigma$ pretty exclusively for lensing since having access to any kind of redshift information, so maybe we should be using this here as well.
-
-Using $\Delta \Sigma$ for the observable, equation \ref{subtract_gammat} becomes
-\begin{align}
-\tilde{\Delta \Sigma}(r_p) &= \frac{B(r_p) \sum\limits_{k}^{\rm lens} \tilde{w}_k \tilde{\Sigma}_c^k\tilde{\gamma}_k}{\sum\limits_{k}^{\rm lens} \tilde{w}_k} = \frac{B(r_p) \sum\limits_{k}^{\rm lens} \tilde{w}_k \tilde{\Sigma}_c^k \Sigma_{c,k}^{-1}\Delta\Sigma}{\sum\limits_{k}^{\rm lens} \tilde{w}_k}+\frac{B(r_p) \sum\limits_{k}^{\rm lens} \tilde{w}_k \tilde{\Sigma}_c^k \gamma_{\rm IA}^k}{\sum\limits_{k}^{\rm lens} \tilde{w}_k} \nonumber \\ 
-\tilde{\Delta\Sigma}^\prime(r_p) &= \frac{B^\prime(r_p) \sum\limits_{k}^{\rm lens} \tilde{w}^\prime_k \tilde{\Sigma}_c^k\tilde{\gamma}_k}{\sum\limits_{k}^{\rm lens} \tilde{w}^\prime_k} = \frac{B^\prime(r_p) \sum\limits_{k}^{\rm lens} \tilde{w}^\prime_k \tilde{\Sigma}_c^k \Sigma_{c,k}^{-1}\Delta\Sigma}{\sum\limits_{k}^{\rm lens} \tilde{w}^\prime_k}+\frac{B^\prime(r_p) \sum\limits_{k}^{\rm lens} \tilde{w}^\prime_k a \tilde{\Sigma}_c^k\gamma_{\rm IA}^k}{\sum\limits_{k}^{\rm lens} \tilde{w}^\prime_k} 
-\label{full_both_Delta_Sigma}
-\end{align}
-and equation \ref{subtract_gammat_2} becomes:
-\begin{align}
-\tilde{\Delta \Sigma}(r_p) - \tilde{\Delta\Sigma}^\prime(r_p) &= \Delta \Sigma(r_p)\left[\frac{B(r_p) \sum\limits_{k}^{\rm lens} \tilde{w}_k \tilde{\Sigma}_c^k\Sigma_{c,k}^{-1}}{\sum\limits_{k}^{\rm lens} \tilde{w}_k} - \frac{B^\prime(r_p) \sum\limits_{k}^{\rm lens} \tilde{w}^\prime_k \tilde{\Sigma}_c^k\Sigma_{c,k}^{-1}}{\sum\limits_{k}^{\rm lens} \tilde{w}^\prime_k}\right] \nonumber \\ &+\gamma_{\rm IA}(r_p) \left[(B(r_p)-1+F)\langle \Sigma_c \rangle_{\rm IA}-a(B^\prime(r_p)-1+F^\prime)\langle \Sigma_c \rangle_{\rm IA}^\prime \right]
-\label{subtract_deltaS}
-\end{align}
-
-In this case, in order to simplify the above to solve for $\gamma_{\rm IA}$, we would need:
+To estimate the statistical error on the left hand side of equation \ref{IAsol}, we use the expression:
 \begin{equation}
-\frac{B(r_p) \sum\limits_{k}^{\rm lens} \tilde{w}_k \tilde{\Sigma}_c^k\Sigma_{c,k}^{-1}}{\sum\limits_{k}^{\rm lens} \tilde{w}_k} \approx \frac{B^\prime(r_p) \sum\limits_{k}^{\rm lens} \tilde{w}^\prime_k \tilde{\Sigma}_c^k\Sigma_{c,k}^{-1}}{\sum\limits_{k}^{\rm lens} \tilde{w}^\prime_k}
-\label{lens_req_DS}
+\sigma^2(\gamma_{\rm IA}(r_p)(1-a)) = \left(\frac{N_{\rm tot}}{N_{\rm tot} - N_{\rm high}}\right) \sigma^2\left(\tilde{\gamma}(r_p) - \tilde{\gamma}^\prime(r_p)\right).
+\label{error}
 \end{equation}
-and
-\begin{equation}
-(B(r_p)-1+F)\langle \Sigma_c^{\rm IA} \rangle\approx (B^\prime(r_p)-1+F^\prime)\langle \Sigma_c ^{\rm IA}\rangle^\prime
-\label{ia_req_DS}
-\end{equation}
-
-In that case, we then find:
-\begin{equation}
-\gamma_{IA}(r_p)(1-a) = \frac{\tilde{\Delta \Sigma}(r_p) - \tilde{\Delta \Sigma}'(r_p)}{\langle \Sigma_c^{\rm IA}\rangle (B(r_p)-1+F)}
-\label{gammaIA_sol_DS}
-\end{equation}
-where $\langle \Sigma_c^{\rm IA}\rangle$ is defined as in the Blazek et al. 2012 case.
-
-To estimate the statistical errors on the left hand side in this case, the required expression is:
-\begin{equation}
-\frac{\sigma^2(\gamma^{\rm IA}(r_p)(1-a))}{(\gamma^{\rm IA}(r_p)(1-a))^2} = \frac{\sigma^2(\tilde{\Delta \Sigma}(r_p) - \tilde{\Delta \Sigma}(r_p)^\prime)}{(\tilde{\Delta \Sigma}(r_p) - \tilde{\Delta \Sigma}(r_p)^\prime)^2} + \frac{\sigma^2(B(r_p)-1+F)}{(B(r_p)-1+F)^2}
-\label{error_DS}
-\end{equation}
-Note that unlike in the case of the Blazek et al. 2012 formalism, $\langle \Sigma_c^{\rm IA}\rangle$ has canceled out of the expression for statistical error. 
-
-As in the case of using tangential shear as the observable, remember to account for correlation between the two shape noises and to somehow select an $a$ value for computing the denominator of the first term on the right hand side.
+The error on the averaged tangential shear obtained using each shape-measurement method is dominated by shape noise, so the covariance can be represented by a diagonal matrix with $e_{\rm rms}^2 / N_{ls}$ on the diagonal for each bin and the correct choice of $e_{\rm rms}$ for each shape measurement. The errors for the two shape measurements are correlated so this must be taken into account when combining them. The correction factor contributes negligible statistical error so is treated as a constant.
 
 \section*{Questions}
 \begin{enumerate}
-\item{Should we be using $\Delta \Sigma$ or averaged tangential shear as the observable?}
-\item{If $\gamma_t$, what should be done about the weights? Are they the same as in the $\Delta \Sigma$ case?}
-\item{Should we be using $\Delta\Sigma$ as the `theory' quantity?}
-\item{The fact that $e_{\rm rms}$ is different for different shape measurements means that anything that depends on the weights is different too for each measurement, as shown. This needs to be tested. I could test it directly, but I'm not sure how to treat e.g. the boost which is currently taken as an empirical model.}
+\item{Does the correction factor seem sensible when calculated?}
+\item{What are the properties of the systematic error from not knowing $dN/dz$ perfectly?}
 \end{enumerate}
 %-------------------------------------------------------------------------------
 
