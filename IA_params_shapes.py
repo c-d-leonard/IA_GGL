@@ -3,18 +3,19 @@
 import numpy as np
 
 # The parameter labels to be constrainted in the Fisher forecast
-A       =       0
-beta    =       1
-par     =       [A, beta]
-A_fid   =       0.059
+A       		=       0
+beta    		=       1
+par     		=       [A, beta]
+A_fid   		=       0.059
 beta_fid        =       -0.73
 
 # The separation in Mpc/h within which we consider source galaxies could be subject to intrinsic alingments
 close_cut = 100
 
 # The rms ellipticity of sample a and b.
-e_rms_a = 	0.2
-e_rms_b	=	0.3
+e_rms_a = 	0.32
+e_rms_b	=	0.35
+e_rms_mean 	=	np.abs((e_rms_b+e_rms_a)/2.)
 
 # The signal to noise - necessary for estimating sigma_e
 S_to_N = 15.
@@ -52,7 +53,7 @@ covar_DSig = 10**(-11)*np.asarray([100, 50, 10, 5, 1, 1, 1])
 #Parameters of the dNdz of sources, if using an analytic distribution.
 alpha 	= 	2.338
 zs 	= 	0.303
-zpts	=	1000  # Number of points in the z vector at which we are evaluating dNdz
+zpts	=	10000  # Number of points in the z vector at which we are evaluating dNdz
 
 # The effective redshift of the lens sample
 zeff 	= 	0.32
@@ -64,6 +65,8 @@ zS_max 	= 	0.49
 # The minimum and maximum redshift to consider in the source sample
 zmin 	=	0.0
 zmax 	= 	3.0
+zmin_ph	=	0.0
+zmax_ph	=	5.0
 
 # Location of file for plot showing 1 sigma error bars on gamma_IA
 plotfile =	'./test_shapes_Nakajima.pdf' 
