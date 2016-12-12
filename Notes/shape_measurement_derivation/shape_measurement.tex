@@ -34,7 +34,7 @@
 
 \paragraph*{Background} Different shape measurement methods are sensitive to different parts of the radial profile of a galaxy. In Singh et al. 2016, it appears as though the intrinsic alignment signals measured by these different methods are offset from one another by a constant. By measuring a correlation between galaxy position and shape with two different shape measurements, and subtracting these, you could get rid of the lensing signal and obtain a constraint on the scale-dependence of intrinsic alignments. This is useful for building intrinsic alignment models.
 
-\paragraph*{Source sample} This method naturally allows us to loosen the standard assumption that only excess galaxies are subject to IA. We consider galaxies which form part of the smooth source distribution, but which are still physically close to a lens galaxy, to be impacted by intrinsic alignments as well. We assume a source sample which is defined by the requirement that the photo-z of a source galaxy is always within a certain cut-off separation of the lens galaxy in question. In the case of an effective redshift for the lenses, call this cut $z_{\rm cut}$.
+\paragraph*{Source sample} This method naturally allows us to loosen the standard assumption that only excess galaxies are subject to IA. We consider galaxies which form part of the smooth source distribution, but which are still physically close to a lens galaxy, to be impacted by intrinsic alignments as well. We assume a source sample which is defined by the requirement that the photo-z of a source galaxy is always within a certain cut-off separation of the lens galaxy in question. In the case of an effective redshift for the lenses, call the high and low photo-z edges of the sample $z_{\rm cut_h}$ and $z_{\rm cut_l}$, respectively. Note that galaxies with photo-z below the effective lens redshift are included in the sample, because they are subject to intrinsic alignments. 
 
 We write:
 \begin{align}
@@ -65,45 +65,56 @@ In principle, all the galaxies in our source sample contribute to intrinsic alig
 \tilde{\gamma}(r_p) - \tilde{\gamma}^\prime(r_p) = \gamma_{\rm IA}(r_p)(1-a).
 \label{subtract_gammat_simp}
 \end{equation}
-However, there is another factor here that we have not yet accounted for. Because we are assuming photometric redshifts for our sources, we will have source galaxies in our sample which are actually higher redshift than $z_{\rm cut}$. These galaxies will not be affected by intrinsic alignments. Therefore, if we apply equation \ref{subtract_gammat_simp} directly, we will estimate the intrinsic alignment signal to be too low. We need to apply a correction factor which accounts for this. 
+However, there is another factor here that we have not yet accounted for. Because we are assuming photometric redshifts for our sources, we will have source galaxies in our sample which are actually higher redshift than $z_{\rm cut_h}$ and at lower redshift than $z_{\rm cut_l}$. These galaxies will not be affected by intrinsic alignments. Therefore, if we apply equation \ref{subtract_gammat_simp} directly, we will estimate the intrinsic alignment signal to be too low. We need to apply a correction factor which accounts for this. 
 
-\subsection*{Correction factor: inclusion of higher-z galaxies}
-We assume that we know the smooth distribution of source galaxies, $dN / dz$, to some reasonably high redshift, from a spectroscopic subsample. This may be difficult for future surveys, in which an inadequate spectroscopic subsample, especially at high redshifts, could result in systematic error. {\it We will need to account for this possible systematic error at some point.}
+\subsection*{Correction factor: inclusion of higher-z and lower-z galaxies}
+We assume that we know the smooth distribution of galaxies, $dN / dz$, from which our source sample is drawn to some reasonably high redshift, from a spectroscopic subsample. This may be difficult for future surveys, in which an inadequate spectroscopic subsample, especially at high redshifts, could result in systematic error. {\it We will need to account for this possible systematic error at some point.}
 
-Let the probability of labelling a galaxy with spectroscopic redshift $z_s$ as having photometric redshift $z_p$ be $p(z_s, z_p)$. {\it I think} the total weighted number of galaxies in the photo-z range between $z_l$ and $z_{\rm cut}$ is:
+Let $z_{\rm min}$ and $z_{\rm max}$ be, respectively, the minimum and maximum spec-z, and let the probability of labelling a galaxy with spectroscopic redshift $z_s$ as having photometric redshift $z_p$ be $p(z_s, z_p)$. The fraction of galaxies in the photo-z-defined sample which have spec-z which also put them between $z_{\rm cut_l}$ and $z_{\rm cut_h}$ is then given by
 \begin{equation}
-N_{\rm tot} = \int_{z_l}^{z_{\rm cut}} dz_p \int_{z_l}^{z_{\rm max}} \frac{dN}{dz_s} p(z_s, z_p) \tilde{w}(z_p)
+N_{\rm corr} = \frac{N_{\rm close}}{N_{\rm tot}}
+\label{Ncorr}
+\end{equation}
+where $N_{\rm tot}$ is
+\begin{equation}
+N_{\rm tot} = \frac{\int_{z_{\rm cut_l}}^{z_{\rm cut_h}} dz_p\int_{z_{\rm min}}^{z_{\rm max}} dz_s\frac{dN}{dz_s} p(z_s, z_p)}{\int_{z_{\rm cut_l}}^{z_{\rm cut_h}} d z_{\rm p} \int_{z_{\rm max}}^{z_{\rm min}} dz_s\frac{dN}{dz_s} p(z_s, z_p)}
 \label{tot}
 \end{equation}
-and the number of galaxies in the photo-z range between $z_l$ and $z_{\rm cut}$ which have $z_s$ above $z_{\rm cut}$ is:
+which in this normalization scheme is equal to $1$, and 
 \begin{equation}
-N_{\rm high} = \int_{z_l}^{z_{\rm cut}} dz_p \int_{z_{\rm cut}}^{z_{\rm max}} \frac{dN}{dz_s} p(z_s, z_p) \tilde{w}(z_p).
-\label{high}
+N_{\rm close} = \frac{\int_{z_{\rm cut_l}}^{z_{\rm cut_h}} dz_p\int_{z_{\rm cut_l}}^{z_{\rm cut_h}} dz_s\frac{dN}{dz_s} p(z_s, z_p)}{\int_{z_{\rm cut_l}}^{z_{\rm cut_h}} d z_{\rm p} \int_{z_{\rm max}}^{z_{\rm min}} dz_s\frac{dN}{dz_s} p(z_s, z_p)}.
+\label{close}
 \end{equation}
-In this case the weights are independent of redshift but they could in principle depend on redshift.
 
-To correct for higher-z galaxies being included, we alter equation \ref{subtract_gammat_simp} as follows:
+We alter equation \ref{subtract_gammat_simp} to account for this correction factor
 \begin{equation}
-\tilde{\gamma}(r_p) - \tilde{\gamma}^\prime(r_p) = \gamma_{\rm IA}(r_p)(1-a) \left(\frac{N_{\rm tot} - N_{\rm high}}{N_{\rm tot}}\right)
+\tilde{\gamma}(r_p) - \tilde{\gamma}^\prime(r_p) = \gamma_{\rm IA}(r_p)(1-a) \left(\frac{N_{\rm close}}{N_{\rm tot}}\right)
 \label{subtract_gammat_fac}
 \end{equation}
 which is trivially rearranged to solve for the IA term:
 \begin{equation}
-\gamma_{\rm IA}(r_p)(1-a) = \left(\tilde{\gamma}(r_p) - \tilde{\gamma}^\prime(r_p)\right) \left(\frac{N_{\rm tot}}{N_{\rm tot} - N_{\rm high}}\right)
+\gamma_{\rm IA}(r_p)(1-a) = \left(\tilde{\gamma}(r_p) - \tilde{\gamma}^\prime(r_p)\right) \left(\frac{N_{\rm tot}}{N_{\rm close}}\right)
 \label{IAsol}
 \end{equation}
 
 To estimate the statistical error on the left hand side of equation \ref{IAsol}, we use the expression:
 \begin{equation}
-\sigma^2(\gamma_{\rm IA}(r_p)(1-a)) = \left(\frac{N_{\rm tot}}{N_{\rm tot} - N_{\rm high}}\right) \sigma^2\left(\tilde{\gamma}(r_p) - \tilde{\gamma}^\prime(r_p)\right).
+\sigma^2(\gamma_{\rm IA}(r_p)(1-a)) = \left(\frac{N_{\rm tot}}{N_{\rm close}}\right) \sigma^2\left(\tilde{\gamma}(r_p) - \tilde{\gamma}^\prime(r_p)\right).
 \label{error}
 \end{equation}
 The error on the averaged tangential shear obtained using each shape-measurement method is dominated by shape noise, so the covariance can be represented by a diagonal matrix with $e_{\rm rms}^2 / N_{ls}$ on the diagonal for each bin and the correct choice of $e_{\rm rms}$ for each shape measurement. The errors for the two shape measurements are correlated so this must be taken into account when combining them. The correction factor contributes negligible statistical error so is treated as a constant.
 
+When computing the shape-noise term which dominates the covariance for each shape-measurement method, one has to compute $N_{ls}$ in each projected radial bin. Given that we have a surface density of galaxies for the full spectroscopic $dN/dz$, the fraction of these which lie within the photo-z cuts of our source sample should be considered. When computing this fraction, the $dN / dz$ with respect to photo-z's should be used. It is given by:
+\begin{equation}
+\frac{dN}{dz_{ph}}= \frac{\int_{z_{\rm min}}^{z_{\rm max}} dz_s\frac{dN}{dz_s} p(z_s, z_p)}{\int_{z_{\rm cut_l}}^{z_{\rm cut_h}} d z_{\rm p} \int_{z_{\rm max}}^{z_{\rm min}} dz_s\frac{dN}{dz_s} p(z_s, z_p)}.
+\label{dndzph}
+\end{equation}
+
 \section*{Questions}
 \begin{enumerate}
-\item{Does the correction factor seem sensible when calculated?}
+\item{Should source galaxies both above and below the lens redshift be included in the photo-z-defined sample?}
 \item{What are the properties of the systematic error from not knowing $dN/dz$ perfectly?}
+\item{When computing the number of galaxy pairs to use in computing $N_{ls}$ for the covariance, there is a factor from the fraction of the dNdz which is included in the redshift range. Should this be calclated according to the photo-z dNdz? I think so.}
 \end{enumerate}
 %-------------------------------------------------------------------------------
 

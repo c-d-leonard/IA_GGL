@@ -11,17 +11,15 @@ import matplotlib.pyplot as plt
 ####### SET UP & BASICS #######
 
 def setup_rp_bins(rmin, rmax, nbins):
-	""" Sets up the bins of projected radius """
-
-	# These are the *edges* of the bins.
+	""" Sets up the edges of the bins of projected radius """
+	
 	bins = scipy.logspace(np.log10(rmin), np.log10(rmax), nbins+1)
-
+	
 	return bins
 
 def rp_bins_mid(rp_edges):
         """ Gets the middle of each projected radius bin."""
 
-        # Get the midpoints of the projected radius bins
         logedges=np.log10(rp_edges)
         bin_centers=np.zeros(len(rp_edges)-1)
         for ri in range(0,len(rp_edges)-1):
@@ -30,7 +28,7 @@ def rp_bins_mid(rp_edges):
         return bin_centers
 
 def com(z_):
-	""" Gets the comoving distance in units of Mpc/h at a given redshift. """
+	""" Gets the comoving distance in units of Mpc/h at a redshift or a set of redshifts. """
 
 	OmL = 1. - pa.OmC - pa.OmB - pa.OmR - pa.OmN
 
@@ -49,7 +47,7 @@ def com(z_):
 def z_interpof_com():
 	""" Returns an interpolating function which can give z as a function of comoving distance. """
 
-	z_vec = scipy.linspace(0., 2100., 100000) # This hardcodes that we don't care about anything over z=2100
+	z_vec = scipy.linspace(0., 10., 1000) # This hardcodes that we don't care about anything over z=10.
 
 	com_vec = com(z_vec)
 
@@ -62,13 +60,15 @@ def get_z_close(z_l, cut_MPc_h):
 
 	com_l = com(z_l) # Comoving distance to z_l, in Mpc/h
 
-	tot_com = com_l + cut_MPc_h
+	tot_com_high = com_l + cut_MPc_h
+	tot_com_low = com_l - cut_MPc_h
 
 	# Convert tot_com back to a redshift.
 
-	z_cl = z_of_com(tot_com)
+	z_cl_high = z_of_com(tot_com_high)
+	z_cl_low = z_of_com(tot_com_low)
 
-	return z_cl
+	return (z_cl_high, z_cl_low)
 
 def get_areas(bins, z_eff):
         """ Gets the area of each projected radial bin, in square arcminutes. z_eff = effective lens redshift. """
@@ -96,13 +96,8 @@ def get_NofZ_unnormed(a, zs, z_min, z_max, zpts):
 
 def get_z_frac(z_1, z_2):
         """ Gets the fraction of sources in a sample between z_1 and z_2, for dNdz given by a normalized nofz_1 computed at redshifts z_v"""
-
-        # Get the index of the z vector closest to the limits of the integral
-        #i_z1 = next(j[0] for j in enumerate(z_v) if j[1]>=z_1)
-        #i_z2 = next(j[0] for j in enumerate(z_v) if j[1]>=z_2)
         
-        # The normalization factor should be the norm over the whole range of z for which the number density of the survey is given, i.e. z min to zmax. 
-        
+        # The normalization factor should be the norm over the whole range of z for which the number density of the survey is given, i.e. z min to zmax.       
         (z_ph_vec, N_of_p) = N_of_zph(pa.zmin, pa.zmax, pa.zmin, pa.zmax, pa.zmin_ph, pa.zmax_ph)
         
         i_z1 = next(j[0] for j in enumerate(z_ph_vec) if j[1]>=z_1)
@@ -114,9 +109,9 @@ def get_z_frac(z_1, z_2):
 
 def get_perbin_N_ls(rp_bins_, zeff_, ns_, nl_, A):
 	""" Gets the number of lens/source pairs relevant to each bin of projected radius """
-	""" zeff_ is the effective redshift of the lenses. frac_ is the fraction of sources in the sample. ns_ is the           number density of sources per square arcminute. nl_ is the number density of lenses per square degree. A is the survey area in square degrees."""
+	""" zeff_ is the effective redshift of the lenses. frac_ is the fraction of sources in the sample. ns_ is the number density of sources per square arcminute. nl_ is the number density of lenses per square degree. A is the survey area in square degrees."""
         
-	frac_		=	get_z_frac(pa.zeff, z_close)
+	frac_		=	get_z_frac(z_close_low, z_close_high)
 
 	# Get the area of each projected bin in square arcminutes
 	bin_areas       =       get_areas(rp_bins_, zeff_)
@@ -128,7 +123,7 @@ def get_perbin_N_ls(rp_bins_, zeff_, ns_, nl_, A):
 ####### GETTING ERRORS #########
 
 def N_of_zph(z_a_def, z_b_def, z_a_norm, z_b_norm, z_a_norm_ph, z_b_norm_ph):
-	""" Returns dNdz_ph, the number density in terms of photometric redshift, normalized over the sample range in photo_z (assumed z_eff to z_close) and over the full range in the spec-z, but defined on the spec-z range z_a to z_b"""
+	""" Returns dNdz_ph, the number density in terms of photometric redshift, defined and normalized over the photo-z range (z_a_norm_ph, z_b_norm_ph), normalized over the spec-z range (z_a_norm, z_b_norm), but defined on the spec-z range (z_a_def, z_b_def)"""
 	
 	(z, dNdZ) = get_NofZ_unnormed(pa.alpha, pa.zs, z_a_def, z_b_def, pa.zpts)
 	(z_norm, dNdZ_norm) = get_NofZ_unnormed(pa.alpha, pa.zs, z_a_norm, z_b_norm, pa.zpts)
@@ -148,7 +143,7 @@ def N_of_zph(z_a_def, z_b_def, z_a_norm, z_b_norm, z_a_norm_ph, z_b_norm_ph):
 def N_in_samp(z_a, z_b, e_rms_weights):
 	""" Number of galaxies in the photometric redshift range of the sample (assumed z_eff of lenses to z_close) from the SPECTROSCOPIC redshift range z_a to z_b """
 	
-	(z_ph, N_of_zp) = N_of_zph(z_a, z_b, pa.zeff, pa.zmax, pa.zeff, z_close)
+	(z_ph, N_of_zp) = N_of_zph(z_a, z_b, pa.zmin, pa.zmax, z_close_low, z_close_high)
 
 	answer = scipy.integrate.simps(N_of_zp, z_ph)
 	
@@ -157,17 +152,16 @@ def N_in_samp(z_a, z_b, e_rms_weights):
 def N_corr():
 	""" Computes the correction factor which accounts for the fact that some of the galaxies in the photo-z defined source sample are actually higher-z and therefore not expected to be affected by IA"""
 	
-	N_tot = N_in_samp(pa.zeff, pa.zmax, pa.e_rms_mean)
-	N_high = N_in_samp(z_close, pa.zmax_ph, pa.e_rms_mean)
+	N_tot = N_in_samp(pa.zmin, pa.zmax, pa.e_rms_mean)
+	N_close = N_in_samp(z_close_low, z_close_high, pa.e_rms_mean)
 	
-	Corr_fac = (N_tot - N_high) / (N_tot) # fraction of the galaxies in the source sample which have spec-z at z above this.
+	Corr_fac = N_close / N_tot # fraction of the galaxies in the source sample which have spec-z in the photo-z range of interest.
 	
 	return Corr_fac
 
 def sigma_e(z_s_, s_to_n):
 	""" Returns a value for the model for the per-galaxy noise as a function of source redshift"""
 
-	# This is a dummy things for now
 	sig_e = 2. / s_to_n * np.ones(len(z_s_))
 
 	return sig_e
@@ -182,7 +176,7 @@ def weights(e_rms, z_):
 def p_z(z_ph, z_sp, sigz):
 	""" Returns the probability of finding a photometric redshift z_ph given that the true redshift is z_sp. """
 	
-	# I'm going to use a Gaussian probability distribution here, but you could change that.
+	# I'm going to use a Gaussian probability distribution here for now
 	p_z_ = np.exp(-(z_ph - z_sp)**2 / (2.*(sigz*(1.+z_sp))**2)) / (np.sqrt(2.*np.pi)*(sigz * (1. + z_sp)))
 	
 	return p_z_
@@ -190,10 +184,7 @@ def p_z(z_ph, z_sp, sigz):
 def get_fid_gIA(rp_bins_c):
 	""" This function computes the fiducial value of gamma_IA in each projected radial bin."""
 	
-	# This needs to be updated to nonlinear alignment model.
-	
-	#fidvals = pa.A_fid * np.asarray(rp_bins_c)**pa.beta_fid
-	
+	# This is a dummy thing for now.
 	fidvals = np.zeros(len(rp_bins_c))
 
 	return fidvals
@@ -202,8 +193,6 @@ def setup_shapenoise_cov(e_rms, N_ls_pbin):
 	""" Returns a diagonal covariance matrix in bins of projected radius for a measurement dominated by shape noise. Elements are e_{rms}^2 / (N_ls) where N_ls is the number of l/s pairs relevant to each projected radius bin.""" 
 
 	cov = np.diag(e_rms**2 / N_ls_pbin)
-
-	#print "cov=", cov
 	
 	return cov
 
@@ -237,10 +226,6 @@ def get_gammaIA_sys_cov(rp_cents_, sys_list):
 
 def plot_variance(cov_1, fidvalues_1, bin_centers, filename):
 	""" Takes a covariance matrix, a vector of the fiducial values of the object in question, and the edges of the projected radial bins, and makes a plot showing the fiducial values and 1-sigma error bars from the diagonal of the covariance matrix. Outputs this plot to location 'filename'."""
-
-	print "fidvalues_1=", fidvalues_1
-	print "np.sqrt(np.diag(cov_1))=",np.sqrt(np.diag(cov_1))
-	print "bin_centers=",bin_centers
 
 	fig=plt.figure()
         plt.rc('font', family='serif', size=20)
@@ -353,16 +338,16 @@ import IA_params_shapes as pa
 rp_bins 	= 	setup_rp_bins(pa.rp_min, pa.rp_max, pa.N_bins) # Edges
 rp_cents	=	rp_bins_mid(rp_bins) # Centers
 
-# Set up a function to get z as a function of comoving distance
+# Set up to get z as a function of comoving distance
 z_of_com 	= 	z_interpof_com()
 
 # Get the redshift corresponding to the maximum separation from the effective lens redshift at which we assume IA may be present (pa.close_cut is the separation in Mpc/h)
-z_close 	= 	get_z_close(pa.zeff, pa.close_cut)
+(z_close_high, z_close_low)	= 	get_z_close(pa.zeff, pa.close_cut)
 
 # Get the number of lens source pairs for the source sample in projected radial bins
 N_ls_pbin	=	get_perbin_N_ls(rp_bins, pa.zeff, pa.n_s, pa.n_l, pa.Area)
 
-# Get the covariance matrix in projected radial bins of Delta Sigma for both shape measurement methods
+# Get the covariance matrix in projected radial bins of gamma_t for both shape measurement methods
 Cov_a		=	setup_shapenoise_cov(pa.e_rms_a, N_ls_pbin)
 Cov_b		=	setup_shapenoise_cov(pa.e_rms_b, N_ls_pbin)
 
