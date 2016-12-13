@@ -18,6 +18,7 @@ e_rms_b	=	0.35 # The rms ellipticity under measurement method b.
 n_l     =   8.7 # The number of lenses in the lens sample per square DEGREE
 Area    =   7131 # Area associated with the lens sample in square DEGREES
 n_s     =   1.2 # The number density of sources in the sample per square ARCMINUTE
+a_con	=	1./1.4	# Fiducial constant offset, approximated from Singh 2016 assuming unprimed method isophotal and primed ReGaussianisation
 
 #Parameters of the dNdz of sources, if using an analytic distribution.
 alpha 	= 	2.338
@@ -48,10 +49,10 @@ beta_fid        =       -0.73
 
 # Other
 covar_DSig = 10**(-11)*np.asarray([100, 50, 10, 5, 1, 1, 1]) # The covariance of gamma_t, between shape-meaurement a and shape-measurement b, in each bin, from low to high projected radius
+sig_sys_dNdz = 0.05 # The systematic error on N_corr from a badly measured dNdz
+syslist = np.asarray([sig_sys_dNdz])
 sigz=0.08 # Error on photo z (Gaussian model, sigma = sigz*(1+z))
-Boost_prop = 0.1 # The proportionality factor of the model for the boost (the value of the boost at 1 Mpc/h separation):
-sys_sigc = 1.0*10**(-5) # This is a dummy number for now. # The systematic error to be assumed on the observed Sigma_c excess (from insufficient spec-z calibration sample)
-plotfile =	'./test_shapes.pdf'  # Location of file for plot showing 1 sigma error bars on gamma_IA
+plotfile =	'./test_shapes_sys0.05_log.pdf'  # Location of file for plot showing 1 sigma error bars on gamma_IA
 
 # The edges of the source redshift bin to be considered:
 #zS_min 	= 	0.32
