@@ -122,6 +122,13 @@ def get_perbin_N_ls(rp_bins_, zeff_, ns_, nl_, A):
 
 ####### GETTING ERRORS #########
 
+def get_boost(rp_cents_, propfact):
+	""" Returns the boost factor in radial bins. propfact is a tunable parameter giving the proportionality constant by which boost goes like projected correlation function (= value at 1 Mpc/h). """
+
+	Boost = propfact *(rp_cents_)**(-0.8) + np.ones((len(rp_cents_))) # Empirical power law fit to the boost, derived from the fact that the boost goes like projected correlation function.
+
+	return Boost
+
 def N_of_zph_unweighted(z_a_def, z_b_def, z_a_norm, z_b_norm, z_a_norm_ph, z_b_norm_ph):
 	""" Returns dNdz_ph, the number density in terms of photometric redshift, defined and normalized over the photo-z range (z_a_norm_ph, z_b_norm_ph), normalized over the spec-z range (z_a_norm, z_b_norm), but defined on the spec-z range (z_a_def, z_b_def)"""
 	
@@ -168,16 +175,28 @@ def N_in_samp(z_a, z_b, e_rms_weights):
 	answer = scipy.integrate.simps(N_of_zp, z_ph)
 	
 	return (answer)
-	
-def N_corr():
+
+def N_corr(rp_cent):
 	""" Computes the correction factor which accounts for the fact that some of the galaxies in the photo-z defined source sample are actually higher-z and therefore not expected to be affected by IA"""
 	
 	N_tot = N_in_samp(pa.zmin, pa.zmax, pa.e_rms_mean)
 	N_close = N_in_samp(z_close_low, z_close_high, pa.e_rms_mean)
+	boost = get_boost(rp_cent, pa.Boost_prop)
 	
-	Corr_fac = N_close / N_tot # fraction of the galaxies in the source sample which have spec-z in the photo-z range of interest.
+	Corr_fac = 1. - (1. / boost) * ( 1. - (N_close / N_tot)) # fraction of the galaxies in the source sample which have spec-z in the photo-z range of interest.
 	
 	return Corr_fac
+
+def N_corr_stat_err(rp_cents_):
+	""" Gets the error on N_corr from statistical error on the boost. """
+	
+	N_tot = N_in_samp(pa.zmin, pa.zmax, pa.e_rms_mean)
+	N_close = N_in_samp(z_close_low, z_close_high, pa.e_rms_mean)
+	boost = get_boost(rp_cents_, pa.Boost_prop)
+	
+	sig_Ncorr = (pa.sigB / boost**2) * np.sqrt(1. - N_close / N_tot)
+	
+	return sig_Ncorr
 
 def sigma_e(z_s_, s_to_n):
 	""" Returns a value for the model for the per-galaxy noise as a function of source redshift"""
@@ -189,7 +208,7 @@ def sigma_e(z_s_, s_to_n):
 def weights(e_rms, z_):
 	""" Returns the inverse variance weights as a function of redshift. """
 	
-	weights = (sigma_e(z_, pa.S_to_N)**2 + e_rms**2 * np.ones(len(z_)))
+	weights = (1./(sigma_e(z_, pa.S_to_N)**2 + e_rms**2)) * np.ones(len(z_))
 	
 	return weights
 	
@@ -217,6 +236,13 @@ def setup_shapenoise_cov(e_rms, N_ls_pbin):
 	
 	return cov
 
+def get_cov_btw_methods(cov_a_, cov_b_):
+	""" Get the covariance between the methods given their correlation """
+	
+	cov_btw_methods = pa.cov_perc * np.sqrt(np.diag(cov_a_)) * np.sqrt(np.diag(cov_b_))
+	
+	return cov_btw_methods
+
 def subtract_var(var_1, var_2, covar):
 	""" Takes the variance of two non-independent  Gaussian random variables, and their covariance, and returns the variance of their difference."""
 	
@@ -224,32 +250,39 @@ def subtract_var(var_1, var_2, covar):
 
 	return var_diff
 
-def get_gammaIA_stat_cov(Cov_1, Cov_2, covar):
+def get_gammaIA_stat_cov(Cov_1, Cov_2, rp_cents_):
 	""" Takes the covariance matrices of the constituent elements of gamma_{IA} and combines them to get the covariance matrix of gamma_{IA} in projected radial bins."""
 	
-	corr_fac = N_corr()  # factor correcting for galaxies which have higher spec-z than the sample but which end up in the sample.
+	# Get the covariance between the shear of the two shape measurement methods in each bin:
+	covar = get_cov_btw_methods(Cov_1, Cov_2)
+	
+	corr_fac = N_corr(rp_cents_)  # factor correcting for galaxies which have higher spec-z than the sample but which end up in the sample.
+	corr_fac_err = N_corr_stat_err(rp_cents_) # statistical error on that from the boost
+	gIA_fid = get_fid_gIA(rp_cents_) # fiducial value of gamma_IA
 
 	stat_mat = np.diag(np.zeros(len(np.diag(Cov_1))))
 
 	for i in range(0,len(np.diag(Cov_1))):	
-		stat_mat[i,i] = subtract_var(Cov_1[i,i], Cov_2[i,i], covar[i]) / corr_fac
+		stat_mat[i, i] = (1.-pa.a_con)**2 * gIA_fid[i]**2 * ( corr_fac_err[i]**2 / corr_fac[i]**2 + subtract_var(Cov_1[i,i], Cov_2[i,i], covar[i]) / (corr_fac[i]**2 * (1.-pa.a_con)**2 * gIA_fid[i]**2))
+		
+	print "stat=", np.sqrt(np.diag(stat_mat))
 
 	return stat_mat
 
-def get_gammaIA_sys_cov(rp_cents_, sys):
+def get_gammaIA_sys_cov(rp_cents_, sys_dN, sys_p):
 	""" Takes the centers of rp_bins and a systematic error sources from dNdz_s uncertainty (assumed to affect each r_p bin in the same way) and adds them to each other in quadrature."""
 	
-	#Sys^2 = (sys_dNdz^2) * N_corr**2 * (1-a)**2 * gamma_IA**2
+	gIa_fid = get_fid_gIA(rp_cents_) # fiducial gamma_IA
+	
+	corr_fac = N_corr(rp_cents_) # correction factor
 	
 	sys_mat = np.zeros((len(rp_cents_), len(rp_cents_)))
-
-	gIa_fid = get_fid_gIA(rp_cents_)
-	
-	corr_fac = N_corr()
 	
 	for i in range(0,len(rp_cents_)):
 		for j in range(0,len(rp_cents_)):
-			sys_mat[i,j] = sys**2 * (1-pa.a_con)**2 * corr_fac**2 * gIa_fid[i] * gIa_fid[j]
+			sys_mat[i,j] = sys_dN**2 * (1-pa.a_con)**2 * corr_fac[i] * corr_fac[j] * gIa_fid[i] * gIa_fid[j] + sys_p**2 * (1-pa.a_con)**2 * corr_fac[i] * corr_fac[j] * gIa_fid[i] * gIa_fid[j]
+			
+	print "sys=", np.sqrt(np.diag(sys_mat))
 
 	return sys_mat
 	
@@ -257,6 +290,8 @@ def get_gamma_tot_cov(sys_mat, stat_mat):
 	""" Takes the covariance matrix from statistical error and systematic error, and adds them to get the total covariance matrix. Assumes stat and sys errors should be added in quadrature."""
 	
 	tot_cov = sys_mat+stat_mat
+	
+	print "tot=", np.sqrt(np.diag(tot_cov))
 	
 	return tot_cov
 
@@ -391,8 +426,8 @@ Cov_a		=	setup_shapenoise_cov(pa.e_rms_a, N_ls_pbin)
 Cov_b		=	setup_shapenoise_cov(pa.e_rms_b, N_ls_pbin)
 
 # Combine the constituent covariance matrices to get the covariance matrix for gamma_IA in projected radial bins
-Cov_stat	=	get_gammaIA_stat_cov(Cov_a, Cov_a, pa.covar_DSig)
-Cov_sys 	=	get_gammaIA_sys_cov(rp_cents, pa.syslist)
+Cov_stat	=	get_gammaIA_stat_cov(Cov_a, Cov_b, rp_cents) 
+Cov_sys 	=	get_gammaIA_sys_cov(rp_cents, pa.sig_sys_dNdz, pa.sig_sys_dp)
 
 Cov_tot		=	get_gamma_tot_cov(Cov_sys, Cov_stat)
 
