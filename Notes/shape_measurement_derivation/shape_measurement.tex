@@ -68,90 +68,161 @@ In principle, all the galaxies in our source sample contribute to intrinsic alig
 However, there is another factor here that we have not yet accounted for. Because we are assuming photometric redshifts for our sources, we will have source galaxies in our sample which are actually higher redshift than $z_{\rm cut_h}$ and at lower redshift than $z_{\rm cut_l}$. These galaxies will not be affected by intrinsic alignments. Therefore, if we apply equation \ref{subtract_gammat_simp} directly, we will estimate the intrinsic alignment signal to be too low. We need to apply a correction factor which accounts for this. 
 
 \subsection*{Correction factor: inclusion of higher-z and lower-z galaxies}
-We assume that we know the smooth distribution of galaxies, $dN / dz$, from which our source sample is drawn to some reasonably high redshift, from a spectroscopic subsample. This may be difficult for future surveys, in which an inadequate spectroscopic subsample, especially at high redshifts, could result in systematic error. {\it We will need to account for this possible systematic error at some point.}
+We assume that we know the smooth distribution of galaxies, $dN / dz$, from which our source sample is drawn to some reasonably high redshift, from a spectroscopic subsample. This may be difficult for future surveys, in which an inadequate spectroscopic subsample could result in systematic error (discussed below). 
 
-Let $z_{\rm min}$ and $z_{\rm max}$ be, respectively, the minimum and maximum spec-z, and let the probability of labelling a galaxy with spectroscopic redshift $z_s$ as having photometric redshift $z_p$ be $p(z_s, z_p)$. The fraction of galaxies in the photo-z-defined sample which have spec-z which also put them between $z_{\rm cut_l}$ and $z_{\rm cut_h}$ is then given by
+Let $z_{\rm min}$ and $z_{\rm max}$ be, respectively, the minimum and maximum spec-z, and let the probability of labelling a galaxy with spectroscopic redshift $z_s$ as having photometric redshift $z_p$ be $p(z_s, z_p)$. The required correction factor is the fraction of galaxies in the photo-z-defined sample which have spec-z between $z_{\rm cut_l}$ and $z_{\rm cut_h}$. This can be separated into two terms:
+\begin{enumerate}
+\item{The galaxies from the smooth redshift distribution which have spec-z between $z_{\rm cut_l}$ and $z_{\rm cut_h}$.}
+\item{The excess galaxies. All of these have spec-z between $z_{\rm cut_l}$ and $z_{\rm cut_h}$ by definition.}
+\end{enumerate}
+Schematically, we have:
 \begin{equation}
-N_{\rm corr} = \frac{N_{\rm close}}{N_{\rm tot}}
+N_{\rm corr} = \frac{{\rm smooth, z_s \, in \, (z_{\rm cut_l}, z_{\rm cut_h})} + {\rm excess}}{{\rm total}} =  \frac{{\rm smooth, z_s \, in \, (z_{\rm cut_l}, z_{\rm cut_h})}}{{\rm total}} + \frac{{\rm excess}}{{\rm total}}
+\label{schematic}
+\end{equation}
+where these quantities should all be considered as weighted. 
+
+The weighted fraction of galaxies which are excess, i.e., the second term above, is given by:
+\begin{equation}
+1 - \frac{1}{B(r_p)}.
+\label{frac_excess}
+\end{equation}
+
+The numerator of the first term on the right hand side of equation \ref{schematic}, that is, the weighted number of galaxies from the smooth distribution which have spec-z within the photo-z cuts, is given by:
+\begin{equation}
+\int_{z_{\rm cut_l}}^{z_{\rm cut_h}} dz_p \tilde{w}(z_p) \int_{z_{\rm cut_l}}^{z_{\rm cut_h}} dz_s\frac{dN}{dz_s} p(z_s, z_p)
+\label{num_smooth_speczin}
+\end{equation}
+
+The total weighted number of galaxies from the {\it smooth} distribution can be given similarly by:
+\begin{equation}
+\int_{z_{\rm cut_l}}^{z_{\rm cut_h}} dz_p  \tilde{w}(z_p) \int_{z_{\rm min}}^{z_{\rm max}} dz_s\frac{dN}{dz_s} p(z_s, z_p)
+\label{tot_smooth}
+\end{equation}
+However, this is not the denominator of the first term on the right hand side of equation \ref{schematic}, for this we need the total weighted number of galaxies, not the total only from the smooth distribution. Fortunate, the boost is defined as (schematically):
+\begin{equation}
+B(r_p) = \frac{ {\rm total}}{{\rm total, smooth}}
+\label{boost_schm}
+\end{equation}
+It can therefore be seen that multiplying equation \ref{tot_smooth} by the boost gives the desired total. Assembling these terms, we find the correction factor to be given by:
+\begin{equation}
+N_{\rm corr}(r_p) = \frac{\int_{z_{\rm cut_l}}^{z_{\rm cut_h}} dz_p \tilde{w}(z_p) \int_{z_{\rm cut_l}}^{z_{\rm cut_h}} dz_s\frac{dN}{dz_s} p(z_s, z_p)}{B(r_p) \int_{z_{\rm cut_l}}^{z_{\rm cut_h}} dz_p  \tilde{w}(z_p) \int_{z_{\rm min}}^{z_{\rm max}} dz_s\frac{dN}{dz_s} p(z_s, z_p)} +1 - \frac{1}{B(r_p)}.
 \label{Ncorr}
 \end{equation}
-where $N_{\rm tot}$ is
+If desired, this can be rearranged into the less pedagogical but potentially more useful form:
 \begin{equation}
-N_{\rm tot} = \frac{\int_{z_{\rm cut_l}}^{z_{\rm cut_h}} dz_p  \tilde{w}(z_p) \int_{z_{\rm min}}^{z_{\rm max}} dz_s\frac{dN}{dz_s} p(z_s, z_p)}{\int_{z_{\rm cut_l}}^{z_{\rm cut_h}} d z_{p} \tilde{w}(z_p) \int_{z_{\rm max}}^{z_{\rm min}} dz_s\frac{dN}{dz_s} p(z_s, z_p)}
-\label{tot}
-\end{equation}
-which in this normalization scheme is equal to $1$, and 
-\begin{equation}
-N_{\rm close} = \frac{\int_{z_{\rm cut_l}}^{z_{\rm cut_h}} dz_p \tilde{w}(z_p) \int_{z_{\rm cut_l}}^{z_{\rm cut_h}} dz_s\frac{dN}{dz_s} p(z_s, z_p)}{\int_{z_{\rm cut_l}}^{z_{\rm cut_h}} d z_{p} \tilde{w}(z_p)\int_{z_{\rm max}}^{z_{\rm min}} dz_s\frac{dN}{dz_s} p(z_s, z_p)}.
-\label{close}
+N_{\rm corr}(r_p) = 1 - \frac{1}{B(r_p)}\left(1 - \frac{\int_{z_{\rm cut_l}}^{z_{\rm cut_h}} dz_p \tilde{w}(z_p) \int_{z_{\rm cut_l}}^{z_{\rm cut_h}} dz_s\frac{dN}{dz_s} p(z_s, z_p)}{\int_{z_{\rm cut_l}}^{z_{\rm cut_h}} dz_p  \tilde{w}(z_p) \int_{z_{\rm min}}^{z_{\rm max}} dz_s\frac{dN}{dz_s} p(z_s, z_p)} \right)
+\label{ncorr_2}
 \end{equation}
 
 We alter equation \ref{subtract_gammat_simp} to account for this correction factor
 \begin{equation}
-\tilde{\gamma}(r_p) - \tilde{\gamma}^\prime(r_p) = \gamma_{\rm IA}(r_p)(1-a) N_{\rm corr}
+\tilde{\gamma}(r_p) - \tilde{\gamma}^\prime(r_p) = \gamma_{\rm IA}(r_p)(1-a) N_{\rm corr}(r_p)
 \label{subtract_gammat_fac}
 \end{equation}
 which is trivially rearranged to solve for the IA term:
 \begin{equation}
-\gamma_{\rm IA}(r_p)(1-a) = \left(\tilde{\gamma}(r_p) - \tilde{\gamma}^\prime(r_p)\right)\left(\frac{1}{N_{\rm corr}}\right)
+\gamma_{\rm IA}(r_p)(1-a) = \left(\tilde{\gamma}(r_p) - \tilde{\gamma}^\prime(r_p)\right)\left(\frac{1}{N_{\rm corr}(r_p)}\right)
 \label{IAsol}
 \end{equation}
 
 \subsection*{Statistical error}
 
-To estimate the statistical error on the left hand side of equation \ref{IAsol}, we use the expression:
-\begin{equation}
-\sigma^2(\gamma_{\rm IA}(r_p)(1-a)) = \left(\frac{1}{N_{\rm corr}}\right) \sigma^2\left(\tilde{\gamma}(r_p) - \tilde{\gamma}^\prime(r_p)\right).
+There are two types of statistical error sources in equation \ref{IAsol}: 
+\begin{enumerate}
+\item{$\tilde{\gamma}(r_p)$ and $\tilde{\gamma}^\prime(r_p)$ have statistical error due to shape noise}
+\item{$N_{\rm corr}(r_p)$ has statistical error due to $B(r_p)$, which is sourced from large scale structure}
+\end{enumerate}
+It is expected that the second of these will be sub-dominant, but we include it anyway for completeness. 
+
+These two sources of error are independent, so the total statistical error contribution can be written as:
+\begin{align}
+\sigma^2(\gamma_{\rm IA}(r_p)(1-a)) &= (1-a_{\rm fid})^2\gamma_{\rm IA}^{\rm fid}(r_p)^2\left(\frac{\sigma^2(N_{\rm corr}(r_p))}{N_{\rm corr}^{\rm fid}(r_p)^2} + \frac{\sigma^2(\tilde{\gamma}(r_p) - \tilde{\gamma}^\prime(r_p))}{(\tilde{\gamma}(r_p) - \tilde{\gamma}^\prime(r_p))^2}\right) \nonumber \\
+\sigma^2(\gamma_{\rm IA}(r_p)(1-a)) &= (1-a_{\rm fid})^2\gamma_{\rm IA}^{\rm fid}(r_p)^2\left(\frac{\sigma^2(N_{\rm corr}(r_p))}{N_{\rm corr}^{\rm fid}(r_p)^2} + \frac{\sigma^2(\tilde{\gamma}(r_p) - \tilde{\gamma}^\prime(r_p))}{(N_{\rm corr}^{\rm fid}(1-a_{\rm fid})^2\gamma_{\rm IA}^{\rm fid}(r_p))^2}\right)
 \label{error}
+\end{align}
+Note that in the above equation we explicitly consider only diagonal elements of the covariance matrix between $r_p$ bins. {\it The statistical error contribution from $N_{\rm corr}$ may have off-diagonal elements. For the moment we don't consider these.}
+
+$\sigma^2(N_{\rm corr}(r_p))$ is given by:
+\begin{equation}
+\sigma^2(N_{\rm corr}(r_p)) = \frac{\sigma^2(B(r_p))}{B(r_p)^4}\left[1-\frac{\int_{z_{\rm cut_l}}^{z_{\rm cut_h}} dz_p \tilde{w}(z_p) \int_{z_{\rm cut_l}}^{z_{\rm cut_h}} dz_s\frac{dN}{dz_s} p(z_s, z_p)}{\int_{z_{\rm cut_l}}^{z_{\rm cut_h}} dz_p  \tilde{w}(z_p) \int_{z_{\rm min}}^{z_{\rm max}} dz_s\frac{dN}{dz_s} p(z_s, z_p)}\right]
+\label{Ncorr_err}
 \end{equation}
+
 The error on the averaged tangential shear obtained using each shape-measurement method is dominated by shape noise, so the covariance can be represented by a diagonal matrix with 
 \begin{equation}
 \frac{e_{\rm rms}^2}{N_{ls}}
 \label{diag_corr}
 \end{equation} 
-on the diagonal for each bin and the correct choice of $e_{\rm rms}$ for each shape measurement (as opposed to the average $e_{\rm rms}$ which is used in computing the weights). The errors for the two shape measurements are correlated so this must be taken into account when combining them. The correction factor contributes negligible statistical error so is treated as a constant.
+on the diagonal for each bin and the correct choice of $e_{\rm rms}$ for each shape measurement (as opposed to the average $e_{\rm rms}$ which is used in computing the weights). The errors for the two shape measurements are correlated so this must be taken into account when combining them. 
 
-When computing the expression of equation \ref{diag_corr}, one has to compute $N_{ls}$ in each projected radial bin. Given that we have a surface density of galaxies for the full spectroscopic $dN/dz$, the fraction of these which lie within the photo-z cuts of our source sample should be considered. When computing this fraction, the $dN / dz$ with respect to photo-z's should be used. It is given by:
-\begin{equation}
-\frac{dN}{dz_{ph}}= \frac{\int_{z_{\rm min}}^{z_{\rm max}} dz_s\frac{dN}{dz_s} p(z_s, z_p)}{\int_{z_{\rm cut_l}}^{z_{\rm cut_h}} d z_{\rm p} \int_{z_{\rm max}}^{z_{\rm min}} dz_s\frac{dN}{dz_s} p(z_s, z_p)}.
-\label{dndzph}
-\end{equation}
-where, notably, we use the unweighted number density as a function of photo-z. This is because the covariance depends on the number of lens-source pairs, not the weighted number.
+When computing the expression of equation \ref{diag_corr}, one has to compute $N_{ls}$ in each projected radial bin. Given that we have a surface density of galaxies for the full $dN/dz$, the fraction of these which lie within the photo-z cuts of our source sample should be considered. When computing this fraction, the $dN / dz$ with respect to photo-z's should be used. {\it It is also important to include the excess galaxies when calculating $N_{ls}$. I currently haven't done this.}
 
 \subsection*{Systematic error}
 
-Non-negligible systematic error could arise in this method due to an inadequate spectroscopic subsample and therefore an uncertain measurement of $\frac{dN}{dz_s}$. This would result in uncertainty in the $\frac{1}{N_{\rm corr}}$ term of equation \ref{IAsol}. Uncertainty in $\frac{1}{N_{\rm corr}}$ constitutes a systematic error here because it affects the measurements of the IA term in each projected $r_p$ bin in the same way. For example, if ${1}{N_{\rm corr}}$ is high, then $(1-a)\gamma_{\rm IA}(r_p)$ would be high in each bin. The result is that this introduces a correlation between $r_p$ bins as well as a contribution to the diagonal elements to the covariance. 
+There are similarly two obvious sources of systematic error in equation \ref{IAsol}:
+\begin{enumerate}
+\item{$\frac{dN}{dz_s}$: We may have an imperfect knowledge of $\frac{dN}{dz_s}$ due to an inadequate spectroscopic subsample, especially for dim source galaxies.}
+\item{$p(z_s, z_p)$: We will not necessarily have an accurate model of how likely we are to measure $z_p$ given $z_s$.}
+\end{enumerate}
 
-The systematic error from this source, call is $S^2$, is given by:
-\begin{equation}
-S^2 = \sigma_{\rm sys}^2 (1-a_{\rm fid})^2(N_{\rm corr}^{{\rm fid}})^2 \gamma_{\rm IA}(r_p) \gamma_{\rm IA}(r_p')
-\label{S^2}
-\end{equation}
-where fid indicates a fiducial value.
+Uncertainty in either $\frac{dN}{dz_s}$ or $p(z_s, z_l)$ leads to uncertainty in the $\frac{1}{N_{\rm corr}}$ term of equation \ref{IAsol}. This manifests as a systematic error here because it affects the measurements of the IA term in each projected $r_p$ bin in the same way. For example, if $\frac{1}{N_{\rm corr}}$ is high, then $(1-a)\gamma_{\rm IA}(r_p)$ would be high in each bin. This introduces a correlation between $r_p$ bins as well as a contribution to the diagonal elements to the covariance. {\it For the moment, we are only considering the diagonal elements of the covariance.}
 
-In order to get an estimate for $\sigma_{\rm sys}$, we could choose a set of $\frac{dN}{dz}$ which vary at high redshift, where we expect to have an insufficient spec-z subsample. Then, for each of these $\frac{dN}{dz}$, compute $\frac{1}{N_{\rm corr}}$. This should give an approximate value of $\sigma_{\rm sys}$.
+The systematic error contributions from these sources are given by:
+\begin{align}
+S_{dN}^2 &= \sigma_{dN}^2 (1-a_{\rm fid})^2 N_{\rm corr}^{{\rm fid}}(r_p) N_{\rm corr}^{{\rm fid}}(r_p')\gamma_{\rm IA}^{\rm fid}(r_p) \gamma_{\rm IA}^{\rm fid}(r_p') \nonumber \\
+S_{p}^2 &= \sigma_{p}^2 (1-a_{\rm fid})^2 N_{\rm corr}^{{\rm fid}}(r_p) N_{\rm corr}^{{\rm fid}}(r_p')\gamma_{\rm IA}^{\rm fid}(r_p) \gamma_{\rm IA}^{\rm fid}(r_p') 
+\label{S2}
+\end{align}
+where `fid' indicates a fiducial value.
 
-{\it Is there also a systematic error contribution from being uncertain of the photo-z distribution?}
+In order to get an estimate for $\sigma_{\rm dN}$, we would vary $\frac{dN}{dz}$. This could be done, for example, by varying the parameters of $\frac{dN}{dz}$ over the range of their uncertainty (given in Nakajima 2011 for SDSS). Then, for each of these choices of $\frac{dN}{dz}$, we would compute $\frac{1}{N_{\rm corr}}$. The range of resultant $N_{\rm corr}$ would allow for an estimate of $\sigma_{\rm dN}$. A similar scheme could be used to account for $\sigma_{\rm p}$.
 
 \subsection*{Total covariance matrix}
 
 The diagonal elements of the total covariance matrix are:
 \begin{equation}
-C(r_p,r_p) = \sigma^2(r_p) + S^2(r_p, r_p)
+C(r_p,r_p) = \sigma^2(r_p) + S_{dN}^2(r_p, r_p) + S_{p}^2(r_p, r_p)
 \label{diag}
 \end{equation}
 and the off-diagonal elements are given by
 \begin{equation}
-C(r_p, r_p') = S^2(r_p,r_p')
+C(r_p, r_p') = S_{dN}^2(r_p,r_p')+S_{p}^2(r_p,r_p')
 \label{off_diag}
 \end{equation}
+{\it under the likely-incorrect assumption that the statistical error from the boost has no off-diagonal elements}.
+
+\subsection*{Factors which affect errors}
+There are numerous degrees of freedom in the calculation which can affect the calculated errors on $(1-a)\gamma_{\rm IA}$. We break them up into several categories.
+
+Directly related to the covariance matrix:
+\begin{itemize}
+\item{$e_{\rm rms}$ for each shape measurement method}
+\item{the density of lens galaxies}
+\item{the density of source galaxies}
+\item{covariance of $\gamma_t$ between the two shape-measurement methods}
+\item{the level of systematic error on $\frac{1}{N_{\rm corr}}$}
+\item{fiducial model / values for $\gamma_{\rm IA}$, $a$, and $\frac{dN}{dz_s}$}
+\item{the photo-z model}
+\end{itemize}
+
+Related to redshift setup (and so indirectly related to the covariance matrix):
+\begin{itemize}
+\item{the redshift of the lenses}
+\item{the line-of-sight separation from the lens within which we assume galaxies are subject to IA}
+\item{Cosmological parameters (affect $z$ to $\chi$ conversion)}
+\end{itemize}
+
+Currently no effect but could have an effect if weights were redshift-dependent:
+\begin{itemize}
+\item{the signal to noise (affects $\sigma_e$)}
+\item{the intermediate $e_{\rm rms}$ which goes into the weights}
+\end{itemize}
 
 \section*{Questions}
 \begin{enumerate}
-\item{Should source galaxies both above and below the lens redshift be included in the photo-z-defined sample?}
-\item{When computing the number of galaxy pairs to use in computing $N_{ls}$ for the covariance, there is a factor from the fraction of the dNdz which is included in the redshift range. I think this should be calculated using the unweighted photo-z dNdz. Is this correct?}
-\item{Is my above method for treating the systematic error from not knowing $dN/dz$ correct? Should systematic error be multiplied through by the fiducial value of the other quantities, as I have done? Is my method of approximating $\sigma_{\rm sys}$ reasonable?}
-\item{Is there also a systematic error contribution from being uncertain about the photo-z model? How uncertain are we typically expecting to be about this model?}
+\item{When computing the number of galaxy pairs to use in computing $N_{ls}$ for the covariance, how to include excess galaxies?}
+\item{How to deal with off-diagonal elements of the contribution to the statistical error from the boost?}
 \end{enumerate}
 %-------------------------------------------------------------------------------
 
