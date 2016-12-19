@@ -94,24 +94,26 @@ def get_NofZ_unnormed(a, zs, z_min, z_max, zpts):
 
 	return (z, nofz_)
 
-def get_z_frac(z_1, z_2):
-        """ Gets the fraction of sources in a sample between z_1 and z_2, for dNdz given by a normalized nofz_1 computed at redshifts z_v"""
+def get_z_frac(rp_cents_):
+        """ Gets the fraction of sources of the full survey which are within our photo-z cut (excess and smooth background)"""
         
         # The normalization factor should be the norm over the whole range of z for which the number density of the survey is given, i.e. z min to zmax.       
-        (z_ph_vec, N_of_p) = N_of_zph_unweighted(pa.zmin, pa.zmax, pa.zmin, pa.zmax, pa.zmin_ph, pa.zmax_ph)
+        (z, dNdz) = N_of_zph_weighted(pa.zmin, pa.zmax, pa.zmin, pa.zmax, z_close_low, z_close_high, pa.zmin_ph, pa.zmax_ph, pa.e_rms_mean)
         
-        i_z1 = next(j[0] for j in enumerate(z_ph_vec) if j[1]>=z_1)
-        i_z2 = next(j[0] for j in enumerate(z_ph_vec) if j[1]>=z_2)
+        frac_rand = scipy.integrate.simps(dNdz, z)
+        
+        boost_samp = get_boost(rp_cents_, pa.boost_samp)
+        boost_tot = get_boost(rp_cents_, pa.boost_tot)
+        
+        frac_total = boost_samp / boost_tot * frac_rand
 
-        frac = scipy.integrate.simps(N_of_p[i_z1:i_z2], z_ph_vec[i_z1:i_z2])
+        return frac_total
 
-        return frac
-
-def get_perbin_N_ls(rp_bins_, zeff_, ns_, nl_, A):
+def get_perbin_N_ls(rp_bins_, zeff_, ns_, nl_, A, rp_cents_):
 	""" Gets the number of lens/source pairs relevant to each bin of projected radius """
 	""" zeff_ is the effective redshift of the lenses. frac_ is the fraction of sources in the sample. ns_ is the number density of sources per square arcminute. nl_ is the number density of lenses per square degree. A is the survey area in square degrees."""
         
-	frac_		=	get_z_frac(z_close_low, z_close_high)
+	frac_		=	get_z_frac(rp_cents_)
 
 	# Get the area of each projected bin in square arcminutes
 	bin_areas       =       get_areas(rp_bins_, zeff_)
@@ -125,7 +127,7 @@ def get_perbin_N_ls(rp_bins_, zeff_, ns_, nl_, A):
 def get_boost(rp_cents_, propfact):
 	""" Returns the boost factor in radial bins. propfact is a tunable parameter giving the proportionality constant by which boost goes like projected correlation function (= value at 1 Mpc/h). """
 
-	Boost = propfact *(rp_cents_)**(-0.8) + np.ones((len(rp_cents_))) # Empirical power law fit to the boost, derived from the fact that the boost goes like projected correlation function.
+	Boost = (propfact-1.) *(rp_cents_)**(-0.8) + np.ones((len(rp_cents_))) # Empirical power law fit to the boost, derived from the fact that the boost goes like projected correlation function.
 
 	return Boost
 
@@ -147,30 +149,34 @@ def N_of_zph_unweighted(z_a_def, z_b_def, z_a_norm, z_b_norm, z_a_norm_ph, z_b_n
 	
 	return (z_ph_vec, int_dzs / norm)
 	
-def N_of_zph_weighted(z_a_def, z_b_def, z_a_norm, z_b_norm, z_a_norm_ph, z_b_norm_ph):
-	""" Returns dNdz_ph, the number density in terms of photometric redshift, defined and normalized over the photo-z range (z_a_norm_ph, z_b_norm_ph), normalized over the spec-z range (z_a_norm, z_b_norm), but defined on the spec-z range (z_a_def, z_b_def). This version returns the weighted photo-z number density, primarily for getting the correction factor calculatd in N_corr."""
+def N_of_zph_weighted(z_a_def_s, z_b_def_s, z_a_norm_s, z_b_norm_s, z_a_def_ph, z_b_def_ph, z_a_norm_ph, z_b_norm_ph, erms):
+	""" Returns dNdz_ph, the number density in terms of photometric redshift, defined over photo-z range (z_a_def_ph, z_b_def_ph), normalized over the photo-z range (z_a_norm_ph, z_b_norm_ph), normalized over the spec-z range (z_a_norm, z_b_norm), and defined on the spec-z range (z_a_def, z_b_def)"""
 	
-	(z, dNdZ) = get_NofZ_unnormed(pa.alpha, pa.zs, z_a_def, z_b_def, pa.zpts)
-	(z_norm, dNdZ_norm) = get_NofZ_unnormed(pa.alpha, pa.zs, z_a_norm, z_b_norm, pa.zpts)
+	(z, dNdZ) = get_NofZ_unnormed(pa.alpha, pa.zs, z_a_def_s, z_b_def_s, pa.zpts)
+	(z_norm, dNdZ_norm) = get_NofZ_unnormed(pa.alpha, pa.zs, z_a_norm_s, z_b_norm_s, pa.zpts)
 	
-	z_ph_vec = scipy.linspace(z_a_norm_ph, z_b_norm_ph, 5000)
+	z_ph_vec = scipy.linspace(z_a_def_ph, z_b_def_ph, 5000)
+	z_ph_vec_norm = scipy.linspace(z_a_norm_ph, z_b_norm_ph, 5000)
 	
-	weights_ = weights(pa.e_rms_mean, z_ph_vec)
+	weights_ = weights(erms, z_ph_vec)
+	weights_norm = weights(erms, z_ph_vec_norm)
 	
 	int_dzs = np.zeros(len(z_ph_vec))
-	int_dzs_norm = np.zeros(len(z_ph_vec))
 	for i in range(0,len(z_ph_vec)):
 		int_dzs[i] = scipy.integrate.simps(dNdZ*p_z(z_ph_vec[i], z, pa.sigz), z)
-		int_dzs_norm[i] = scipy.integrate.simps(dNdZ_norm*p_z(z_ph_vec[i], z_norm, pa.sigz), z_norm)
+	
+	int_dzs_norm = np.zeros(len(z_ph_vec_norm))
+	for i in range(0,len(z_ph_vec_norm)):
+		int_dzs_norm[i] = scipy.integrate.simps(dNdZ_norm*p_z(z_ph_vec_norm[i], z_norm, pa.sigz), z_norm)
 		
-	norm = scipy.integrate.simps(int_dzs_norm*weights_, z_ph_vec)
+	norm = scipy.integrate.simps(weights_norm*int_dzs_norm, z_ph_vec_norm)
 	
 	return (z_ph_vec, weights_*int_dzs / norm)
 
 def N_in_samp(z_a, z_b, e_rms_weights):
 	""" Number of galaxies in the photometric redshift range of the sample (assumed z_eff of lenses to z_close) from the SPECTROSCOPIC redshift range z_a to z_b """
 	
-	(z_ph, N_of_zp) = N_of_zph_weighted(z_a, z_b, pa.zmin, pa.zmax, z_close_low, z_close_high)
+	(z_ph, N_of_zp) = N_of_zph_weighted(z_a, z_b, pa.zmin, pa.zmax, z_close_low, z_close_high, z_close_low, z_close_high, pa.e_rms_mean)
 
 	answer = scipy.integrate.simps(N_of_zp, z_ph)
 	
@@ -181,7 +187,7 @@ def N_corr(rp_cent):
 	
 	N_tot = N_in_samp(pa.zmin, pa.zmax, pa.e_rms_mean)
 	N_close = N_in_samp(z_close_low, z_close_high, pa.e_rms_mean)
-	boost = get_boost(rp_cent, pa.Boost_prop)
+	boost = get_boost(rp_cent, pa.boost_samp)
 	
 	Corr_fac = 1. - (1. / boost) * ( 1. - (N_close / N_tot)) # fraction of the galaxies in the source sample which have spec-z in the photo-z range of interest.
 	
@@ -192,7 +198,7 @@ def N_corr_stat_err(rp_cents_):
 	
 	N_tot = N_in_samp(pa.zmin, pa.zmax, pa.e_rms_mean)
 	N_close = N_in_samp(z_close_low, z_close_high, pa.e_rms_mean)
-	boost = get_boost(rp_cents_, pa.Boost_prop)
+	boost = get_boost(rp_cents_, pa.boost_samp)
 	
 	sig_Ncorr = (pa.sigB / boost**2) * np.sqrt(1. - N_close / N_tot)
 	
@@ -419,7 +425,7 @@ z_of_com 	= 	z_interpof_com()
 (z_close_high, z_close_low)	= 	get_z_close(pa.zeff, pa.close_cut)
 
 # Get the number of lens source pairs for the source sample in projected radial bins
-N_ls_pbin	=	get_perbin_N_ls(rp_bins, pa.zeff, pa.n_s, pa.n_l, pa.Area)
+N_ls_pbin	=	get_perbin_N_ls(rp_bins, pa.zeff, pa.n_s, pa.n_l, pa.Area, rp_cents)
 
 # Get the covariance matrix in projected radial bins of gamma_t for both shape measurement methods
 Cov_a		=	setup_shapenoise_cov(pa.e_rms_a, N_ls_pbin)

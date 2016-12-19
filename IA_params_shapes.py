@@ -48,14 +48,14 @@ A_fid   		=       0.059
 beta_fid        =       -0.73
 
 # Other
-#covar_DSig = 10**(-11)*np.asarray([100, 50, 10, 5, 1, 1, 1]) # The covariance of gamma_t, between shape-meaurement a and shape-measurement b, in each bin, from low to high projected radius
 cov_perc = 0.6 #percentage covariance between methods
-sig_sys_dNdz = 0.318367637485 # 10% error on 1/Ncorr for sigz=0.08 # The systematic error on N_corr from a badly measured dNdz
-sig_sys_dp = 0.318367637485
-sigz=0.08 # Error on photo z (Gaussian model, sigma = sigz*(1+z))
+sig_sys_dNdz = 0.318367637485 # systematic error from dNdz in Ncorr
+sig_sys_dp = 0.318367637485 # systematic error from p(z) in Ncorr
+sigz=0.08 # Uncertainty on photo z (Gaussian model, sigma = sigz*(1+z))
 plotfile =	'./test_shapes_sys10%_sigz0.08_log.pdf'  # Location of file for plot showing 1 sigma error bars on gamma_IA
-Boost_prop = 0.05
-sigB	= 0.0
+boost_samp = 1.2 # Boost at 1 Mpc/h for our associated sample
+boost_tot = 1.04 # Boost at 1 Mpc/h for all the source-lens pairs in the survey (all z)
+sigB	= 0.0 # The statistical error from the boost in Ncorr.
 
 # The edges of the source redshift bin to be considered:
 #zS_min 	= 	0.32

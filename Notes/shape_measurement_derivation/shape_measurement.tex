@@ -138,7 +138,7 @@ It is expected that the second of these will be sub-dominant, but we include it 
 These two sources of error are independent, so the total statistical error contribution can be written as:
 \begin{align}
 \sigma^2(\gamma_{\rm IA}(r_p)(1-a)) &= (1-a_{\rm fid})^2\gamma_{\rm IA}^{\rm fid}(r_p)^2\left(\frac{\sigma^2(N_{\rm corr}(r_p))}{N_{\rm corr}^{\rm fid}(r_p)^2} + \frac{\sigma^2(\tilde{\gamma}(r_p) - \tilde{\gamma}^\prime(r_p))}{(\tilde{\gamma}(r_p) - \tilde{\gamma}^\prime(r_p))^2}\right) \nonumber \\
-\sigma^2(\gamma_{\rm IA}(r_p)(1-a)) &= (1-a_{\rm fid})^2\gamma_{\rm IA}^{\rm fid}(r_p)^2\left(\frac{\sigma^2(N_{\rm corr}(r_p))}{N_{\rm corr}^{\rm fid}(r_p)^2} + \frac{\sigma^2(\tilde{\gamma}(r_p) - \tilde{\gamma}^\prime(r_p))}{(N_{\rm corr}^{\rm fid}(1-a_{\rm fid})^2\gamma_{\rm IA}^{\rm fid}(r_p))^2}\right)
+&= (1-a_{\rm fid})^2\gamma_{\rm IA}^{\rm fid}(r_p)^2\left(\frac{\sigma^2(N_{\rm corr}(r_p))}{N_{\rm corr}^{\rm fid}(r_p)^2} + \frac{\sigma^2(\tilde{\gamma}(r_p) - \tilde{\gamma}^\prime(r_p))}{(N_{\rm corr}^{\rm fid}(1-a_{\rm fid})\gamma_{\rm IA}^{\rm fid}(r_p))^2}\right)
 \label{error}
 \end{align}
 Note that in the above equation we explicitly consider only diagonal elements of the covariance matrix between $r_p$ bins. {\it The statistical error contribution from $N_{\rm corr}$ may have off-diagonal elements. For the moment we don't consider these.}
@@ -149,14 +149,31 @@ $\sigma^2(N_{\rm corr}(r_p))$ is given by:
 \label{Ncorr_err}
 \end{equation}
 
-The error on the averaged tangential shear obtained using each shape-measurement method is dominated by shape noise, so the covariance can be represented by a diagonal matrix with 
+The error on the averaged tangential shear obtained using each shape-measurement method is dominated by shape noise, so the covariance can be represented by a diagonal matrix:
 \begin{equation}
-\frac{e_{\rm rms}^2}{N_{ls}}
+\sigma^2(\gamma(r_p)) = \frac{e_{\rm rms}^2}{N_{ls}(r_p)}
 \label{diag_corr}
 \end{equation} 
-on the diagonal for each bin and the correct choice of $e_{\rm rms}$ for each shape measurement (as opposed to the average $e_{\rm rms}$ which is used in computing the weights). The errors for the two shape measurements are correlated so this must be taken into account when combining them. 
+where $e_{\rm rms}$ is different for each shape measurement (as opposed to the average $e_{\rm rms}$ which is used in computing the weights). The errors for the two shape measurements are correlated:
+\begin{equation}
+\sigma^2(\tilde{\gamma}(r_p) - \tilde{\gamma}^\prime(r_p)) = \sigma^2(\tilde{\gamma}(r_p)) + \sigma^2(\tilde{\gamma}^\prime(r_p)) - 2 {\rm Cov}( \tilde{\gamma}(r_p), \, \tilde{\gamma}^\prime(r_p))
+\label{comb_gammat}
+\end{equation}
+where ${\rm Cov}( \tilde{\gamma}(r_p), \, \tilde{\gamma}^\prime(r_p))$ is calculated as:
+\begin{equation}
+{\rm Cov}( \tilde{\gamma}(r_p), \, \tilde{\gamma}^\prime(r_p)) = f \left(\sqrt{\sigma^2(\tilde{\gamma}(r_p), \tilde{\gamma}(r_p))}\right)\left(\sqrt{\sigma^2(\tilde{\gamma}^\prime(r_p), \tilde{\gamma}^\prime(r_p))}\right)
+\label{Cov}
+\end{equation}
+where $f$ is the fractional correlation between the two shape measurement methods (empirical input).
 
-When computing the expression of equation \ref{diag_corr}, one has to compute $N_{ls}$ in each projected radial bin. Given that we have a surface density of galaxies for the full $dN/dz$, the fraction of these which lie within the photo-z cuts of our source sample should be considered. When computing this fraction, the $dN / dz$ with respect to photo-z's should be used. {\it It is also important to include the excess galaxies when calculating $N_{ls}$. I currently haven't done this.}
+\paragraph{A note on computing $N_{ls}$}: We have the surface density of galaxies for the full survey at all redshifts. To compute $N_{ls}$ from theory, we require the fraction of these which lie within the photo-z cuts of our source sample. This includes both galaxies from the smooth source sample and excess galaxies. This is given by:
+\begin{equation}
+\frac{B^{\rm samp}(r_p) \int_{z_{\rm cut_l}}^{z_{\rm cut_h}} dz_p \tilde{w}(z_p) \int_{z_{\rm min}}^{z_{\rm max}} dz_s \frac{dN}{dz_s}p(z_s, z_p)}{B^{\rm tot}(r_p) \int_{z_{\rm min}}^{z_{\rm max}} dz_p \tilde{w}(z_p) \int_{z_{\rm min}}^{z_{\rm max}} dz_s \frac{dN}{dz_s}p(z_s, z_p)}
+\label{Nls}
+\end{equation}
+where there are two boost factors, one for our photo-z-defined sample and one for the full survey. We expect that the boost factor for the full survey will be smaller than that for our sample, because of the addition of comparatively more smooth background galaxies than excess galaxies. We assume that both boost factors follow the same power law in $r_p$: $B(r_p) \propto r^{-0.8}$, with a free parameter of the value of $B(r_p = 1 {\rm Mpc/h})$. To set this for each boost, we look to Blazek et al. 2012. There in Figure 1 the boost is measured for various samples. For now, we associate the `assoc' sample with our source sample, and the `src' sample with the total survey, {\it although the latter is not strictly correct as `src' includes no sources at $z$ below the lens}. Therefore, from Figure 1 of Blazek et al. 2012, we fiducially set $B^{\rm samp}(r_p = 1 {\rm Mpc/h}) = 1.2$ and $B^{\rm tot}(r_p = 1 {\rm Mpc/h}) = 1.04$.
+
+Also to note is the fact that equation \ref{Nls} gives the weighted fraction of galaxies in our source sample. In the current place, where weights are assumed to be independent of $z$, this is equivalent to the actual fraction. {\it However, in the case in which weights were redshift-dependent, this could affect the result.}
 
 \subsection*{Systematic error}
 
