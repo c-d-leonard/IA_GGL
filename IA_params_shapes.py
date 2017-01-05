@@ -33,7 +33,7 @@ e_rms_mean 	=	np.abs((e_rms_b+e_rms_a)/2.) # This is the e_rms used in computing
 # Quantities related to how we split up the `data'
 rp_max 	=	100.0 # The maximum projected radius (Mpc/h)
 rp_min	=	0.01 # The minimum projected radius (Mpc/h)
-N_bins	=	20.  # The number of bins of projected radius 
+N_bins	=	50.  # The number of bins of projected radius 
 zmin 	=	0.0 # Minimum spec-z
 zmax 	= 	3.0 # Maximum spec-z
 zmin_ph	=	0.0 # Minimu photo-z
@@ -67,6 +67,7 @@ bs = 1.77
 bd = 1.77
 Ai = 5.0
 C1rho = 0.0134
+sigz_gwin = 0.001
 
 # 1 halo IA term parameters
 q11 = 0.005 #0.02056    
@@ -79,5 +80,9 @@ q31 = 3.1 #4.154
 q32 = 0.1912
 q33 = 0.4368
 ah =  1. # 0.08
+
+# 1 halo term gg parameters
+c14 = 10**(0.7) # Parameter in the concentration / mass relationship (Neto 2007)
+Mvir = 4. * 10 ** (12) 
 
 
