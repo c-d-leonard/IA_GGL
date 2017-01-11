@@ -207,7 +207,7 @@ To begin, consider the simplified case in which only excess galaxies contribute 
 \end{equation}
 This is given in terms of spectroscopic source redshifts only, because $\gamma_{\rm IA}(r_p)$ is already fully corrected for photometric effects by the inclusion of $N_{\rm corr}$. Note that weights, being independent of redshift, have canceled. 
 
-The integration over correlation functions indicates that we are considering excess galaxies only. As such, equation \ref{gamma_blazek} can be heuristically understood as a ratio of the projected IA tangential shear from excess galaxies and the projected number of pairs of excess source and lens galaxies. However, equation \ref{gamma_blazek} does not strictly follow the typical definition of a projected correlation function, which is given by (see, eg., Singh 2014, equation 7):
+Equation \ref{gamma_blazek} can be heuristically understood as a ratio of the projected IA tangential shear from excess galaxies and the projected number of pairs of excess source and lens galaxies. However, equation \ref{gamma_blazek} does not strictly follow the typical definition of a projected correlation function, which is given by (see, eg., Singh 2014, equation 7):
 \begin{equation}
 w_{\rm AB}(r_p) = \int dz W(z) \int d\Pi \xi_{\rm AB}(r_p, \Pi, z)
 \label{wABW}
@@ -231,7 +231,7 @@ w_{ls}(r_p) &= \frac{b_S b_l}{\pi^2} \int dk_z  \int dk_\perp  \frac{k_\perp}{k_
 w_{l+}(r_p) &= \frac{A_I b_l C_1 \rho_c \Omega_M}{\pi^2 D(z_l)} \int dk_z  \int dk_\perp  \frac{k_\perp^3 }{(k_z^2 + k_\perp^2)k_z} P(\sqrt{k_\perp^2 + k_z^2}, z_l) \sin(k_z \Pi_{\rm max}) J_2(r_p k_\perp)
 \label{ws}
 \end{align}
-where $b_S$ is the bias of the sources and $b_l$ is the bias of the lenses. {\it It appears to be quite important to well-sample $k_\perp$ and $k_z$ for this integral. I don't know yet how many points are needed for convergence.}
+where $b_S$ is the bias of the sources and $b_l$ is the bias of the lenses. It is important to well-sample $k_\perp$ and $k_z$ for the $w_{ls}$ integral. (Using 10,000 points logarithmically spaced on the range of k$\approx$($10^{-4}$, 2000) gives convergence out to $30$ Mpc/h.)
 
 $\gamma_{\rm IA}(r_p)$ can be obtained in the linear alignment model by invoking these equations with $P(k,z)$ taken as the linear power spectrum. This is not a very good fit on small scales. The slightly better nonlinear alignment model uses the same equations, but allows $P(k,z)$ to be the nonlinear matter power spectrum as produced by halofit. This produces a reasonable prediction to smaller scales (depsite being known to neglects some terms which should be important). However, at the smallest scales in the regime we care about, we need to introduce a 1-halo term, both the standard one (for $w_{ls}(r_p)$) and from the halo model for intrinsic alignments (for $w_{l\gamma}(r_p)$). Failing to do this means there is an unphysical deficit in $\gamma_{\rm IA}(r_p)$ at the smallest scales.
 
@@ -279,7 +279,7 @@ The integral over $M$ here averages over mass, with $\frac{dn}{dM}$ providing th
 P_{1h}(k,z) \frac{M_{\rm vir}}{\bar{\rho}_M} u(k,M_{\rm vir})^2 = \frac{M_{\rm vir}}{\Omega_M(z) \rho_c} u(k,M_{\rm vir})^2.
 \label{P1h_onemass}
 \end{equation}
-A choice of $M_{\rm vir} = 4 \times 10^{12} M_{\odot}$ given a 1-halo term that roughly matches $w_{gg}$ from Singh et al. 2014.
+A choice of $M_{\rm vir} = 4 \times 10^{12} M_{\odot}$ given a 1-halo term that roughly matches $w_{gg}$ from Singh et al. 2014. {\it However, the halo mass measured for the sample is $13.18 \pm 0.05$. Picking this mass gives $w_{gg}$ that does not match at all.}
 
 $w_{g+}(r_p)$ also requires a 1-halo term, this time given by the halo model for intrinsic alignments. This time, we will calculate $w_{g+}^{1h}(r_p)$ separately, and do $w_{g+}^{\rm tot}(r_p) = w_{g+}(r_p) + w_{g+}^{1h}(r_p)$. We follow Singh et al. 2014 and Schneider \& Bridle 2010 in computing the following.
 
@@ -366,9 +366,10 @@ Currently no effect but could have an effect if weights were redshift-dependent:
 \section*{Questions}
 \begin{enumerate}
 \item{Is using the weighted-fraction for getting $N_{ls}$ generally okay or just in this case where the weights are z-independent? }
-\item{How to include random galaxy tangential shear in the fiducial $\gamma_{IA}$ calculation.}
+\item{The definition of fiducial $\gamma_{\rm IA}$ from Blazek 2012 says it is approximately equal to a ratio of projected correlation functions, but this is using a different definition than the standard definition for correlation functions. Is this where the `approximately' comes in?}
 \item{Is it acceptable to use the dark matter 1-halo term for $w_{gg}$ or do I need to account for central and satellite galaxy stuff?}
-\item{Need to figure out how well-sampled $k_\perp$ and $k_z$ need to be for convergence of $w_{gg}$ at large separation.}
+\item{Choosing the measured sample mass of LOWZ from Singh 2014 gives a $w_{gg}$ that doesn't match the figure in that paper (while choosing a slightly lower mass does match). Is this expected, perhaps due to not averaging over the HMF?}
+\item{How to include random galaxy tangential shear in the fiducial $\gamma_{IA}$ calculation.}
 \item{How to deal with off-diagonal elements of the contribution to the statistical error from the boost?}
 \end{enumerate}
 %-------------------------------------------------------------------------------

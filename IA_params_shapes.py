@@ -62,12 +62,14 @@ ProjMax = 100.
 #zS_min 	= 	0.32
 #zS_max 	= 	0.49
 
-# LA model parameters
+# NLA model parameters
 bs = 1.77
 bd = 1.77
 Ai = 5.0
 C1rho = 0.0134
 sigz_gwin = 0.001
+kpts_wgg = 1000
+kpts_wgp = 1000
 
 # 1 halo IA term parameters
 q11 = 0.005 #0.02056    
@@ -83,6 +85,6 @@ ah =  1. # 0.08
 
 # 1 halo term gg parameters
 c14 = 10**(0.7) # Parameter in the concentration / mass relationship (Neto 2007)
-Mvir = 4. * 10 ** (12) 
-
+Mvir = 10.**(13.18) / (HH0/100.)
+#Mvir = 4.*10**12
 

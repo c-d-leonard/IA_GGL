@@ -10,8 +10,8 @@ A_fid	=	0.059
 beta_fid	=	-0.73
 
 # The rms ellipticity of sample a and b.
-e_rms_a = 	0.2
-e_rms_b	=	0.2
+e_rms_a = 	0.3
+e_rms_b	=	0.3
 
 # The signal to noise - necessary for estimating sigma_e
 S_to_N = 15.
@@ -35,7 +35,7 @@ sys_sigc = 1.0*10**(-5) # This is a dummy number for now.
 n_s 	=	1.2
 
 # The maximum projected radius (Mpc/h)
-rp_max 	=	20.0
+rp_max 	=	200.0
 
 # The minimum projected radius (Mpc/h)
 rp_min	=	0.05
@@ -60,6 +60,8 @@ zeff 	= 	0.32
 # The minimum and maximum redshift to consider in the source sample
 zmin 	=	0.0
 zmax 	= 	3.0
+zphmin	=	0.0	
+zphmax	=	5.0
 
 # The maximum separation from a lens to consider part of `rand-close', in Mpc/h
 close_cut = 100 # Mpc/h
@@ -79,3 +81,8 @@ OmN	=	Nnu*(7./8.)*(4./11.)**(4./3.)*OmR
 OmB	=	0.02222/(HH0/100.)**2
 OmC	=	0.1199/(HH0/100.)**2
 H0	=	10**(5)/c
+
+#
+c14 = 10**(0.7) # Parameter in the concentration / mass relationship (Neto 2007)
+Mvir = 10.**(13.18) / (HH0/100.)
+#Mvir = 10.**11

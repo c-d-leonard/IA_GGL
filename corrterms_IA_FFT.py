@@ -24,21 +24,30 @@ def getcorrfunc():
 	# Import the 1d correlation function as calculated in FFTlog
 	(rvec, corrfunc1d) = np.loadtxt(folderpath+outputfolder+corrfunc1dfile,unpack=True)
 	
+	# Multiply by the desired galaxy bias amplitude - just one factor because we want e_gm
+	
+	corrfunc1d_gm = corrfunc1d * bias
+	
+	plt.figure()
+	plt.loglog(rvec, corrfunc1d)
+	plt.savefig('./plots/corrfunc_botheterms_1d_M1e13.png')
+	plt.close()
+	
 	#Define an array to hold the correlation function as a 2D array in R and Delta 
-	corrfunc2d=np.zeros((len(deltavec),len(Rvec)))
+	corrfunc2d_gm=np.zeros((len(deltavec),len(Rvec)))
 
 	#Interpolate in rvec
-	interp_corrfunc1d=scipy.interpolate.interp1d(rvec, corrfunc1d)
+	interp_corrfunc1d=scipy.interpolate.interp1d(rvec, corrfunc1d_gm)
 	
 	#Now get the value of this at every bigR and Delta val
 	print 'Interpolate to get 2D corr fun'
 	for ri in range(0,len(Rvec)):
 		for di in range(0, len(deltavec)):
-			corrfunc2d[di, ri]=interp_corrfunc1d((deltavec[di]**2+Rvec[ri]**2)**(0.5))
+			corrfunc2d_gm[di, ri]=interp_corrfunc1d((deltavec[di]**2+Rvec[ri]**2)**(0.5))
 	print "done getting 2d corr func" 
 	
 	#Save the correlation function as a function of delta, theta
-	np.savetxt(folderpath+outputfolder+corrfunc2dfile, corrfunc2d)
+	np.savetxt(folderpath+outputfolder+corrfunc2dfile, corrfunc2d_gm)
 
 	return
 
@@ -46,12 +55,25 @@ def getintoverR():
 	""" This function computes the integral over R of the correlation function for the first term of the three-part correlation function term"""
 
 	#Load correlation function as a function of R and Delta:
-	corrfunc=np.loadtxt(folderpath+outputfolder+corrfunc2dfile)
-
+	corrfunc_gm=np.loadtxt(folderpath+outputfolder+corrfunc2dfile)
+	
 	Rintans=np.zeros((len(deltavec),len(Rvec)))
+	#Rintans = np.zeros((len(Rvec)))
 	for di in range(0, len(deltavec)):
 		for ri in range(0,len(Rvec)):
-			Rintans[di,ri] = 2./Rvec[ri]**2 * scipy.integrate.simps(Rvec[0:ri+1]**2*corrfunc[di,:][0:ri+1], np.log(Rvec[0:ri+1]))
+			#print "di=", di, "ri=", ri
+			Rintans[di,ri] = 2./Rvec[ri]**2 * scipy.integrate.simps(Rvec[0:ri+1]**2*corrfunc_gm[di,:][0:ri+1], np.log(Rvec[0:ri+1]))
+			#Rintans[ri] = 2./Rvec[ri]**2 * scipy.integrate.trapz(Rvec[0:ri+1]**2, np.log(Rvec[0:ri+1]))
+			
+	#plt.figure()
+	#plt.semilogx(Rvec, np.ones(len(Rvec)), 'r+')
+	#plt.hold(True)
+	#plt.semilogx(Rvec, Rintans, 'b+')
+	#plt.savefig('./plots/test_Rint.png')
+	#plt.close()
+	
+	#exit()
+		
 
 	#Save the value of the integral as a function of delta and theta
 	np.savetxt(folderpath+outputfolder+Rintfile, Rintans)
@@ -68,19 +90,22 @@ a = time.time()
 folderpath 	= 	'/home/danielle/Dropbox/CMU/Research/Intrinsic_Alignments/' #This is the folder where everything is happening
 
 # Set parameters which are used to create vectors in Delta and R
-Rpts		=	200 	#Number of points in Rvec
+Rpts		=	400 	#Number of points in Rvec
 Rmin 		= 	0.000143
-Rmax		=	22.0
+Rmax		=	200.
 Dnegmax = 883.
 Dposmax = 3504.
 Deltamin = 0.000143
 zval = 0.32
 kmax=4000 #This is the max k in the power spectrum file.
 
+bias = 1.77
+
 outputfolder	= 	'/txtfiles/'
-corrfunc2dfile	=	'/corr_z='+str(zval)+'_kmax='+str(kmax)+'.txt'
-Rintfile	=	'/Rint_z='+str(zval)+'_kmax='+str(kmax)+'.txt'
-corrfunc1dfile ='/corr_1d_NL_z='+str(zval)+'_kmax'+str(kmax)+'.txt'
+corrfunc2dfile	=	'/corr_2d_z='+str(zval)+'_kmax='+str(kmax)+'_M1e13.txt'
+Rintfile	=	'/Rint_z='+str(zval)+'_kmax='+str(kmax)+'_M1e13.txt'
+#corrfunc1dfile ='/corr_1d_NL_z='+str(zval)+'_kmax'+str(kmax)+'.txt'
+corrfunc1dfile = '/corr_bothterms_z='+str(zval)+'_kmax'+str(kmax)+'_M1e13_FFT.txt'
 
 ##############################################################
 ############## Set up the Delta and R vectors ################

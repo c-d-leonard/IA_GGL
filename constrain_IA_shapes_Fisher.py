@@ -132,7 +132,6 @@ def window(tag):
 	
 	sigz = pa.sigz_gwin
 	z = scipy.linspace(pa.zeff-5.*sigz, pa.zeff+5.*sigz, 50)
-	print "z=", z
 	dNdz_1 = 1. / np.sqrt(2. * np.pi) / sigz * np.exp(-(z-pa.zeff)**2 / (2. *sigz**2))
 	
 	chi = com(z)
@@ -254,7 +253,7 @@ def wgp_1halo(rp_c_):
 	(z, w) = window('g+') # Same window function as for the NLA term.
 	
 	# Set up a k vector to integrate over:
-	k = np.logspace(-5., 4., 10000)
+	k = np.logspace(-5., 4., 1000000)
 	
 	# Get the `power spectrum' term
 	P1h = get_P1haloIA(z, k)
@@ -310,6 +309,9 @@ def Rhalo(M_insol, z):
 	Dv = Delta_virial(z)
 	
 	Rvir = ( 3. * M_insol * OmM / (4. * np.pi * rho_crit * Dv))**(1./3.)
+	#Rvir = ( 3. * M_insol / (4. * np.pi * 180. * rho_crit * OmM))**(1./3.)
+	
+	print "Rvir=", Rvir
 	
 	return Rvir
 	
@@ -317,6 +319,9 @@ def cvir(M_insol, z):
 	""" Returns the concentration parameter of the NFW profile, c_{vir}. Uses the Neto 2007 definition, referenced in Giocoli 2010 """
 	
 	cvi = pa.c14 / (1. + z) * (M_insol / 10**14)**(-0.11)
+	
+	# This is the mass concentration relation used in Singh 2014, for comparison
+	#cvi = 5. * (M_insol * (pa.HH0 / 100.) / 10**14 ) ** (-0.1)
 	
 	return cvi 
 	
@@ -371,12 +376,13 @@ def P1halo_DM(M_insol, z_vec, k):
 		OmM = (pa.OmC + pa.OmB)* (1. + z)**(3) / ( (pa.OmC+pa.OmB)*(1+z)**3 + OmL + (pa.OmR+pa.OmN) * (1+z)**4 )
 		rho_m = OmM * rho_crit # units of Msol h^3 / Mpc^3
 	
-		P1h[zi, :] = M_insol / rho_m * u**2 
+		#P1h[zi, :] = M_insol / rho_m * u**2 
+		P1h[zi, :] = (M_insol / rho_m)**2 * 3.0*10**(-4) * u**2
 	
 	return P1h
 	
 def wgg_wgp(rp_cents_):
-	""" Returns wgg and wg+ in the linear alignment model"""
+	""" Returns wgg and wg+ (nla + 1 halo terms) """
 
 	# Get the redshift window functions
 	z_gg, win_gg = window('gg')
@@ -409,10 +415,10 @@ def wgg_wgp(rp_cents_):
 		zint_gp[ki] = scipy.integrate.simps(win_gp * P_gp[:, ki] / D_gp, z_gp)
 		
 	# Define vectors of kp (kperpendicual) and kz. The sampling of these affects the answer a fair bit at large scales.
-	kp_gg = np.logspace(np.log10(k_gg[0]), np.log10(k_gg[-1]/ np.sqrt(2.01)), 4000)
-	kp_gp = np.logspace(np.log10(k_gp[0]), np.log10(k_gp[-1]/ np.sqrt(2.01)), 4000)
-	kz_gg = np.logspace(np.log10(k_gg[0]), np.log10(k_gg[-1]/ np.sqrt(2.01)), 4000)
-	kz_gp = np.logspace(np.log10(k_gp[0]), np.log10(k_gp[-1]/ np.sqrt(2.01)), 4000)
+	kp_gg = np.logspace(np.log10(k_gg[0]), np.log10(k_gg[-1]/ np.sqrt(2.01)), pa.kpts_wgg)
+	kp_gp = np.logspace(np.log10(k_gp[0]), np.log10(k_gp[-1]/ np.sqrt(2.01)), pa.kpts_wgp)
+	kz_gg = np.logspace(np.log10(k_gg[0]), np.log10(k_gg[-1]/ np.sqrt(2.01)), pa.kpts_wgg)
+	kz_gp = np.logspace(np.log10(k_gp[0]), np.log10(k_gp[-1]/ np.sqrt(2.01)), pa.kpts_wgp)
 	
 	# Interpolate the answers to the z integrals in k to get it in terms of kperp and kz
 	kinterp_gg = scipy.interpolate.interp1d(k_gg, zint_gg)
@@ -469,22 +475,39 @@ def wgg_wgp(rp_cents_):
 	wgp_1h = wgp_1halo(rp_cents_)
 	wgp = wgp_NLA + wgp_1h
 	
+	plt.figure()
+	plt.loglog(rp_cents_, wgp_NLA, 'bo')
+	plt.hold(True)
+	plt.loglog(rp_cents_, wgp_1h, 'go')
+	plt.hold(True)
+	plt.loglog(rp_cents_, wgp, 'ro')
+	plt.ylim(10**(-2), 20)
+	plt.xlim(10**(-1), 200)
+	plt.savefig('./plots/wg+_both_'+str(pa.kpts_wgp)+'pts_1e6kpts1h.png')
+	plt.close()
+	
+	#exit()
+	
 	wgg_stack = np.column_stack((rp_cents_, wgg))
 	wgp_stack = np.column_stack((rp_cents_, wgp))
-	np.savetxt('./txtfiles/wgg_4000pts.txt', wgg_stack)
-	np.savetxt('./txtfiles/wgp_4000pts.txt', wgp_stack)
+	np.savetxt('./txtfiles/wgg_'+str(pa.kpts_wgg)+'pts_newexp1h_MLOWZ.txt', wgg_stack)
+	np.savetxt('./txtfiles/wgp_'+str(pa.kpts_wgp)+'pts.txt', wgp_stack)
 	
 	return (wgg, wgp)
+	#return
 	
 def gamma_fid(rp):
 	""" Returns the fiducial gamma_IA from a combination of terms from different models which are valid at different scales """
 	
 	(wgg, wgp) = wgg_wgp(rp)
 	
-	#(rp_hold, wgg) = np.loadtxt('./txtfiles/wgg_2000pts.txt', unpack=True)
-	#(rp_hold, wgp) = np.loadtxt('./txtfiles/wgp_2000pts.txt', unpack=True)
+	#wgg_wgp(rp)
 	
-	gammaIA = (wgp+ 2. * pa.close_cut) / (wgg+ 2. * pa.close_cut)
+	#(rp_hold, wgg) = np.loadtxt('./txtfiles/wgg_'+str(pa.kpts_wgg)+'pts.txt', unpack=True)
+	#(rp_hold, wgp) = np.loadtxt('./txtfiles/wgp_'+str(pa.kpts_wgp)+'pts.txt', unpack=True)
+	
+	#gammaIA = (wgp+ 2. * pa.close_cut) / (wgg+ 2. * pa.close_cut) # This is incorrect
+	gammaIA_excessonly = wgp / wgg
 	
 	plt.figure()
 	plt.loglog(rp, wgp, 'bo')
@@ -492,19 +515,19 @@ def gamma_fid(rp):
 	#plt.loglog(rp, wgp_1h, 'go')
 	plt.ylim(10**(-2), 20)
 	plt.xlim(10**(-1), 200)
-	plt.savefig('./wg+_both_2000.png')
+	plt.savefig('./plots/wg+_both_'+str(pa.kpts_wgg)+'pts.png')
 	plt.close()
 	
 	plt.figure()
 	plt.semilogx(rp, rp* wgg, 'go')
 	plt.ylim(0, 300)
 	plt.xlim(10**(-1), 200)
-	plt.savefig('./wgg_both_2000.png')
+	plt.savefig('./plots/wgg_both_'+str(pa.kpts_wgp)+'pts_nexpMLOWZ.png')
 	plt.close()
 	
 	plt.figure()
-	plt.loglog(rp, gammaIA, 'bo')
-	plt.savefig('./gammaIA_2000.png')
+	plt.loglog(rp, gammaIA_excessonly, 'bo')
+	plt.savefig('./plots/gammaIA_excessonly_'+str(pa.kpts_wgg)+'ggpts_'+str(pa.kpts_wgp)+'gppts_new1hexp.png')
 	plt.close()
 	
 	return
@@ -840,8 +863,6 @@ N_ls_pbin	=	get_perbin_N_ls(rp_bins, pa.zeff, pa.n_s, pa.n_l, pa.Area, rp_cents)
 
 # Get the fiducial value of gamma_IA in each projected radial bin (this takes a while so only do it once
 fid_gIA		=	get_fid_gIA(rp_cents)
-
-exit()
 
 # Get the covariance matrix in projected radial bins of gamma_t for both shape measurement methods
 Cov_a		=	setup_shapenoise_cov(pa.e_rms_a, N_ls_pbin)
