@@ -67,7 +67,7 @@ and
 
 This means there are several quantities for which we must make some reasonable calcultion in a fiducial case: $c_z$, ($B(r_p)-1+F$), $\langle \tilde{\Sigma}_c\rangle_{\rm IA}(r_p)$, $\widetilde{\Delta\Sigma}(r_p)$, and $\bar{\gamma}^{\rm IA}(r_p)$.
 
-\subsection*{$B(r_p)-1+F$}
+\subsection{$B(r_p)-1+F$}
 
 The boost is known to scale like the projected correlation function, which can be modelled as a power law in $r_p$: 
 \begin{equation}
@@ -100,7 +100,7 @@ The numerator of equation \ref{F} can similarly be written:
 \end{equation}
 where $z_{\rm p}^{\rm close,max}$ and $z_{\rm p}^{\rm close,min}$ are respectively the maxinum and minimum photo-z which are included when selecting sources close enough to the lense to contribute to IA. {\it There is a similar correction factor due to scattering from bad photo-z's required here; to do.}
 
-\subsection*{$\langle \tilde{\Sigma}_c\rangle_{\rm IA}(r_p)$}
+\subsection{$\langle \tilde{\Sigma}_c\rangle_{\rm IA}(r_p)$}
 
 $\langle \tilde{\Sigma}_c\rangle_{\rm IA}(r_p)$ is given as:
 \begin{equation}
@@ -134,9 +134,9 @@ The other sum in the numerator, over all lens-source pairs, is more complicated.
 \end{equation}
 {\it again, with a correction factor}.
 
-In order to account for the `excess' part of equation \ref{split_lens}, we assume that all excess galaxies are located at the lens redshift. {\it I'm not sure why this is justified.} We then construct the following quantity:
+In order to account for the `excess' part of equation \ref{split_lens}, we assume that all excess galaxies are located at the lens redshift. We then construct the following quantity:
 \begin{align}
-&\int_{z_{\rm p}^{\rm min}}^{z_{\rm p}^{\rm max}} \tilde{w}(z_l, z_{\rm p}) \tilde{\Sigma}_c(z_l, z_{\rm p}) \int dz_s \delta(z_s - z_l) p(z_s, z_{\rm p}) \nonumber \\ &= \int_{z_{\rm p}^{\rm min}}^{z_{\rm p}^{\rm max}} \tilde{w}(z_l, z_{\rm p}) \tilde{\Sigma}_c(z_l, z_{\rm p}) p(z_l, z_{\rm p})
+&\int_{z_{\rm p}^{\rm min}}^{z_{\rm p}^{\rm max}} dz_{\rm p}\tilde{w}(z_l, z_{\rm p}) \tilde{\Sigma}_c(z_l, z_{\rm p}) \int dz_s \delta(z_s - z_l) p(z_s, z_{\rm p}) \nonumber \\ &= \int_{z_{\rm p}^{\rm min}}^{z_{\rm p}^{\rm max}} dz_{\rm p}\tilde{w}(z_l, z_{\rm p}) \tilde{\Sigma}_c(z_l, z_{\rm p}) p(z_l, z_{\rm p})
 \label{rand_atzl}
 \end{align}
 which is the sum over random pairs in the case in which the spectroscopic redshift of all sources the lens redshift. {\it A correction factor is required here too for photo-z scatter.} 
@@ -146,15 +146,14 @@ We also know that $(B(r_p) -1)$ provides the weighted ratio of excess galaxies t
 B(r_p) - 1 = \frac{\sum\limits_{j}^{\rm excess} \tilde{w}_j}{\sum\limits_{j}^{\rm rand} \tilde{w}_j}.
 \label{boostminus1}
 \end{equation}
-It follows that multiplying equation \ref{rand_atzl} by $(B(r_p) - 1)$ should provide something at least close to what we are looking for:
+ I think we had previously discussed multiplying equation \ref{rand_atzl} by $(B(r_p) - 1)$ in order to get the desired quantity:
 \begin{equation}
-\sum\limits_{j}^{\rm excess} \tilde{w}_j \tilde{\Sigma}_{c,j} \approx (B(r_p) - 1) \int_{z_{\rm p}^{\rm min}}^{z_{\rm p}^{\rm max}} \tilde{w}(z_l, z_{\rm p}) \tilde{\Sigma}_c(z_l, z_{\rm p}) p(z_l, z_{\rm p}).
+\sum\limits_{j}^{\rm excess} \tilde{w}_j \tilde{\Sigma}_{c,j} \approx (B(r_p) - 1) \int_{z_{\rm p}^{\rm min}}^{z_{\rm p}^{\rm max}} dz_{\rm p} \tilde{w}(z_l, z_{\rm p}) \tilde{\Sigma}_c(z_l, z_{\rm p}) p(z_l, z_{\rm p}).
 \label{sumexcesswSigC}
 \end{equation}
-{\it I don't have the math fully worked out for this yet and I'm concerned that the $(B(r_p)-1)$ factor only accounts for weights, not $\tilde{w} \tilde{\Sigma}_c$.}
+{\it But, this is multiplying by the weighted ratio of number of excess pairs to number of random pairs, which doesn't seem to exactly provide what we want, since the quantity in question is a sum not just over weights but also over $\Sigma_c$ for each pair. For this reason, I'm not sure if equation \ref{sumexcesswSigC} is the correct expression.}
 
-
-\subsection*{$c_z$}
+\subsection{$c_z$}
 
 The photometric bias variable $c_z$ is equal to $(1+b_z)^{-1}$.
 \begin{equation}
@@ -173,14 +172,14 @@ where we have defined a factor $b_{\Sigma}(z_{\rm s})$, which encapsulates the b
 \end{equation}
 $b_\Sigma(z_{\rm s})$ should be estimated by sampling from $p(z_{\rm s}, z_{\rm p})$ and constructing $\Sigma_c$ values for these samples, then fitting. {\it I need to do this.}
 
-\subsection*{$\widetilde{\Delta \Sigma}$}
+\subsection{$\widetilde{\Delta \Sigma}$}
 From equation 3.9 of Blazek et al., the estimated $\widetilde{\Delta \Sigma}$ is given by:
 \begin{align}
 \widetilde{\Delta \Sigma}&= (1+b_z) \Delta \Sigma + \frac{\sum\limits_{j}^{\rm lens} \tilde{w}_j \tilde{\Sigma}_{c,j} \gamma^{\rm IA}_j }{\sum\limits_{j}^{\rm rand} \tilde{w}_j} 
 \label{deltasigma}
 \end{align}
 
-\subsubsection*{$\Delta \Sigma$, from theory}
+\subsubsection{$\Delta \Sigma$, from theory}
 The first term of the above is computed using equation \ref{photozbias} and $\Delta \Sigma$ from theory. The latter is given by:
 \begin{equation}
 \Delta \Sigma = \rho_c \Omega_M(z=0) \int_{-\Pi_{\rm max}}^{\Pi_{\rm max}} \Delta \frac{(\bar{\chi}_l+\Delta) a(\bar{\chi}_l)}{\bar{\chi}_l a(\bar{\chi}_l+\Delta)} \int_{\bar{\chi}_l+\Delta}^{\chi_H}d\chi_s W(\chi_s) \frac{(\chi_s - \bar{\chi}_l-\Delta)}{(\chi_s-\bar{\chi}_l)}\left[\frac{2}{R^2}\int_0^{R}dR' R' \xi_{gm}(R', \Delta) - \xi_{gm}(R, \Delta)\right]
@@ -244,7 +243,7 @@ To calculate the numerator, first split the sum over all lens-source pairs into 
 \end{equation}
 where $\gamma_{\rm IA}(r_p)$, the IA shear per contributing pair, has been pulled out of the sum using the same logic as usual. {\it A correction factor is needed here for scatter in and out of samples due to be photo-z's.} The two terms inside brackets on the RHS can then be calculated using equations \ref{sumexcesswSigC} and \ref{sumrandweightsSigC}, respectively. A fiducial value of $\gamma^{\rm IA}(z_s, z_l, r_p)$ must be computed from some model of intrinsic alignments. 
 
-\subsection*{$\bar{\gamma}^{\rm IA}(r_p)$}
+\subsection{$\bar{\gamma}^{\rm IA}(r_p)$}
 \subsubsection*{Excess-only}
 To begin, consider the simplified case in which only excess galaxies contribute to IA. This is given by equation 4.11 of Blazek et al. 2012, adjusted to consider only a single effective lens redshift:
 \begin{equation}
@@ -305,10 +304,9 @@ w_{g+}^{1h}(r_p) = \int \frac{dk_\perp}{k_\perp}{2\pi} P_{1h}(k_\perp,z) J_0(r_p
 \label{wg1h}
 \end{equation}
 
-\subsection*{Random + excess}
-Recall, though, that we would like to assume that not only excess galaxies, but also nearby galaxies which form part of the smooth background, can contribute to IA. This means that we must account for `random' terms in equation \ref{gamma_blazek}, rather than just excess.
-
-We begin with the task of adding a `random' contribution to the denominator of equation \ref{gamma_blazek}; that is, adding the random contribution to the number of lens-source pairs. From equations 4.8 and 4.10 of Blazek et al. 2012, it can be deduced that the sum over random pairs, in case of an effective lens redshift, is given by:
+\subsubsection*{Random + excess}
+The random and excess galaxies are affected in the same way by intrinsic alignments, so there is no need to alter the numerator of equation \ref{gamma_blazek}.
+ We do, however, need to add the random contribution to the number of lens-source pairs in the denominator. From equations 4.8 and 4.10 of Blazek et al. 2012, it can be deduced that the sum over random pairs, in case of an effective lens redshift, is given by:
 \begin{equation}
 \int dz_p \tilde{w}(z_p) \int dz_s \frac{dN}{dz_s} p(z_s, z_p).
 \end{equation}
@@ -319,10 +317,14 @@ Adding this to the sum over excess, the denominator of equation \ref{gamma_blaze
 \end{equation}
 This is intuitively sensible. We expect the number of lens-source pairs from excess galaxies to vary as a function of $r_p$ due to clustering, but we expect that from random galaxies to be independent of separation, other than a slight dependence on $z_s$ via $\Pi$. Mapping this to the form of equation \ref{wAB}, we find:
 \begin{equation}
-\int d\Pi (\xi_{ls}(r_p, \Pi, z_l) + 1) = w_{ls}(r_p) + \Pi_{\rm max} - \Pi_{\rm min}.
+\int d\Pi (\xi_{ls}(r_p, \Pi, z_l) + 1) = w_{ls}(r_p) + 2\Pi_{\rm max}.
 \label{wl}
 \end{equation}
-However, the equivalent inclusion of random galaxies in the numerator is trickier. We expect that the intrinsic tangential shear of random galaxies will decrease as a function of $r_p$ and $\Pi$. {\it I don't know how to account for this. This needs to be sorted out.} 
+The result is that equation \ref{gamma_blazek} is modified to be:
+\begin{equation}
+\bar{\gamma}_{\rm IA}(r_p) \approx \frac{w_{l+}(r_p)}{w_{ls}(r_p) + 2 \Pi_{\rm max}}.
+\label{gamma_blazek_randoms}
+\end{equation} 
 
 \section{Systematic errors}
 The systematic errors which affect $\gamma_{\rm IA}(r_p)$ measured using this method are are:
@@ -343,7 +345,6 @@ The systematic errors which affect $\gamma_{\rm IA}(r_p)$ measured using this me
 \item{My theoretical $\Delta \Sigma$ is coming out wrong, regardless of choice of average mass or galaxy bias.}
 \item{The definition of $\gamma_{\rm IA}$ from Blazek et al uses something slightly different than the standard projection function definition - is this okay?}
 \item{My equations for $w_{gg}$ and $w_{g+}$ neglect photo-z - is that okay? Taken from Singh 2014.}
-\item{I do not know how to treat including random lens-source pairs for $w_{l+}$.}
 \item{Need to figure out and incorporate systematic errors.}
 \end{enumerate}
 
