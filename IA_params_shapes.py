@@ -33,7 +33,7 @@ e_rms_mean 	=	np.abs((e_rms_b+e_rms_a)/2.) # This is the e_rms used in computing
 # Quantities related to how we split up the `data'
 rp_max 	=	100.0 # The maximum projected radius (Mpc/h)
 rp_min	=	0.01 # The minimum projected radius (Mpc/h)
-N_bins	=	50.  # The number of bins of projected radius 
+N_bins	=	7  # The number of bins of projected radius 
 zmin 	=	0.0 # Minimum spec-z
 zmax 	= 	3.0 # Maximum spec-z
 zmin_ph	=	0.0 # Minimu photo-z
@@ -52,7 +52,7 @@ cov_perc = 0.6 #percentage covariance between methods
 sig_sys_dNdz = np.asarray([ 0.0014777 ,  0.0037014 ,  0.00917435,  0.02051145,  0.03701631, 0.05260886,  0.06284505]) # systematic error from dNdz in Ncorr. Estimated from varying alpha and zs, with sigz=0.08 and Boost(1Mpc/h) = 1.2
 sig_sys_dp = np.asarray( [ 0.00654311,  0.01624936,  0.0396385 ,  0.08656573,  0.15238458, 0.21256654,  0.2512192 ] ) # systematic error from p(z) in Ncorr
 sigz=0.09 # Uncertainty on photo z (Gaussian model, sigma = sigz*(1+z))
-plotfile =	'./test_shapes_sys10%_sigz0.08_log.pdf'  # Location of file for plot showing 1 sigma error bars on gamma_IA
+plotfile =	'./fid_gIA_randoms_in.pdf'  # Location of file for plot showing 1 sigma error bars on gamma_IA
 boost_samp = 1.2 # Boost at 1 Mpc/h for our associated sample
 boost_tot = 1.04 # Boost at 1 Mpc/h for all the source-lens pairs in the survey (all z)
 sigB	= 0.0 # The statistical error from the boost in Ncorr.
@@ -68,8 +68,8 @@ bd = 1.77
 Ai = 5.0
 C1rho = 0.0134
 sigz_gwin = 0.001
-kpts_wgg = 1000
-kpts_wgp = 1000
+kpts_wgg = 10000
+kpts_wgp = 5000
 
 # 1 halo IA term parameters
 q11 = 0.005 #0.02056    
@@ -85,6 +85,6 @@ ah =  1. # 0.08
 
 # 1 halo term gg parameters
 c14 = 10**(0.7) # Parameter in the concentration / mass relationship (Neto 2007)
-Mvir = 10.**(13.18) / (HH0/100.)
-#Mvir = 4.*10**12
+#Mvir = 10.**(13.18) / (HH0/100.)
+Mvir = 2.*10.**13
 

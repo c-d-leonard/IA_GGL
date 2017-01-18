@@ -383,16 +383,173 @@ def get_est_DeltaSig(z_l, z_max_samp, erms, rp_bins, rp_bins_c, boost):
 
 	return EstDeltaSig
 
+def Rhalo(M_insol, z):
+	""" Get the radius of a halo in Mpc/h given its mass IN SOLAR MASSES. Uses the Rvir / Mvir relationship from Giocolo 2010, which employs Delta_virial, from Eke et al 1996."""
+	
+	OmL = 1. - pa.OmC - pa.OmB - pa.OmR - pa.OmN
+	E_ofz = ( (pa.OmC+pa.OmB)*(1+z)**3 + OmL + (pa.OmR+pa.OmN) * (1+z)**4 )**(0.5)#the dimensionless part of the hubble parameter 
+	rho_crit = 4.126 * 10** 11 * E_ofz**2 # This is rho_crit in units of Msol h^3 / Mpc^3
+	OmM = (pa.OmC+pa.OmB)*(1+z)**3 / ( (pa.OmC+pa.OmB)*(1+z)**3 + OmL + (pa.OmR+pa.OmN) * (1+z)**4 )
+	#Dv = Delta_virial(z)
+	
+	#Rvir = ( 3. * M_insol * OmM / (4. * np.pi * rho_crit * Dv))**(1./3.)
+	Rvir = ( 3. * M_insol / (4. * np.pi * rho_crit * OmM * 180.))**(1./3.)
+	
+	print "Rvir= ", Rvir
+	
+	return Rvir
+
+def cvir(M_insol, z):
+	""" Returns the concentration parameter of the NFW profile, c_{vir}. Uses the Neto 2007 definition, referenced in Giocoli 2010 """
+	
+	#cvi = pa.c14 / (1. + z) * (M_insol / 10**14)**(-0.11)
+	
+	cvi = 7.
+	
+	return cvi
+
+def rho_s(cvi, Rvi, M_insol):
+	""" Returns rho_s, the NFW parameter representing the density at the `scale radius', Rvir / cvir. Units: Msol * ( 1 / (Rvir units)**3), usualy Msol * h^3 / Mpc^3. """
+	
+	rhos = M_insol / (4. * np.pi) * ( cvi / Rvi)**3 * (np.log(1. + cvi) - (cvi / (1. + cvi)))**(-1)
+	
+	return rhos
+
+def rho_NFW(r_, M_insol, z):
+	""" Returns the density for an NFW profile in real space at distance r from the center (?). Units = units of rhos. (Usually Msol * h^3 / Mpc^3). r_ MUST be in the same units as Rv; usually Mpc / h."""
+	
+	Rv = Rhalo(M_insol, z)
+	cv = cvir(M_insol, z)
+	rhos = rho_s(cv, Rv, M_insol)
+	
+	rho_nfw = rhos  / ( (cv * r_ / Rv) * (1. + cv * r_ / Rv)**2)
+	
+	plt.figure()
+	plt.loglog(r_ , rho_nfw *  (pa.HH0/100.) )
+	plt.ylim(10**14, 2*10**18)
+	plt.xlim(0.001, 3)
+	plt.savefig('./plots/nfw_0605_6e13h_inBlazek.png')
+	plt.close()
+	
+	return rho_nfw
+
+def get_DeltaSig_theory_update(z_l, rp_bins, rp_bins_c):
+	""" Returns the theoretical value of Delta Sigma in bin using projection over the NFW profile and over the 2-pt correlation function at larger scales, rather than using the lensing-related definition."""
+	
+	###### First get the term from halofit (valid at larger scales) ######
+	# Import the correlation function as a function of R and Pi, obtained via getting P(k) from CAMB and then using FFT_log, Anze Slozar version. 
+	corr = np.loadtxt('./txtfiles/corr_2d_z='+str(z_l)+'_kmax=4000_HF.txt')
+	rpvec = np.loadtxt('./txtfiles/corr_rp_z='+str(z_l)+'_kmax=4000.txt')
+	Pivec = np.loadtxt('./txtfiles/corr_delta_z='+str(z_l)+'_kmax=4000.txt') 
+	
+	# Get Sigma(R)
+	OmL = 1. - pa.OmC - pa.OmB - pa.OmR - pa.OmN
+	E_ofz = ( (pa.OmC+pa.OmB)*(1+z_l)**3 + OmL + (pa.OmR+pa.OmN) * (1+z_l)**4 )**(0.5)#the dimensionless part of the hubble parameter 
+	rho_crit = 4.126 * 10** 11 * E_ofz**2 # This is rho_crit in units of Msol h^3 / Mpc^3
+	OmM = (pa.OmC + pa.OmB)* (1. + z_l)**(3) / ( (pa.OmC+pa.OmB)*(1+z_l)**3 + OmL + (pa.OmR+pa.OmN) * (1+z_l)**4 )
+	rho_m = OmM * rho_crit # units of Msol h^3 / Mpc^3
+	
+	Sigma_HF = np.zeros(len(rpvec))
+	for ri in range(0,len(rpvec)):
+		Sigma_HF[ri] = rho_m * scipy.integrate.simps(corr[:, ri], Pivec)
+	
+	plt.figure()
+	plt.loglog(rpvec, Sigma_HF * (pa.HH0 / 100.) / (10**12), 'r+')
+	plt.xlim(0.0003,8)
+	plt.ylim(0.3,20000)
+	plt.savefig('./plots/test_SigmaHF_new.png')
+	plt.close()
+	
+	# Now average over R to get the first averaged term in Delta Sigma
+	barSigma_HF = np.zeros(len(rpvec))
+	for ri in range(0,len(rpvec)):
+		barSigma_HF[ri] = 2. / rpvec[ri]**2 * scipy.integrate.simps(rpvec[0:ri+1]**2*Sigma_HF[0:ri+1], np.log(rpvec[0:ri+1]))
+
+	plt.figure()
+	plt.loglog(rpvec, barSigma_HF * (pa.HH0 / 100.) / (10**12), 'r+')
+	plt.xlim(0.0003,8)
+	plt.ylim(0.3,20000)
+	plt.savefig('./plots/test_barSigmaHF_new.png')
+	plt.close()
+	
+	DeltaSigma_HF = barSigma_HF - Sigma_HF
+	
+	plt.figure()
+	plt.loglog(rpvec, DeltaSigma_HF * (pa.HH0 / 100.) / (10**12), 'r+')
+	plt.xlim(0.0003,8)
+	plt.ylim(0.3,20000)
+	plt.savefig('./plots/test_DeltaSigmaHF_new.png')
+	plt.close()
+	
+	####### Now get the 1 halo term (valid at smaller scales) #######
+	
+	# Get the r (unprojected) vector at which to get the NFW profile
+	(rvec, notneeded) = np.loadtxt('./txtfiles/corr_bothterms_z='+str(z_l)+'_HF.txt', unpack=True)
+	
+	rho = rho_NFW(rvec, pa.Mvir, z_l)
+	
+	rho_interp = scipy.interpolate.interp1d(rvec, rho)
+
+	rho_2D = np.zeros((len(rpvec), len(Pivec)))
+	for ri in range(0, len(rpvec)):
+		for pi in range(0, len(Pivec)):
+			rho_2D[ri, pi] = rho_interp(np.sqrt(rpvec[ri]**2 + Pivec[pi]**2))
+	
+	Sigma_1h = np.zeros(len(rpvec))
+	for ri in range(0,len(rpvec)):
+		Sigma_1h[ri] = scipy.integrate.simps(rho_2D[ri, :], Pivec)
+		
+	plt.figure()
+	plt.loglog(rpvec, Sigma_1h * (pa.HH0 / 100.) / (10**12), 'r+')
+	plt.xlim(0.0003,8)
+	plt.ylim(0.3,20000)
+	plt.savefig('./plots/test_Sigma1h_new.png')
+	plt.close()
+	
+	# Now average over R to get the first averaged term in Delta Sigma
+	barSigma_1h = np.zeros(len(rpvec))
+	for ri in range(0,len(rpvec)):
+		barSigma_1h[ri] = 2. / rpvec[ri]**2 * scipy.integrate.simps(rpvec[0:ri+1]**2*Sigma_1h[0:ri+1], np.log(rpvec[0:ri+1]))
+	
+	plt.figure()
+	plt.loglog(rpvec, barSigma_1h * (pa.HH0 / 100.) / (10**12), 'r+')
+	plt.xlim(0.0003,8)
+	plt.ylim(0.3,20000)
+	plt.savefig('./plots/test_barSigma1h_new.png')
+	plt.close()
+	
+	DeltaSigma_1h = barSigma_1h - Sigma_1h
+	
+	plt.figure()
+	plt.loglog(rpvec, DeltaSigma_1h * (pa.HH0 / 100.) / (10**12), 'r+')
+	plt.xlim(0.0003,8)
+	plt.ylim(0.3,20000)
+	plt.savefig('./plots/test_DeltaSigma1h_new.png')
+	plt.close()
+	
+	plt.figure()
+	plt.loglog(rpvec, DeltaSigma_1h * (pa.HH0 / 100.) / (10**12), 'g+', label='1-halo')
+	plt.hold(True)
+	plt.loglog(rpvec, DeltaSigma_HF * (pa.HH0 / 100.) / (10**12), 'm+', label='halofit')
+	plt.hold(True)
+	plt.loglog(rpvec, (DeltaSigma_HF + DeltaSigma_1h) * (pa.HH0 / 100.) / (10**12), 'k+', label='total')
+	plt.xlim(0.05,20)
+	plt.ylim(0.3,200)
+	plt.xlabel('$r_p$, Mpc/h')
+	plt.ylabel('$\Delta \Sigma$, $h M_\odot / pc^2$')
+	plt.legend()
+	plt.savefig('./plots/test_DeltaSigmatot_new.png')
+	plt.close()
+	
+	return
+
 def get_DeltaSig_theory(z_l, rp_bins, rp_bins_c):
 	""" Returns the theoretical value of Delta Sigma in bins. This Delta Sigma has dimensions of 1 / length, to correspond with leaving the factor of c^2 / 4piG off Sigma_c. """
 	
 	# The theoretical value for Delta Sigma requires the correlation function at the lens redshift, which we calculate elsewhere and import.
-	corr = np.loadtxt('./txtfiles/corr_2d_z='+str(z_l)+'_kmax=4000_M1e14.txt')
-	Rint = np.loadtxt('./txtfiles/Rint_z='+str(z_l)+'_kmax=4000_M1e14.txt')
-	#corr = np.loadtxt('./txtfiles/corr_z='+str(z_l)+'_kmax=4000.txt')
-	#Rint = np.loadtxt('./txtfiles/Rint_z='+str(z_l)+'_kmax=4000.txt')
+	corr = np.loadtxt('./txtfiles/corr_2d_z='+str(z_l)+'_kmax=4000_M6e13h_fixRhoC.txt')
+	Rint = np.loadtxt('./txtfiles/Rint_z='+str(z_l)+'_kmax=4000_M6e13h_fixRhoC.txt')
 	corrterm = Rint - corr
-	#print "Rint loc=", './txtfiles/Rint_z='+str(z_l)+'_kmax=4000.txt'
 	# Load also the vectors in projected radius and line-of-sight distance (Delta) along which the correlation funtion is calculated
 	rpvec = np.loadtxt('./txtfiles/corr_rp_z='+str(z_l)+'_kmax=4000.txt')
 	deltavec = np.loadtxt('./txtfiles/corr_delta_z='+str(z_l)+'_kmax=4000.txt') 
@@ -415,10 +572,10 @@ def get_DeltaSig_theory(z_l, rp_bins, rp_bins_c):
 			i=i+1
 			
 	plt.figure()
-	plt.loglog(r_2d_test, corr_1d_fr_2d, '+')
-	plt.xlim(0.0001,50)
-	plt.ylim(0.005,10000)
-	plt.savefig('./plots/test_corrfunc_insideDeltaSigma_M1e14.png')
+	plt.loglog(r_2d_test, corr_1d_fr_2d , '+')
+	plt.ylim(0.01, 3000)
+	plt.xlim(0.05, 100)
+	plt.savefig('./plots/test_corrfunc_insideDeltaSigma_6e13h_fixRhoC.png')
 	plt.close()
 	
 	Rint_proj = np.zeros(len(rpvec))
@@ -428,16 +585,24 @@ def get_DeltaSig_theory(z_l, rp_bins, rp_bins_c):
 			proj_corr[ri] = scipy.integrate.simps(corr[:,ri], deltavec)
 			#print "ri=", ri, "Rint proj=", Rint_proj[ri], "proj_corr=", proj_corr[ri]
 			
+	OmL = 1. - pa.OmC - pa.OmB - pa.OmR - pa.OmN
+	E_ofz = ( (pa.OmC+pa.OmB)*(1+z_l)**3 + OmL + (pa.OmR+pa.OmN) * (1+z_l)**4 )**(0.5)#the dimensionless part of the hubble parameter 
+	rho_crit = 4.126 * 10** 11 * E_ofz**2 # This is rho_crit in units of Msol h^3 / Mpc^3
+	#print "rho_crit=", rho_crit
+	#print "E_ofz=", E_ofz
+	OmM = (pa.OmC + pa.OmB)* (1. + z_l)**(3) / ( (pa.OmC+pa.OmB)*(1+z_l)**3 + OmL + (pa.OmR+pa.OmN) * (1+z_l)**4 )
+	rho_m = OmM * rho_crit # units of Msol h^3 / Mpc^3
+	#print "rho_m=", rho_m
+	print "OmM=", OmM
+			
 	plt.figure()
-	plt.semilogx(rpvec, Rint_proj, 'b+')
-	plt.hold(True)
-	plt.semilogx(rpvec, proj_corr, 'r+')
-	plt.xlim(1.5*10**(-4),0.05)
-	#plt.ylim(-500,300)
-	plt.savefig('./plots/test_corr_proj_insideDeltaSigma_M1e14.png')
+	#plt.semilogx(rpvec, Rint_proj, 'b+')
+	#plt.hold(True)
+	plt.loglog(rpvec, rho_m * proj_corr * (pa.HH0 / 100.) / (10**12), 'r+')
+	plt.xlim(0.0003,8)
+	plt.ylim(0.3,20000)
+	plt.savefig('./plots/test_Sigma?_6e13h_fixRhoC.png')
 	plt.close()
-	
-	#exit()
 	
 	
 	# Get the dNdz for the full z range:
@@ -448,17 +613,11 @@ def get_DeltaSig_theory(z_l, rp_bins, rp_bins_c):
 	
 	# Get the comoving distances corresponding to these source z's
 	chiSvec = com(z)
-	#print "chiSvec=",chiSvec
 	# and to the lens z:
 	chiLmean = com(z_l)
-	#print "chiLmean=", chiLmean
-	
-	#print "chiLmean + deltavec=", chiLmean+deltavec
 
 	# the radial window function used should be in terms of comoving distance rather than redshift, which means there is a factor of H / c:
 	OmL = 1. - pa.OmC - pa.OmB - pa.OmR - pa.OmN
-	#print "OmL=", OmL
-	
 	Wind_fac = pa.H0 * np.sqrt( (pa.OmC+pa.OmB) * (1.+z)**3 + OmL + (pa.OmR+pa.OmN) * (1.+ z)**4)
 	
 	#First, do the integral in comovoing distance to the source, at each Delta 
@@ -466,49 +625,49 @@ def get_DeltaSig_theory(z_l, rp_bins, rp_bins_c):
 	# Find the delta index which corresponds to the comoving distance above which W(chiS) is 0, because the chiS integral is zero above this point no matter what:
 	index_maxd=next(j[0] for j in enumerate(deltavec) if j[1]>=(chiSvec[-1]-chiLmean))
 	
-	#print "before chiS integral"
 	holdXisint=np.zeros(len(deltavec))
 	for di in range(0,len(deltavec[0:index_maxd])):	
 		Integrand= Nofz * Wind_fac * (chiSvec - chiLmean - deltavec[di]) / ((1+z_of_com(chiSvec)) * (chiSvec / (1+z_of_com(chiSvec)) - chiLmean / (1+ z_of_com(chiLmean)))) 
-		#print "Nofz=", Nofz
-		#print "Wind_fac=", Wind_fac
-		#print "chiSvec=", chiSvec
-		#print "chiLmean=", chiLmean
-		#print "deltavec[di]=", deltavec[di]
-		#print "integrand=", Integrand
-		#exit()
 		holdXisint[di] = scipy.integrate.simps(Integrand, chiSvec)
-		#print "hold xis=", holdXisint
-		#indexlow=next(j[0] for j in enumerate(chiSvec) if j[1]>=(chiLmean + deltavec[di]))
-		#print "chiSvec=", chiSvec
-		#print "chiL + delta=", chiLmean + deltavec[di]	
-
-	#for di in range(0,len(deltavec[0:index_maxd])):
-			
-	#print "finished chis"	
 	
 	#Now we do the integral in Delta at each R.  Note that we are leaving out the factor of rho_c  
-	
 	indexL=next(j[0] for j in enumerate(chiSvec) if j[1]>=chiLmean)
 	z_delt = z_of_com(chiLmean+deltavec)
 	a_delt = 1. / (1.+z_delt)
 
 	holdDeltint=np.zeros(len(rpvec))
 	for ri in range(0,len(rpvec)):
-		Integrand = (chiLmean + deltavec) / (a_delt * chiLmean *(1.+z[indexL])) * holdXisint * corrterm[:,ri]
+		#Integrand = (chiLmean + deltavec) / (a_delt * chiLmean *(1.+z[indexL])) * holdXisint * corrterm[:,ri]
+		Integrand = (chiLmean + deltavec) / (a_delt * chiLmean *(1.+z[indexL])) * holdXisint * corr[:,ri]
 		holdDeltint[ri] = scipy.integrate.simps(Integrand, deltavec)
 
 	#Get Delta Sigma, in units of h Msun / pc^2
-	Delta_Sigma = 0.279 * holdDeltint * (pa.OmC + pa.OmB)
+	#Delta_Sigma = 0.279 * holdDeltint * (pa.OmC + pa.OmB)
+	Sigma = 0.279 * holdDeltint * (pa.OmC + pa.OmB)
 	
-	ds_stack = np.column_stack((rpvec, Delta_Sigma))
-	np.savetxt('./txtfiles/DeltaSigma_M1e14.txt', ds_stack)
+	print "h=", pa.HH0/100.
+	# Units Msun / pc^2
+	Sigma_noh = 0.279 * holdDeltint * (pa.OmC + pa.OmB) * (pa.HH0) / 100.
+	
+	#ds_stack = np.column_stack((rpvec, Delta_Sigma))
+	#np.savetxt('./txtfiles/DeltaSigma_M1e14_newexp.txt', ds_stack)
+	
+	s_stack = np.column_stack((rpvec, Sigma))
+	np.savetxt('./txtfiles/Sigma_HF.txt', s_stack)
 	
 	plt.figure()
-	plt.semilogx(rpvec, Delta_Sigma, '+')
-	plt.xlim(1.5*10**(-4),20)
-	plt.ylim(-500,500)
-	plt.savefig('./plots/DeltaSigma_noaverage_M1e14.png')
+	plt.loglog(rpvec, Sigma, '+')
+	plt.xlim(0.0003,8)
+	plt.ylim(0.3,20000)
+	plt.savefig('./plots/Sigma_noaverage_6e13h_fixRhoC.png')
+	plt.close()
+	
+	plt.figure()
+	plt.loglog(rpvec/ (pa.HH0/100.) * 1000., Sigma_noh, '+')
+	plt.xlim(0.1,3000)
+	plt.ylim(0.01,10**6)
+	plt.xlabel('kpc')
+	plt.savefig('./plots/Sigma_noh_6e13h_fixRhoC.png')
 	plt.close()
 	
 	exit()
@@ -702,7 +861,9 @@ print "getting z of com"
 z_of_com = z_interpof_com()
 print "got z of com"
 
-DSig_the = get_DeltaSig_theory(pa.zeff, rp_bins, rp_cent)
+DSig_the = get_DeltaSig_theory_update(pa.zeff, rp_bins, rp_cent)
+
+exit()
 
 # Get the redshift corresponding to the maximum separation from the effective lens redshift at which we assume IA may be present
 # pa.close_cut is the separation in Mpc/h.

@@ -84,5 +84,5 @@ H0	=	10**(5)/c
 
 #
 c14 = 10**(0.7) # Parameter in the concentration / mass relationship (Neto 2007)
-Mvir = 10.**(13.18) / (HH0/100.)
-#Mvir = 10.**11
+Mvir = 10**(13.08)/ (HH0 / 100.)
+#Mvir = 6. * 10**13 / (HH0 / 100.)

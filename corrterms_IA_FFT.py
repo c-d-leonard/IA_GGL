@@ -30,8 +30,12 @@ def getcorrfunc():
 	
 	plt.figure()
 	plt.loglog(rvec, corrfunc1d)
-	plt.savefig('./plots/corrfunc_botheterms_1d_M1e13.png')
+	plt.ylim(0.01, 3000)
+	plt.xlim(0.05, 100)
+	plt.savefig('./plots/corrfunc_bothterms_M6e13h_fixRhoC.png')
 	plt.close()
+	
+	exit()
 	
 	#Define an array to hold the correlation function as a 2D array in R and Delta 
 	corrfunc2d_gm=np.zeros((len(deltavec),len(Rvec)))
@@ -102,10 +106,10 @@ kmax=4000 #This is the max k in the power spectrum file.
 bias = 1.77
 
 outputfolder	= 	'/txtfiles/'
-corrfunc2dfile	=	'/corr_2d_z='+str(zval)+'_kmax='+str(kmax)+'_M1e13.txt'
-Rintfile	=	'/Rint_z='+str(zval)+'_kmax='+str(kmax)+'_M1e13.txt'
+corrfunc2dfile	=	'/corr_2d_z='+str(zval)+'_kmax='+str(kmax)+'_M6e13h_fixRhoC.txt'
+Rintfile	=	'/Rint_z='+str(zval)+'_kmax='+str(kmax)+'_M6e13h_fixRhoC.txt'
 #corrfunc1dfile ='/corr_1d_NL_z='+str(zval)+'_kmax'+str(kmax)+'.txt'
-corrfunc1dfile = '/corr_bothterms_z='+str(zval)+'_kmax'+str(kmax)+'_M1e13_FFT.txt'
+corrfunc1dfile = '/corr_bothterms_z='+str(zval)+'_M6e13h_fixRhoC.txt'
 
 ##############################################################
 ############## Set up the Delta and R vectors ################

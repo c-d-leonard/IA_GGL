@@ -490,27 +490,30 @@ def wgg_wgp(rp_cents_):
 	
 	wgg_stack = np.column_stack((rp_cents_, wgg))
 	wgp_stack = np.column_stack((rp_cents_, wgp))
-	np.savetxt('./txtfiles/wgg_'+str(pa.kpts_wgg)+'pts_newexp1h_MLOWZ.txt', wgg_stack)
+	np.savetxt('./txtfiles/wgg_'+str(pa.kpts_wgg)+'pts_newexp1h_M2e13.txt', wgg_stack)
 	np.savetxt('./txtfiles/wgp_'+str(pa.kpts_wgp)+'pts.txt', wgp_stack)
 	
 	return (wgg, wgp)
-	#return
 	
 def gamma_fid(rp):
 	""" Returns the fiducial gamma_IA from a combination of terms from different models which are valid at different scales """
 	
-	(wgg, wgp) = wgg_wgp(rp)
+	#(wgg, wgp) = wgg_wgp(rp)
 	
-	#wgg_wgp(rp)
+	(rp_hold, wgg) = np.loadtxt('./txtfiles/wgg_'+str(pa.kpts_wgg)+'pts_M=2e+13.txt', unpack=True)
+	(rp_hold, wgp) = np.loadtxt('./txtfiles/wgp_'+str(pa.kpts_wgp)+'pts_1h1e6kpts.txt', unpack=True)
 	
-	#(rp_hold, wgg) = np.loadtxt('./txtfiles/wgg_'+str(pa.kpts_wgg)+'pts.txt', unpack=True)
-	#(rp_hold, wgp) = np.loadtxt('./txtfiles/wgp_'+str(pa.kpts_wgp)+'pts.txt', unpack=True)
+	wgg_interp = scipy.interpolate.interp1d(rp_hold, wgg)
+	wgp_interp = scipy.interpolate.interp1d(rp_hold, wgp)
 	
-	#gammaIA = (wgp+ 2. * pa.close_cut) / (wgg+ 2. * pa.close_cut) # This is incorrect
-	gammaIA_excessonly = wgp / wgg
+	wgg_rp = wgg_interp(rp)
+	wgp_rp = wgp_interp(rp)
+	
+	gammaIA = wgp_rp / (wgg_rp + 2. * pa.close_cut) 
+	gammaIA_excessonly = wgp_rp / wgg_rp
 	
 	plt.figure()
-	plt.loglog(rp, wgp, 'bo')
+	plt.loglog(rp, wgp_rp, 'bo')
 	#plt.hold(True)
 	#plt.loglog(rp, wgp_1h, 'go')
 	plt.ylim(10**(-2), 20)
@@ -519,18 +522,18 @@ def gamma_fid(rp):
 	plt.close()
 	
 	plt.figure()
-	plt.semilogx(rp, rp* wgg, 'go')
+	plt.semilogx(rp, rp* wgg_rp, 'go')
 	plt.ylim(0, 300)
 	plt.xlim(10**(-1), 200)
-	plt.savefig('./plots/wgg_both_'+str(pa.kpts_wgp)+'pts_nexpMLOWZ.png')
+	plt.savefig('./plots/wgg_both_'+str(pa.kpts_wgp)+'pts_nexpM2e13.png')
 	plt.close()
 	
 	plt.figure()
-	plt.loglog(rp, gammaIA_excessonly, 'bo')
-	plt.savefig('./plots/gammaIA_excessonly_'+str(pa.kpts_wgg)+'ggpts_'+str(pa.kpts_wgp)+'gppts_new1hexp.png')
+	plt.loglog(rp, gammaIA, 'bo')
+	plt.savefig('./plots/gammaIA_randomsin_'+str(pa.kpts_wgg)+'ggpts_'+str(pa.kpts_wgp)+'gppts_new1hexp_M2e13.png')
 	plt.close()
 	
-	return
+	return gammaIA
 	
 
 ####### GETTING ERRORS #########
@@ -644,7 +647,7 @@ def get_fid_gIA(rp_bins_c):
 	#fidvals = np.zeros(len(rp_bins_c))
 	#fidvals = pa.A_fid * np.asarray(rp_bins_c)**pa.beta_fid
 	
-	fidvals = gamma_LA(rp_bins_c)
+	fidvals = gamma_fid(rp_bins_c)
 
 	return fidvals
 
@@ -717,16 +720,19 @@ def get_gamma_tot_cov(sys_mat, stat_mat):
 
 def plot_variance(cov_1, fidvalues_1, bin_centers, filename):
 	""" Takes a covariance matrix, a vector of the fiducial values of the object in question, and the edges of the projected radial bins, and makes a plot showing the fiducial values and 1-sigma error bars from the diagonal of the covariance matrix. Outputs this plot to location 'filename'."""
+	
+	print "fid inside plot=", fidvalues_1
 
 	fig=plt.figure()
 	plt.rc('font', family='serif', size=20)
 	fig_sub=fig.add_subplot(111) #, aspect='equal')
 	fig_sub.set_xscale("log")
+	fig_sub.set_yscale("log")
 	#fig_sub.set_yscale("log")
 	fig_sub.errorbar(bin_centers,fidvalues_1*(1-pa.a_con), yerr = np.sqrt(np.diag(cov_1)), fmt='o')
 	fig_sub.set_xlabel('$r_p$')
 	fig_sub.set_ylabel('$\gamma_{IA}(1-a)$')
-	fig_sub.set_ylim(-0.012, 0.012)
+	fig_sub.set_ylim(10**(-5), 0.05)
 	fig_sub.tick_params(axis='both', which='major', labelsize=12)
 	fig_sub.tick_params(axis='both', which='minor', labelsize=12)
 	plt.tight_layout()
@@ -854,9 +860,9 @@ z_of_com 	= 	z_interpof_com()
 # Get the redshift corresponding to the maximum separation from the effective lens redshift at which we assume IA may be present (pa.close_cut is the separation in Mpc/h)
 (z_close_high, z_close_low)	= 	get_z_close(pa.zeff, pa.close_cut)
 
-gamma_fid(rp_cents)
+#gamma_fid(rp_cents)
 
-exit()
+#exit()
 
 # Get the number of lens source pairs for the source sample in projected radial bins
 N_ls_pbin	=	get_perbin_N_ls(rp_bins, pa.zeff, pa.n_s, pa.n_l, pa.Area, rp_cents)
@@ -876,6 +882,8 @@ Cov_tot		=	get_gamma_tot_cov(Cov_sys, Cov_stat)
 
 # Output a plot showing the 1-sigma error bars on gamma_IA in projected radial bins
 plot_variance(Cov_tot, fid_gIA, rp_cents, pa.plotfile)
+
+print "fid_gIA=", fid_gIA
 
 exit() # Below is Fisher stuff, don't worry about this yet
 
