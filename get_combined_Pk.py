@@ -42,16 +42,14 @@ def Rhalo(M_insol, z):
 	#Rvir = ( 3. * M_insol * OmM / (4. * np.pi * rho_crit * Dv))**(1./3.)
 	Rvir = ( 3. * M_insol / (4. * np.pi * rho_crit * OmM * 180.))**(1./3.)
 	
-	print "Rvir= ", Rvir
-	
 	return Rvir
 
 def cvir(M_insol, z):
 	""" Returns the concentration parameter of the NFW profile, c_{vir}. Uses the Neto 2007 definition, referenced in Giocoli 2010 """
 	
-	#cvi = pa.c14 / (1. + z) * (M_insol / 10**14)**(-0.11)
+	cvi = pa.c14 / (1. + z) * (M_insol / 10**14)**(-0.11)
 	
-	cvi = 7.
+	#cvi = 7.
 	
 	return cvi
 

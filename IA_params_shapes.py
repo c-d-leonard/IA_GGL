@@ -53,8 +53,8 @@ sig_sys_dNdz = np.asarray([ 0.0014777 ,  0.0037014 ,  0.00917435,  0.02051145,  
 sig_sys_dp = np.asarray( [ 0.00654311,  0.01624936,  0.0396385 ,  0.08656573,  0.15238458, 0.21256654,  0.2512192 ] ) # systematic error from p(z) in Ncorr
 sigz=0.09 # Uncertainty on photo z (Gaussian model, sigma = sigz*(1+z))
 plotfile =	'./fid_gIA_randoms_in.pdf'  # Location of file for plot showing 1 sigma error bars on gamma_IA
-boost_samp = 1.2 # Boost at 1 Mpc/h for our associated sample
-boost_tot = 1.04 # Boost at 1 Mpc/h for all the source-lens pairs in the survey (all z)
+boost_samp = 0.2 # Boost at 1 Mpc/h for our associated sample
+boost_tot = 0.04 # Boost at 1 Mpc/h for all the source-lens pairs in the survey (all z)
 sigB	= 0.0 # The statistical error from the boost in Ncorr.
 ProjMax = 100.
 
@@ -85,6 +85,6 @@ ah =  1. # 0.08
 
 # 1 halo term gg parameters
 c14 = 10**(0.7) # Parameter in the concentration / mass relationship (Neto 2007)
-#Mvir = 10.**(13.18) / (HH0/100.)
-Mvir = 2.*10.**13
+Mvir = 10.**(13.18) / (HH0/100.)
+#Mvir = 2.*10.**13
 

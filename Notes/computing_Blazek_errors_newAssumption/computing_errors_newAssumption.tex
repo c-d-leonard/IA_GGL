@@ -43,7 +43,7 @@ The expression for $\bar{\gamma}^{\rm IA}(r_p)$ is:
 The statistical errors which affect $\bar{\gamma}^{\rm IA}(r_p)$ are:
 \begin{itemize}
 \item{error on $\widetilde{\Delta\Sigma}(r_p)$, which is dominated by shape noise (uncorrelated between sample $a$ and $b$).}
-\item{error on $(B(r_p)-1+F)$, which is sourced via clustering and large scale structure.}
+\item{error on $(B(r_p)-1+F)$. This is essentially an error on $B$ and is sourced at small scales by shot noise and at large scales by cosmic variance.}
 \end{itemize}
 These are independent: the $\widetilde{\Delta\Sigma}(r_p)$ errors are due to shape noise, which doesn't affect $(B(r_p)-1+F)$.
 
@@ -83,75 +83,51 @@ F= \frac{\sum\limits_{j}^{\rm rand-close}\tilde{w}_j}{\sum\limits_{j}^{\rm rand}
 \end{equation}
 The denominator of equation \ref{F} can be written as
 \begin{equation}
-\sum\limits_{j}^{\rm rand} \tilde{w}_j = \int_{z_{\rm p}^{\rm min}}^{z_{\rm p}^{\rm max}} d z_{\rm p} \tilde{w}(z_l, z_{\rm p}) \int_{z_{\rm s}^{\rm min}}^{z_{\rm s}^{\rm max}} dz_{\rm s} \frac{dN}{dz_{\rm s}} p(z_{\rm s}, z_{\rm p})
+\sum\limits_{j}^{\rm rand} \tilde{w}_j = \frac{\int_{z_{\rm p}^{\rm min}}^{z_{\rm p}^{\rm max}} d z_{\rm p} \tilde{w}(z_l, z_{\rm p}) \int_{z_{\rm s}^{\rm min}}^{z_{\rm s}^{\rm max}} dz_{\rm s} \frac{dN}{dz_{\rm s}} p(z_{\rm s}, z_{\rm p})}{\int_{z_{\rm p}^{\rm min}}^{z_{\rm p}^{\rm max}} d z_{\rm p} \int_{z_{\rm s}^{\rm min}}^{z_{\rm s}^{\rm max}} dz_{\rm s} \frac{dN}{dz_{\rm s}} p(z_{\rm s}, z_{\rm p})}
 \label{sumrandweights}
 \end{equation}
-where $p(z_{\rm s}, z_{\rm p})$ is the probability of measuring a photometric redshift $z_p$ given a spectroscopic source redshift $z_{\rm s}$. {\it Note that there is a correction factor required here in order to compensate for scattering in and out of this subsample from bad photo-z's, I haven't computed it yet. To do.} $\tilde{w}(z_p)$ represents the weights, given by:
+where $p(z_{\rm s}, z_{\rm p})$ is the probability of measuring a photometric redshift $z_p$ given a spectroscopic source redshift $z_{\rm s}$. $\tilde{w}(z_p)$ represents the weights, given by:
 \begin{equation}
-\tilde{w}(z_l, z_{\rm p}) = \frac{1}{\tilde{\Sigma}_c(z_l, z_{\rm p})(e_{\rm rms}^2 + \sigma_e(z_{\rm p})^2)}.
+\tilde{w}(z_l, z_{\rm p}) = \frac{1}{\tilde{\Sigma}_c^2(z_l, z_{\rm p})(e_{\rm rms}^2 + \sigma_e(z_{\rm p})^2)}.
 \label{weights}
 \end{equation}
-In this context $\sigma_e(z_{\rm p})$ can be assumed to be redshift-independent, and is roughly $2 / (S/N)$, where the signal to noise for the SDSS sample of Blazek et al. is roughly 15. 
+In this context $\sigma_e(z_{\rm p})$ can be assumed to be redshift-independent, and is roughly $2 / (S/N)$, where the signal to noise for the SDSS sample of Blazek et al. is roughly 15.
+
+Note that in equation \ref{sumrandweights} for the sum of weights over random lens-source pairs, the denominator represents a factor which normalizes the smooth redshift distribution. Because we will work exclusively with ratios of such sums here, it is actually unimportant whether or not we include this normalizing factor. However, since we have chosen to include it here, it must be included consistently in each such sum that follows.
 
 The numerator of equation \ref{F} can similarly be written:
 \begin{equation}
-\sum\limits_{j}^{\rm rand-close}\tilde{w}_j = \int_{z_{\rm p}^{\rm close,min}}^{z_{\rm p}^{\rm close,max}} d z_{\rm p} \tilde{w}(z_l, z_{\rm p}) \int_{z_{\rm s}^{\rm min}}^{z_{\rm s}^{\rm max}} dz_{\rm s} \frac{dN}{dz_{\rm s}} p(z_{\rm s}, z_{\rm p})
+\sum\limits_{j}^{\rm rand-close}\tilde{w}_j = \frac{\int_{z_{\rm p}^{\rm min}}^{z_{\rm p}^{\rm max}} d z_{\rm p} \tilde{w}(z_l, z_{\rm p}) \int_{z_{\rm s}^{\rm close, min}}^{z_{\rm s}^{\rm close, max}} dz_{\rm s} \frac{dN}{dz_{\rm s}} p(z_{\rm s}, z_{\rm p})}{\int_{z_{\rm p}^{\rm min}}^{z_{\rm p}^{\rm max}} d z_{\rm p} \int_{z_{\rm s}^{\rm min}}^{z_{\rm s}^{\rm max}} dz_{\rm s} \frac{dN}{dz_{\rm s}} p(z_{\rm s}, z_{\rm p})}
 \label{sumrandcloseweights}
 \end{equation}
-where $z_{\rm p}^{\rm close,max}$ and $z_{\rm p}^{\rm close,min}$ are respectively the maximum and minimum photo-z which are included when selecting sources close enough to the lense to contribute to IA. {\it There is a similar correction factor due to scattering from bad photo-z's required here; to do.}
+where $z_{\rm s}^{\rm close,max}$ and $z_{\rm s}^{\rm close,min}$ are respectively the maximum and minimum redshifts at which we consider sources to be close enough to the lens to contribute to IA. To be abundantly clear, this cut is made on spectroscopic redshifts because it is the physical redshift of the object which determines if it contributes to the IA signal (not the photometric redshift). 
 
 \subsection{$\langle \tilde{\Sigma}_c\rangle_{\rm IA}(r_p)$}
 
 $\langle \tilde{\Sigma}_c\rangle_{\rm IA}(r_p)$ is given as:
 \begin{equation}
-\langle \tilde{\Sigma}_c\rangle_{\rm IA} (r_p) = \frac{\sum\limits_{j}^{\rm lens} \tilde{w}_j \tilde{\Sigma}_{c,j}- \sum\limits_{j}^{\rm rand-far} \tilde{w}_j \tilde{\Sigma}_{c,j}}{\sum\limits_{j}^{\rm lens} \tilde{w}_j - \sum\limits_{j}^{\rm rand-far} \tilde{w}_j} = \frac{\sum\limits_{j}^{\rm lens} \tilde{w}_j \tilde{\Sigma}_{c,j}- \sum\limits_{j}^{\rm rand-far} \tilde{w}_j \tilde{\Sigma}_{c,j}}{B(r_p)\sum\limits_{j}^{\rm rand} \tilde{w}_j - \sum\limits_{j}^{\rm rand-far} \tilde{w}_j}
+\langle \tilde{\Sigma}_c\rangle_{\rm IA} (r_p) =  \frac{\sum\limits_{j}^{\rm excess} \tilde{w}_j \tilde{\Sigma}_{c,j}+ \sum\limits_{j}^{\rm rand-close} \tilde{w}_j \tilde{\Sigma}_{c,j}}{\sum\limits_{j}^{\rm excess} \tilde{w}_j + \sum\limits_{j}^{\rm rand-close} \tilde{w}_j}= \frac{\sum\limits_{j}^{\rm excess} \tilde{w}_j \tilde{\Sigma}_{c,j}+ \sum\limits_{j}^{\rm rand-close} \tilde{w}_j \tilde{\Sigma}_{c,j}}{(B(r_p)-1)\sum\limits_{j}^{\rm rand} \tilde{w}_j + \sum\limits_{j}^{\rm rand-close} \tilde{w}_j}
 \label{SigmaIA}
-\end{equation}
+\end{equation} 
 
-The sum over `rand' in the denominator can be computed using equation \ref{sumrandweights}. The sum over weights on the `rand-far' subsample in the denominator is similarly given by:
+We have seen both sums in the denominator of the far right-hand-side before. The sum over `rand' can be computed using equation \ref{sumrandweights}. The sum over `rand-close' is given by equation \ref{sumrandcloseweights}.
+
+The sum of weights and $\tilde{\Sigma}_{c}$ over `rand-close' in the numerator is given by:
 \begin{equation}
-\sum\limits_{j}^{\rm rand-far} \tilde{w}_j = \int_{z_{\rm p}^{\rm close,max}}^{z_{\rm p}^{\rm max}} d z_{\rm p} \tilde{w}(z_l, z_{\rm p}) \int_{z_{\rm s}^{\rm min}}^{z_{\rm s}^{\rm max}} dz_{\rm s} \frac{dN}{dz_{\rm s}} p(z_{\rm s}, z_{\rm p})
-\label{sumrandfarweights}
+\sum\limits_{j}^{\rm rand-close} \tilde{w}_j \tilde{\Sigma}_{c,j} = \frac{\int_{z_{\rm p}^{\rm min}}^{z_{\rm p}^{\rm max}} d z_{\rm p} \tilde{w}(z_l, z_{\rm p})\tilde{\Sigma}_c(z_l, z_{\rm p}) \int_{z_{\rm s}^{\rm close, min}}^{z_{\rm s}^{\rm close, max}} dz_{\rm s} \frac{dN}{dz_{\rm s}} p(z_{\rm s}, z_{\rm p})}{\int_{z_{\rm p}^{\rm min}}^{z_{\rm p}^{\rm max}} d z_{\rm p} \int_{z_{\rm s}^{\rm min}}^{z_{\rm s}^{\rm max}} dz_{\rm s} \frac{dN}{dz_{\rm s}} p(z_{\rm s}, z_{\rm p})}.
+\label{sumrandcloseweightsSigC}
 \end{equation}
-{\it which again required a correction factor for scatter due to bad photo-z's. To do.}
 
-The sum over weights and $\tilde{\Sigma}_{c}$ for the `rand-far' subsample in the numerator is again very similarly given by:
-\begin{equation}
-\sum\limits_{j}^{\rm rand-far} \tilde{w}_j \tilde{\Sigma}_{c,j} = \int_{z_{\rm p}^{\rm close,max}}^{z_{\rm p}^{\rm max}} d z_{\rm p} \tilde{w}(z_l, z_{\rm p})\tilde{\Sigma}_c(z_l, z_{\rm p}) \int_{z_{\rm s}^{\rm min}}^{z_{\rm s}^{\rm max}} dz_{\rm s} \frac{dN}{dz_{\rm s}} p(z_{\rm s}, z_{\rm p})
-\label{sumrandfarweightsSigC}
-\end{equation}
-{\it and a correction factor is needed here too for the same reason. To do.}
-
-The other sum in the numerator, over all lens-source pairs, is more complicated. First recall:
-\begin{equation}
-\sum\limits_{j}^{\rm lens} \tilde{w}_j \tilde{\Sigma}_{c,j} = \sum\limits_{j}^{\rm excess} \tilde{w}_j \tilde{\Sigma}_{c,j} + \sum\limits_{j}^{\rm rand} \tilde{w}_j \tilde{\Sigma}_{c,j}
-\label{split_lens}
-\end{equation}
- We can compute the part of this sum which is over `rand' via:
- \begin{equation}
-\sum\limits_{j}^{\rm rand} \tilde{w}_j \tilde{\Sigma}_{c,j} = \int_{z_{\rm p}^{\rm min}}^{z_{\rm p}^{\rm max}} d z_{\rm p} \tilde{w}(z_l, z_{\rm p})\tilde{\Sigma}_c(z_l, z_{\rm p}) \int_{z_{\rm s}^{\rm min}}^{z_{\rm s}^{\rm max}} dz_{\rm s} \frac{dN}{dz_{\rm s}} p(z_{\rm s}, z_{\rm p}),
-\label{sumrandweightsSigC}
-\end{equation}
-{\it again, with a correction factor}.
-
-In order to account for the `excess' part of equation \ref{split_lens}, we assume that all excess galaxies are located at the lens redshift. We then construct the following quantity:
+To compute the other sum in the numerator, we first assume that all excess source galaxies have spec-z at the lens redshift. To get a sum that has contributions from the weights and critical density values at the the correct photometric redshifts, we consider a similar expression to equation \ref{sumrandcloseweightsSigC}, but set $\frac{dN}{dz_s} = \delta(z_s-z_l)$. We would have:
 \begin{align}
-&\int_{z_{\rm p}^{\rm min}}^{z_{\rm p}^{\rm max}} dz_{\rm p}\tilde{w}(z_l, z_{\rm p}) \tilde{\Sigma}_c(z_l, z_{\rm p}) \int dz_s \delta(z_s - z_l) p(z_s, z_{\rm p}) \nonumber \\ &= \int_{z_{\rm p}^{\rm min}}^{z_{\rm p}^{\rm max}} dz_{\rm p}\tilde{w}(z_l, z_{\rm p}) \tilde{\Sigma}_c(z_l, z_{\rm p}) p(z_l, z_{\rm p})
+\frac{\int_{z_{\rm p}^{\rm min}}^{z_{\rm p}^{\rm max}} dz_{\rm p}\tilde{w}(z_l, z_{\rm p}) \tilde{\Sigma}_c(z_l, z_{\rm p}) \int_{z_s^{\rm min}}^{z_s^{\rm max}} dz_s \delta(z_s - z_l) p(z_s, z_{\rm p})}{\int_{z_{\rm p}^{\rm min}}^{z_{\rm p}^{\rm max}} d z_{\rm p} \int_{z_{\rm s}^{\rm min}}^{z_{\rm s}^{\rm max}} dz_{\rm s} \delta(z_s - z_l) p(z_{\rm s}, z_{\rm p})} = \frac{\int_{z_{\rm p}^{\rm min}}^{z_{\rm p}^{\rm max}} dz_{\rm p}\tilde{w}(z_l, z_{\rm p}) \tilde{\Sigma}_c(z_l, z_{\rm p}) p(z_l, z_{\rm p})}{\int_{z_{\rm p}^{\rm min}}^{z_{\rm p}^{\rm max}} d z_{\rm p} p(z_l, z_{\rm p})}.
 \label{rand_atzl}
 \end{align}
-which is the sum over random pairs in the case in which the spectroscopic redshift of all sources the lens redshift. {\it A correction factor is required here too for photo-z scatter.} 
-
-We also know that $(B(r_p) -1)$ provides the weighted ratio of excess galaxies to random galaxies:
+Equation \ref{rand_atzl} has the correct relative contributions from weights and critical density with respect to photometric redshift. However, it is normalized in the manner in which we would normalize over random sources. To fix this, recall that $(B(r_p) -1)$ provides the weighted ratio of excess galaxies to random galaxies. We can think about $(B(r_p) -1)$ as a numerical factor that renormalizes equation \ref{rand_atzl} to have the correct normalization for excess galaxies. We get:
 \begin{equation}
-B(r_p) - 1 = \frac{\sum\limits_{j}^{\rm excess} \tilde{w}_j}{\sum\limits_{j}^{\rm rand} \tilde{w}_j}.
-\label{boostminus1}
-\end{equation}
- I think we had previously discussed multiplying equation \ref{rand_atzl} by $(B(r_p) - 1)$ in order to get the desired quantity:
-\begin{equation}
-\sum\limits_{j}^{\rm excess} \tilde{w}_j \tilde{\Sigma}_{c,j} \approx (B(r_p) - 1) \int_{z_{\rm p}^{\rm min}}^{z_{\rm p}^{\rm max}} dz_{\rm p} \tilde{w}(z_l, z_{\rm p}) \tilde{\Sigma}_c(z_l, z_{\rm p}) p(z_l, z_{\rm p}).
+\sum\limits_{j}^{\rm excess} \tilde{w}_j \tilde{\Sigma}_{c,j} = (B(r_p) - 1) \frac{\int_{z_{\rm p}^{\rm min}}^{z_{\rm p}^{\rm max}} dz_{\rm p} \tilde{w}(z_l, z_{\rm p}) \tilde{\Sigma}_c(z_l, z_{\rm p}) p(z_l, z_{\rm p})}{\int_{z_{\rm p}^{\rm min}}^{z_{\rm p}^{\rm max}} d z_{\rm p} p(z_l, z_{\rm p})}.
 \label{sumexcesswSigC}
 \end{equation}
-{\it But, this is multiplying by the weighted ratio of number of excess pairs to number of random pairs, which doesn't seem to exactly provide what we want, since the quantity in question is a sum not just over weights but also over $\Sigma_c$ for each pair. For this reason, I'm not sure if equation \ref{sumexcesswSigC} is the correct expression.}
 
 \subsection{$c_z$}
 
@@ -162,10 +138,12 @@ b_z+1 = \frac{B(r_p) \sum\limits^{\rm lens}_{j} \tilde{w}_j \tilde{\Sigma}_{c,j}
 \end{equation}
 We already have the denominator (equation \ref{sumrandweights}). The numerator can be written as:
 \begin{equation}
-\sum\limits^{\rm rand}_{j} \tilde{w}_j \tilde{\Sigma}_{c,j} \Sigma_{c,j}^{-1} \int_{z_{\rm s}^{\rm min}}^{z_{\rm s}^{\rm max}}dz_{\rm s} \frac{dN^s}{dz^s} \tilde{w}(b_{\Sigma}(z_{\rm s}), z_{\rm p}, z_l) b_\Sigma(z_{\rm s}) 
+\sum\limits^{\rm rand}_{j} \tilde{w}_j \tilde{\Sigma}_{c,j} \Sigma_{c,j}^{-1}  = \frac{\int_{\bar{z}_{\rm s}^{\rm min}}^{\bar{z}_{\rm s}^{\rm max}}dz_{\rm s} \frac{dN^s}{dz^s} \tilde{w}(b_{\Sigma}(z_{\rm s}), z_l) b_\Sigma(z_{\rm s})}{ \int_{\bar{z}_{\rm s}^{\rm min}}^{\bar{z}_{\rm s}^{\rm max}}dz_{\rm s} \frac{dN^s}{dz^s}}
 \label{photoz}
 \end{equation}
-where we have defined a factor $b_{\Sigma}(z_{\rm s})$, which encapsulates the bias to $\Sigma_c$ due to photo-z bias, allowing us to write the estimated $\Sigma_c$ in terms of spectroscopic source redshift 
+where it is important to note that here $\bar{z}_{\rm s}^{\rm min}$ and $\bar{z}_{\rm s}^{\rm max}$ are the spectroscopic redshifts corresponding to the min and max {\it photo}-z of the sample. These will not be perfectly aligned but if $p(z_{\rm s}, z_{\rm p})$ is Gaussian, setting these to our photo-z cuts shouldn't bias our results {\it (I think)}. 
+
+We have defined a factor $b_{\Sigma}(z_{\rm s})$, which encapsulates the bias to $\Sigma_c$ due to photo-z bias, allowing us to write the estimated $\Sigma_c$ in terms of spectroscopic source redshift 
 \begin{equation}
 \tilde{\Sigma}_c(z_{\rm s}, z_l) = b_\Sigma(z_{\rm s}) \Sigma_c(z_{\rm s}, z_l).
 \label{bsig}
@@ -238,10 +216,10 @@ The denominator of the second term on the RHS of equation \ref{deltasigma} can b
 
 To calculate the numerator, first split the sum over all lens-source pairs into a sum over excess and one over randoms:
 \begin{equation}
-\sum\limits_{j}^{\rm lens} \tilde{w}_j \tilde{\Sigma}_{c,j} \gamma^{\rm IA}_j  = \bar{\gamma}_{\rm IA}(r_p)\left[\sum\limits_{j}^{\rm excess} \tilde{w}_j \tilde{\Sigma}_{c,j}  + \sum\limits_{j}^{\rm rand} \tilde{w}_j \tilde{\Sigma}_{c,j} \right]
+\sum\limits_{j}^{\rm lens} \tilde{w}_j \tilde{\Sigma}_{c,j} \gamma^{\rm IA}_j  = \bar{\gamma}_{\rm IA}(r_p)\left[\sum\limits_{j}^{\rm excess} \tilde{w}_j \tilde{\Sigma}_{c,j}  + \sum\limits_{j}^{\rm rand-close} \tilde{w}_j \tilde{\Sigma}_{c,j} \right]
 \label{splitIA}
 \end{equation}
-where $\gamma_{\rm IA}(r_p)$, the IA shear per contributing pair, has been pulled out of the sum using the same logic as usual. {\it A correction factor is needed here for scatter in and out of samples due to be photo-z's.} The two terms inside brackets on the RHS can then be calculated using equations \ref{sumexcesswSigC} and \ref{sumrandweightsSigC}, respectively. A fiducial value of $\bar{\gamma}_{\rm IA}(r_p)$ must be computed from some model of intrinsic alignments. 
+where $\gamma_{\rm IA}(r_p)$, the IA shear per contributing pair, has been pulled out of the sum using the same logic as usual. The two terms inside brackets on the RHS can then be calculated using equations \ref{sumexcesswSigC} and \ref{sumrandcloseweightsSigC}, respectively. A fiducial value of $\bar{\gamma}_{\rm IA}(r_p)$ must be computed from some model of intrinsic alignments. 
 
 \subsection{$\bar{\gamma}^{\rm IA}(r_p)$}
 \subsubsection*{Excess-only}
@@ -299,6 +277,7 @@ The integral over $M$ here averages over mass, with $\frac{dn}{dM}$ providing th
 P_{1h}(k,z) =\frac{\bar{M}^2}{\Omega_M(z)^2 \rho_c^2} u(k,\bar{M})^2.
 \label{P1h_onemass}
 \end{equation}
+{\it It would also be acceptable, and perhaps less prone to error, to compute $w_{ls}^{1h}(r_p)$ directly from the NFW profile and add it to $w_{ls}^{2h}$ as computed using equation \ref{ws} with only the 2-halo contribute to the power spectrum. I should try this.}
 
 $w_{g+}(r_p)$ also requires a 1-halo term, this time given by the halo model for intrinsic alignments. We will calculate $w_{g+}^{1h}(r_p)$ separately, and do $w_{g+}^{\rm tot}(r_p) = w_{g+}(r_p) + w_{g+}^{1h}(r_p)$. We follow Singh et al. 2014 and Schneider \& Bridle 2010 in computing the following.
 
@@ -353,12 +332,14 @@ The systematic errors which affect $\gamma_{\rm IA}(r_p)$ measured using this me
 \section{Open questions / issues}
 \begin{enumerate}
 \item{How to treat the off-diagonal elements of the covariance matrix?}
-\item{Need to do the math to get correction factors for photo-z scatter / all the photo-z cuts.}
 \item{For computing $\sum\limits_{j}^{\rm excess} \tilde{w}_j \tilde{\Sigma}_{c,j}$: $B(r_p) - 1$ only corrects for weights, not weights and $\Sigma_c$. Is my expression right?}
 \item{Need to estimate $b_{\Sigma}$.}
 \item{Need to include halo-exclusion term in calculation of $\Delta \Sigma$ and $w_{gg}$.}
 \item{The definition of $\gamma_{\rm IA}$ from Blazek et al uses something slightly different than the standard projection function definition - is this okay?}
 \item{My equations for $w_{gg}$ and $w_{g+}$ neglect photo-z - is that okay? Taken from Singh 2014.}
+\item{Should try computing $w_{gg}^{1h}$ with the NFW profile directly, probably less error-prone.}
+\item{My fiducial values of $\gamma_{\rm IA}$ are somewhat suspiciously large at small $r_p$.}
+\item{I need to include excess galaxies in $N_{ls}$ calculation (already done in shape measurement case).}
 \item{Need to figure out and incorporate systematic errors.}
 \end{enumerate}
 

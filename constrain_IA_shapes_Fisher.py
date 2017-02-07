@@ -304,14 +304,15 @@ def Rhalo(M_insol, z):
 	
 	OmL = 1. - pa.OmC - pa.OmB - pa.OmR - pa.OmN
 	E_ofz = ( (pa.OmC+pa.OmB)*(1+z)**3 + OmL + (pa.OmR+pa.OmN) * (1+z)**4 )**(0.5)#the dimensionless part of the hubble parameter 
-	rho_crit = 4.65 * 10**10 * E_ofz**2 # This is rho_crit in units of Msol h^3 / Mpc^3
+	#rho_crit = 4.65 * 10**10 * E_ofz**2 # This is rho_crit in units of Msol h^3 / Mpc^3
+	rho_crit = 4.126 * 10** 11 * E_ofz**2 # This is rho_crit in units of Msol h^3 / Mpc^3
 	OmM = (pa.OmC+pa.OmB)*(1+z)**3 / ( (pa.OmC+pa.OmB)*(1+z)**3 + OmL + (pa.OmR+pa.OmN) * (1+z)**4 )
 	Dv = Delta_virial(z)
 	
-	Rvir = ( 3. * M_insol * OmM / (4. * np.pi * rho_crit * Dv))**(1./3.)
-	#Rvir = ( 3. * M_insol / (4. * np.pi * 180. * rho_crit * OmM))**(1./3.)
+	#Rvir = ( 3. * M_insol * OmM / (4. * np.pi * rho_crit * Dv))**(1./3.)
+	Rvir = ( 3. * M_insol / (4. * np.pi * 180. * rho_crit * OmM))**(1./3.)
 	
-	print "Rvir=", Rvir
+	#print "Rvir=", Rvir
 	
 	return Rvir
 	
@@ -329,6 +330,8 @@ def rho_s(cvi, Rvi, M_insol):
 	""" Returns rho_s, the NFW parameter representing the density at the `scale radius', Rvir / cvir. Units: Msol * ( 1 / (Rvir units)**3), usualy Msol * h^3 / Mpc^3. """
 	
 	rhos = M_insol / (4. * np.pi) * ( cvi / Rvi)**3 * (np.log(1. + cvi) - (cvi / (1. + cvi)))**(-1)
+	
+	
 	
 	return rhos
 	
@@ -372,7 +375,8 @@ def P1halo_DM(M_insol, z_vec, k):
 		# Need the average matter density  = rho_crit * OmegaM
 		OmL = 1. - pa.OmC - pa.OmB - pa.OmR - pa.OmN
 		E_ofz = ( (pa.OmC+pa.OmB)*(1+z)**3 + OmL + (pa.OmR+pa.OmN) * (1+z)**4 )**(0.5)#the dimensionless part of the hubble parameter 
-		rho_crit = 4.65 * 10**10 * E_ofz**2 # This is rho_crit in units of Msol h^3 / Mpc^3
+		#rho_crit = 4.65 * 10**10 * E_ofz**2 # This is rho_crit in units of Msol h^3 / Mpc^3
+		rho_crit = 4.126 * 10** 11 * E_ofz**2 # This is rho_crit in units of Msol h^3 / Mpc^3
 		OmM = (pa.OmC + pa.OmB)* (1. + z)**(3) / ( (pa.OmC+pa.OmB)*(1+z)**3 + OmL + (pa.OmR+pa.OmN) * (1+z)**4 )
 		rho_m = OmM * rho_crit # units of Msol h^3 / Mpc^3
 	
@@ -404,10 +408,8 @@ def wgg_wgp(rp_cents_):
 	
 	# gg: z int
 	zint_gg = np.zeros(len(k_gg))
-	#zint_gg_no1h = np.zeros(len(k_gg))
 	for ki in range(0,len(k_gg)):
 		zint_gg[ki] = scipy.integrate.simps(win_gg * Pgg_tot[:, ki], z_gg)
-		#zint_gg_no1h[ki] = scipy.integrate.simps(win_gg * P_gg[:, ki], z_gg)
 
 	# g+: z int
 	zint_gp = np.zeros(len(k_gp))
@@ -422,18 +424,15 @@ def wgg_wgp(rp_cents_):
 	
 	# Interpolate the answers to the z integrals in k to get it in terms of kperp and kz
 	kinterp_gg = scipy.interpolate.interp1d(k_gg, zint_gg)
-	#kinterp_gg_no1h = scipy.interpolate.interp1d(k_gg, zint_gg_no1h)
 	kinterp_gp = scipy.interpolate.interp1d(k_gp, zint_gp)
 	
 	# Get the result of the z integrals in terms of kperp and kz
 	
 	# gg: interpolate in kp and kz
 	kpkz_gg = np.zeros((len(kp_gg), len(kz_gg)))
-	#kpkz_gg_no1h = np.zeros((len(kp_gg), len(kz_gg)))
 	for kpi in range(0,len(kp_gg)):
 		for kzi in range(0, len(kz_gg)):
 			kpkz_gg[kpi, kzi] = kinterp_gg(np.sqrt(kp_gg[kpi]**2 + kz_gg[kzi]**2))
-			#kpkz_gg_no1h[kpi, kzi] = kinterp_gg_no1h(np.sqrt(kp_gg[kpi]**2 + kz_gg[kzi]**2))
 			
 			
 	# g+: interpolate in kp and kz
@@ -446,10 +445,8 @@ def wgg_wgp(rp_cents_):
 	
 	# gg: integral in kz
 	kz_int_gg = np.zeros(len(kp_gg))
-	#kz_int_gg_no1h = np.zeros(len(kp_gg))
 	for kpi in range(0,len(kp_gg)):
 		kz_int_gg[kpi] = scipy.integrate.simps(kpkz_gg[kpi,:] * kp_gg[kpi] / kz_gg * np.sin(kz_gg*pa.ProjMax), kz_gg)
-		#kz_int_gg_no1h[kpi] = scipy.integrate.simps(kpkz_gg_no1h[kpi,:] * kp_gg[kpi] / kz_gg * np.sin(kz_gg*pa.ProjMax), kz_gg)
 	
 	# g+: integral in kz	
 	kz_int_gp = np.zeros(len(kp_gp))
@@ -460,15 +457,12 @@ def wgg_wgp(rp_cents_):
 	
 	# gg and g+: integral in kperp
 	kp_int_gg = np.zeros(len(rp_cents_))
-	#kp_int_gg_no1h  = np.zeros(len(rp_cents_))
 	kp_int_gp = np.zeros(len(rp_cents_))
 	for rpi in range(0,len(rp_cents_)):
 		kp_int_gg[rpi] = scipy.integrate.simps(scipy.special.j0(rp_cents_[rpi]* kp_gg) * kz_int_gg, kp_gg)
-		#kp_int_gg_no1h[rpi] = scipy.integrate.simps(scipy.special.j0(rp_cents_[rpi]* kp_gg) * kz_int_gg_no1h, kp_gg)
 		kp_int_gp[rpi] = scipy.integrate.simps(scipy.special.jv(2, rp_cents_[rpi]* kp_gp) * kz_int_gp, kp_gp)
 		
 	wgg = kp_int_gg * pa.bs * pa. bd / np.pi**2 
-	#wgg_no1h = kp_int_gg_no1h * pa.bs * pa. bd / np.pi**2 
 	wgp_NLA = kp_int_gp * pa.Ai * pa.bd * pa.C1rho * (pa.OmC + pa.OmB) / np.pi**2
 	
 	# Get the wgp 1 halo term, added separately:
@@ -483,14 +477,12 @@ def wgg_wgp(rp_cents_):
 	plt.loglog(rp_cents_, wgp, 'ro')
 	plt.ylim(10**(-2), 20)
 	plt.xlim(10**(-1), 200)
-	plt.savefig('./plots/wg+_both_'+str(pa.kpts_wgp)+'pts_1e6kpts1h.png')
+	plt.savefig('./plots/wg+_both_'+str(pa.kpts_wgp)+'pts.png')
 	plt.close()
-	
-	#exit()
 	
 	wgg_stack = np.column_stack((rp_cents_, wgg))
 	wgp_stack = np.column_stack((rp_cents_, wgp))
-	np.savetxt('./txtfiles/wgg_'+str(pa.kpts_wgg)+'pts_newexp1h_M2e13.txt', wgg_stack)
+	np.savetxt('./txtfiles/wgg_'+str(pa.kpts_wgg)+'pts.txt', wgg_stack)
 	np.savetxt('./txtfiles/wgp_'+str(pa.kpts_wgp)+'pts.txt', wgp_stack)
 	
 	return (wgg, wgp)
@@ -500,8 +492,8 @@ def gamma_fid(rp):
 	
 	#(wgg, wgp) = wgg_wgp(rp)
 	
-	(rp_hold, wgg) = np.loadtxt('./txtfiles/wgg_'+str(pa.kpts_wgg)+'pts_M=2e+13.txt', unpack=True)
-	(rp_hold, wgp) = np.loadtxt('./txtfiles/wgp_'+str(pa.kpts_wgp)+'pts_1h1e6kpts.txt', unpack=True)
+	(rp_hold, wgg) = np.loadtxt('./txtfiles/wgg_'+str(pa.kpts_wgg)+'pts.txt', unpack=True)
+	(rp_hold, wgp) = np.loadtxt('./txtfiles/wgp_'+str(pa.kpts_wgp)+'pts.txt', unpack=True)
 	
 	wgg_interp = scipy.interpolate.interp1d(rp_hold, wgg)
 	wgp_interp = scipy.interpolate.interp1d(rp_hold, wgp)
@@ -530,7 +522,7 @@ def gamma_fid(rp):
 	
 	plt.figure()
 	plt.loglog(rp, gammaIA, 'bo')
-	plt.savefig('./plots/gammaIA_randomsin_'+str(pa.kpts_wgg)+'ggpts_'+str(pa.kpts_wgp)+'gppts_new1hexp_M2e13.png')
+	plt.savefig('./plots/gammaIA_randomsin_'+str(pa.kpts_wgg)+'ggpts_'+str(pa.kpts_wgp)+'gppts_Feb1.png')
 	plt.close()
 	
 	return gammaIA
@@ -541,7 +533,7 @@ def gamma_fid(rp):
 def get_boost(rp_cents_, propfact):
 	""" Returns the boost factor in radial bins. propfact is a tunable parameter giving the proportionality constant by which boost goes like projected correlation function (= value at 1 Mpc/h). """
 
-	Boost = (propfact-1.) *(rp_cents_)**(-0.8) + np.ones((len(rp_cents_))) # Empirical power law fit to the boost, derived from the fact that the boost goes like projected correlation function.
+	Boost = propfact *(rp_cents_)**(-0.8) + np.ones((len(rp_cents_)))# Empirical power law fit to the boost, derived from the fact that the boost goes like projected correlation function.
 
 	return Boost
 
@@ -688,6 +680,12 @@ def get_gammaIA_stat_cov(Cov_1, Cov_2, rp_cents_, gIA_fid):
 		stat_mat[i, i] = (1.-pa.a_con)**2 * gIA_fid[i]**2 * ( corr_fac_err[i]**2 / corr_fac[i]**2 + subtract_var(Cov_1[i,i], Cov_2[i,i], covar[i]) / (corr_fac[i]**2 * (1.-pa.a_con)**2 * gIA_fid[i]**2))
 		
 	print "stat=", np.sqrt(np.diag(stat_mat))
+	
+	plt.figure()
+	plt.loglog(rp_cents, np.sqrt(np.diag(stat_mat)))
+	plt.xlim(0.04, 20)
+	plt.savefig('./plots/variance_alone_shapes.pdf')
+	plt.close()
 
 	return stat_mat
 

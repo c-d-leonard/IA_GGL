@@ -20,7 +20,10 @@ S_to_N = 15.
 sigz=0.08
  
 # The factor by which the boost is proportional to the projected correlation function
-Boost_prop = 0.05
+#Boost_prop = 0.05
+boost_close = 0.2 # Boost at 1 Mpc/h for our associated sample
+boost_tot = 0.04 # Boost at 1 Mpc/h for all the source-lens pairs in the survey (all z)
+boost_far = 0.03
 
 # The number of lenses in the lens sample per square DEGREE
 n_l 	= 	8.7
@@ -35,7 +38,7 @@ sys_sigc = 1.0*10**(-5) # This is a dummy number for now.
 n_s 	=	1.2
 
 # The maximum projected radius (Mpc/h)
-rp_max 	=	200.0
+rp_max 	=	50.0
 
 # The minimum projected radius (Mpc/h)
 rp_min	=	0.05
@@ -58,8 +61,8 @@ delta_z	=	0.17
 zeff 	= 	0.32
 
 # The minimum and maximum redshift to consider in the source sample
-zmin 	=	0.0
-zmax 	= 	3.0
+zsmin 	=	0.0
+zsmax 	= 	3.0
 zphmin	=	0.0	
 zphmax	=	5.0
 
@@ -67,7 +70,7 @@ zphmax	=	5.0
 close_cut = 100 # Mpc/h
 
 # Location of file for plot showing 1 sigma error bars on gamma_IA
-plotfile =	'./Nakajima_nofz.pdf'
+plotfile =	'./plots/varianceplot_Feb1.pdf'
 
 # Speed of light in units of m/s
 c=2.99792458*10**(8)
@@ -86,3 +89,8 @@ H0	=	10**(5)/c
 c14 = 10**(0.7) # Parameter in the concentration / mass relationship (Neto 2007)
 Mvir = 10**(13.08)/ (HH0 / 100.)
 #Mvir = 6. * 10**13 / (HH0 / 100.)
+kpts_wgg = 10000
+kpts_wgp = 5000
+
+sigBF_a =0. # Statistical error from B-1+F term, set to zero for now.
+sigBF_b =0.
