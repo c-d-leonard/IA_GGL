@@ -314,6 +314,7 @@ def get_Sig_IA(z_l, z_ph_min_samp, z_ph_max_samp, erms, rp_bins_, rp_bin_c_, boo
 	norm_rand_for_excess = scipy.integrate.simps(p_z(z_ph, z_l, pa.sigz), z_ph)
 	num_excess = (boost-1.) * rand_for_excess / norm_rand_for_excess
 	
+	
 	Sig_IA = (num_excess + num_rand_close) / (denom_excess + denom_rand_close) * 1.665*10**6 # The numerical factor changes the units from h / Mpc to  Msol h / pc^2.
 
 	return Sig_IA  
@@ -618,6 +619,20 @@ def shapenoise_cov(e_rms, N_ls_pbin):
 	cov = np.diag(e_rms**2 / N_ls_pbin)
 	
 	return cov
+	
+def boost_errors(rp_bins_c, filename):
+	""" Imports a file with 2 columns, [rp (kpc/h), sigma(boost-1)]. Interpolates and returns the value of the error on the boost at the center of each bin. """
+	
+	(rp_kpc, boost_error_raw) = np.loadtxt(filename, unpack=True)
+	
+	# Convert the projected radius to Mpc/h
+	rp_Mpc = rp_kpc / 1000.
+	
+	interpolate_boost_error = scipy.interpolate.interp1d(rp_Mpc, boost_error_raw)
+	
+	boost_error = interpolate_boost_error(rp_bins_c)
+	
+	return boost_error
 
 def get_gammaIA_cov_stat(rp_bins, rp_bins_c):
 	""" Takes information about the uncertainty on constituent elements of gamma_{IA} and combines them to get the covariance matrix of gamma_{IA} in projected radial bins."""
@@ -643,7 +658,7 @@ def get_gammaIA_cov_stat(rp_bins, rp_bins_c):
 
 	# Photometric biases to estimated Delta Sigmas
 	#cz_a = get_cz(pa.zeff, pa.zeff, pa.zeff + pa.delta_z, pa.e_rms_a, rp_bins, rp_bins_c)
-	#cz_b = get_cz(pa.zeff, pa.zeff+pa.delta_z, pa.zphmax, pa.e_rms_b, rp_bins, rp_bins_c)
+	#cz_b = get_cz(pa.zeff, pa.zeff+pa.delta_z, pa.zphmax, pa.e_rms_b, rp_bins, rp_bins_c)fDelta        
 	# bSigma not yet estimated so setting both to unity for now:
 	print "BSIGMA NEEDS TO BE CALIBRATED AND INCLUDED"
 	cz_a = np.ones(len(rp_bins_c)) 
@@ -656,7 +671,6 @@ def get_gammaIA_cov_stat(rp_bins, rp_bins_c):
 	DeltaSig_est_a = get_est_DeltaSig(pa.zeff, pa.zeff, pa.zeff+pa.delta_z, pa.e_rms_a, rp_bins, rp_bins_c, Boost_a, F_a, cz_a, Sig_IA_a, g_IA_fid)
 	DeltaSig_est_b = get_est_DeltaSig(pa.zeff, pa.zeff, pa.zeff+pa.delta_z, pa.e_rms_b, rp_bins, rp_bins_c, Boost_b, F_b, cz_b, Sig_IA_b, g_IA_fid)
 	
-	
 	# These are the shape-noise-dominated diagonal covariance matrices associated with each sample
 	gamCov_a = shapenoise_cov(pa.e_rms_a, N_ls_pbin_a)
 	gamCov_b = shapenoise_cov(pa.e_rms_b, N_ls_pbin_b)
@@ -666,10 +680,56 @@ def get_gammaIA_cov_stat(rp_bins, rp_bins_c):
 	DeltaCov_a = (1.665*10**6* np.asarray(sum_weights_SigC(pa.zeff, pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, pa.zeff, pa.zeff+pa.delta_z, pa.zeff, pa.zeff+pa.delta_z, pa.e_rms_a, rp_bins, rp_bins_c)) / np.asarray(sum_weights(pa.zeff, pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, pa.zeff, pa.zeff+pa.delta_z, pa.zeff, pa.zeff+pa.delta_z, pa.e_rms_a, rp_bins, rp_bins_c)))**2 * np.asarray(gamCov_a)
 	DeltaCov_b = (1.665*10**6* np.asarray(sum_weights_SigC(pa.zeff, pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, pa.zeff+pa.delta_z, pa.zphmax, pa.zeff+pa.delta_z, pa.zphmax, pa.e_rms_b, rp_bins, rp_bins_c))/ np.asarray(sum_weights(pa.zeff, pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, pa.zeff+pa.delta_z, pa.zphmax, pa.zeff+pa.delta_z, pa.zphmax, pa.e_rms_b, rp_bins, rp_bins_c)))**2 * np.asarray(gamCov_b)
 	
+	# Now get the errors on B-1 for each sample from file
+	sigBa = boost_errors(rp_bins_c, pa.sigBF_a)
+	sigBb = boost_errors(rp_bins_c, pa.sigBF_b)
+	print "sigBa=", sigBa
+	print "sigBb=", sigBb
+	
 	gammaIA_stat_cov = np.zeros((len(rp_bins_c), len(rp_bins_c))) 
+	frac_err_denom = np.zeros((len(rp_bins_c), len(rp_bins_c)))
+	frac_err_num = np.zeros((len(rp_bins_c), len(rp_bins_c)))
+	frac_err_combined = np.zeros((len(rp_bins_c), len(rp_bins_c)))
+	boost_contribution = np.zeros((len(rp_bins_c), len(rp_bins_c)))
+	shape_contribution = np.zeros((len(rp_bins_c), len(rp_bins_c)))
 	# Calculate the statistical error covariance
 	for i in range(0,len(np.diag(rp_bins_c))):	 
-		gammaIA_stat_cov[i,i] = g_IA_fid[i]**2 * ((cz_a[i]**2 *DeltaCov_a[i,i] + cz_b[i]**2 *DeltaCov_b[i,i]) / (cz_a[i] * DeltaSig_est_a[i] - cz_b[i] * DeltaSig_est_b[i])**2 + (cz_a[i]**2 * Sig_IA_a[i]**2 * pa.sigBF_a**2 + cz_b[i]**2 * Sig_IA_b[i]**2 * pa.sigBF_b) / (cz_a[i] * Sig_IA_a[i] * (Boost_a[i] - 1. + F_a[i]) - cz_b[i] * Sig_IA_b[i] * (Boost_b[i]-1.+F_b[i])))
+		gammaIA_stat_cov[i,i] = g_IA_fid[i]**2 * ((cz_a[i]**2 *DeltaCov_a[i,i] + cz_b[i]**2 *DeltaCov_b[i,i]) / (cz_a[i] * DeltaSig_est_a[i] - cz_b[i] * DeltaSig_est_b[i])**2 + (cz_a[i]**2 * Sig_IA_a[i]**2 * sigBa[i]**2 + cz_b[i]**2 * Sig_IA_b[i]**2 * sigBb[i]**2) / (cz_a[i] * Sig_IA_a[i] * (Boost_a[i] - 1. + F_a[i]) - cz_b[i] * Sig_IA_b[i] * (Boost_b[i]-1.+F_b[i]))**2)
+		frac_err_denom[i,i] = np.sqrt((cz_a[i]**2 * Sig_IA_a[i]**2 * sigBa[i]**2 + cz_b[i]**2 * Sig_IA_b[i]**2 * sigBb[i]**2) / (cz_a[i] * Sig_IA_a[i] * (Boost_a[i] - 1. + F_a[i]) - cz_b[i] * Sig_IA_b[i] * (Boost_b[i]-1.+F_b[i]))**2)
+		frac_err_num[i,i] = np.sqrt((cz_a[i]**2 *DeltaCov_a[i,i] + cz_b[i]**2 *DeltaCov_b[i,i]) / (cz_a[i] * DeltaSig_est_a[i] - cz_b[i] * DeltaSig_est_b[i])**2)
+		frac_err_combined[i,i] = np.sqrt(((cz_a[i]**2 *DeltaCov_a[i,i] + cz_b[i]**2 *DeltaCov_b[i,i]) / (cz_a[i] * DeltaSig_est_a[i] - cz_b[i] * DeltaSig_est_b[i])**2 + (cz_a[i]**2 * Sig_IA_a[i]**2 * sigBa[i]**2 + cz_b[i]**2 * Sig_IA_b[i]**2 * sigBb[i]**2) / (cz_a[i] * Sig_IA_a[i] * (Boost_a[i] - 1. + F_a[i]) - cz_b[i] * Sig_IA_b[i] * (Boost_b[i]-1.+F_b[i]))**2))
+		boost_contribution[i,i] = g_IA_fid[i]**2 * ((cz_a[i]**2 * Sig_IA_a[i]**2 * sigBa[i]**2 + cz_b[i]**2 * Sig_IA_b[i]**2 * sigBb[i]**2) / (cz_a[i] * Sig_IA_a[i] * (Boost_a[i] - 1. + F_a[i]) - cz_b[i] * Sig_IA_b[i] * (Boost_b[i]-1.+F_b[i]))**2)
+		shape_contribution[i,i] = g_IA_fid[i]**2 * ((cz_a[i]**2 *DeltaCov_a[i,i] + cz_b[i]**2 *DeltaCov_b[i,i]) / (cz_a[i] * DeltaSig_est_a[i] - cz_b[i] * DeltaSig_est_b[i])**2 )
+	
+	plt.figure()
+	plt.loglog(rp_bins_c,np.sqrt(np.diag(gammaIA_stat_cov)), 'go', label='Both')
+	plt.hold(True)
+	plt.loglog(rp_bins_c, np.sqrt(np.diag(boost_contribution)), 'mo', label='Boost')
+	plt.hold(True)
+	plt.loglog(rp_bins_c, np.sqrt(np.diag(shape_contribution)), 'bo', label='Shape')
+	plt.legend()
+	plt.xlabel('$r_p$')
+	plt.ylabel('$\sigma(\gamma_{IA})$')
+	plt.xlim(0.04, 20)
+	plt.savefig('./plots/variance_alone_components_Blazek.pdf')
+	plt.close()
+	
+	plt.figure()
+	plt.semilogx(rp_bins_c,np.diag(frac_err_combined), 'go', label='Both')
+	plt.hold(True)
+	plt.semilogx(rp_bins_c, np.diag(frac_err_denom), 'mo', label='Boost term')
+	plt.hold(True)
+	plt.semilogx(rp_bins_c, np.diag(frac_err_num), 'bo', label='Shape term')
+	plt.legend(bbox_to_anchor=(0, 1))
+	plt.xlabel('$r_p$')
+	plt.ylabel('Fractional error contributions')
+	plt.xlim(0.04, 20)
+	plt.savefig('./plots/frac_error_components_Blazek.pdf')
+	plt.close()
+	
+	print "frac err num=", np.diag(frac_err_num)
+	print "frac err denom=", np.diag(frac_err_denom)
+	print "frac err combined=", np.diag(frac_err_combined)
 
 	return gammaIA_stat_cov
 	
@@ -852,13 +912,13 @@ def plot_variance(cov_1, fidvalues_1, bin_centers, filename):
 	fig_sub.tick_params(axis='both', which='major', labelsize=12)
 	fig_sub.tick_params(axis='both', which='minor', labelsize=12)
 	plt.tight_layout()
-	plt.savefig('./plots/variance_notlog_Feb1.pdf')
+	plt.savefig('./plots/variance_notlog_withBoost.pdf')
 	plt.close()
 	
 	plt.figure()
 	plt.loglog(bin_centers,np.sqrt(np.diag(cov_1)), 'go')
 	plt.xlim(0.04, 20)
-	plt.savefig('./plots/variance_alone_Blazek.pdf')
+	plt.savefig('./plots/variance_alone_Blazek_withBoost.pdf')
 	plt.close()
 
 	return  

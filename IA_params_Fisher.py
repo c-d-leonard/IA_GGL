@@ -70,7 +70,7 @@ zphmax	=	5.0
 close_cut = 100 # Mpc/h
 
 # Location of file for plot showing 1 sigma error bars on gamma_IA
-plotfile =	'./plots/varianceplot_Feb1.pdf'
+plotfile =	'./plots/varianceplot_withBoost_Feb7.pdf'
 
 # Speed of light in units of m/s
 c=2.99792458*10**(8)
@@ -92,5 +92,5 @@ Mvir = 10**(13.08)/ (HH0 / 100.)
 kpts_wgg = 10000
 kpts_wgp = 5000
 
-sigBF_a =0. # Statistical error from B-1+F term, set to zero for now.
-sigBF_b =0.
+sigBF_a = './txtfiles/boost_error_from_rachel.txt' # File containing two columns: rp (kpc/h), sigma(Boost-1) for sample a
+sigBF_b ='./txtfiles/boost_error_from_rachel.txt' # Same for b

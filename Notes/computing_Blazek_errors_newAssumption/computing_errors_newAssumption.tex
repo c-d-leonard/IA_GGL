@@ -61,9 +61,15 @@ where
 \end{equation}
 and 
 \begin{equation}
-\sigma^2((B^a-1+F^a)c_z^a \langle \tilde{\Sigma}_c\rangle_{\rm IA}^a - (B^b-1+F^b)c_z^b \langle \tilde{\Sigma}_c\rangle_{\rm IA}^b) = (c_z^a \langle \tilde{\Sigma}_c\rangle_{\rm IA}^a)^2 \sigma^2(B^a-1+F^a) + (c_z^b \langle \tilde{\Sigma}_c\rangle_{\rm IA}^b)^2 \sigma^2(B^b-1+F^b)
+\sigma^2((B^a-1+F^a)c_z^a \langle \tilde{\Sigma}_c\rangle_{\rm IA}^a - (B^b-1+F^b)c_z^b \langle \tilde{\Sigma}_c\rangle_{\rm IA}^b) = (c_z^a \langle \tilde{\Sigma}_c\rangle_{\rm IA}^a)^2 \sigma^2(B^a-1+F^a) + (c_z^b \langle \tilde{\Sigma}_c\rangle_{\rm IA}^b)^2 \sigma^2(B^b-1+F^b).
 \label{sigbottom}
 \end{equation}
+We will assume that the error from factors of $(B-1+F)$ is dominated by error on $(B-1)$, because the statistical error on $F$ can be made arbitrarily small (due to the fact that it depends on `random' pairs only). Therefore we in fact use:
+\begin{equation}
+\sigma^2((B^a-1+F^a)c_z^a \langle \tilde{\Sigma}_c\rangle_{\rm IA}^a - (B^b-1+F^b)c_z^b \langle \tilde{\Sigma}_c\rangle_{\rm IA}^b) = (c_z^a \langle \tilde{\Sigma}_c\rangle_{\rm IA}^a)^2 \sigma^2(B^a-1) + (c_z^b \langle \tilde{\Sigma}_c\rangle_{\rm IA}^b)^2 \sigma^2(B^b-1).
+\label{sigbottom}
+\end{equation}
+{\it At the moment, I am assuming that the boost errors are similar for both samples when I implement this - is this sensible?}
 
 This means there are several quantities for which we must make some reasonable calculation in a fiducial case: $c_z$, ($B(r_p)-1+F$), $\langle \tilde{\Sigma}_c\rangle_{\rm IA}(r_p)$, $\widetilde{\Delta\Sigma}(r_p)$, and $\bar{\gamma}^{\rm IA}(r_p)$.
 
@@ -341,6 +347,7 @@ The systematic errors which affect $\gamma_{\rm IA}(r_p)$ measured using this me
 \item{My fiducial values of $\gamma_{\rm IA}$ are somewhat suspiciously large at small $r_p$.}
 \item{I need to include excess galaxies in $N_{ls}$ calculation (already done in shape measurement case).}
 \item{Need to figure out and incorporate systematic errors.}
+\item{Should the boost errors be different for different samples, and if so, how?}
 \end{enumerate}
 
 
