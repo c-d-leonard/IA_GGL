@@ -38,6 +38,7 @@ def Rhalo(M_insol, z):
 	rho_crit = 4.126 * 10** 11 * E_ofz**2 # This is rho_crit in units of Msol h^3 / Mpc^3
 	OmM = (pa.OmC+pa.OmB)*(1+z)**3 / ( (pa.OmC+pa.OmB)*(1+z)**3 + OmL + (pa.OmR+pa.OmN) * (1+z)**4 )
 	#Dv = Delta_virial(z)
+	print "rhom=", rho_crit *OmM
 	
 	#Rvir = ( 3. * M_insol * OmM / (4. * np.pi * rho_crit * Dv))**(1./3.)
 	Rvir = ( 3. * M_insol / (4. * np.pi * rho_crit * OmM * 180.))**(1./3.)
@@ -67,15 +68,24 @@ def rho_NFW(r_, M_insol, z):
 	cv = cvir(M_insol, z)
 	rhos = rho_s(cv, Rv, M_insol)
 	
+	print "Rv=", Rv
+	print "cv=", cv
+	print "M=", M_insol
+	print "rhos=", rhos
+	
+	exit()
+	
 	rho_nfw = rhos  / ( (cv * r_ / Rv) * (1. + cv * r_ / Rv)**2)
 	
 	plt.figure()
-	plt.loglog(r_ , rho_nfw *  (pa.HH0/100.) )
-	plt.ylim(10**14, 2*10**18)
+	#plt.loglog(r_ , rho_nfw *  (pa.HH0/100.) )
+	plt.loglog(r_ , rho_nfw )
+	#plt.ylim(10**14, 2*10**18)
+	plt.ylim(10**4, 10**16)
 	plt.xlim(0.001, 3)
-	plt.savefig('./plots/nfw_0605_6e13h.png')
+	#plt.savefig('./plots/nfw_0605_6e13h.png')
+	plt.savefig('./plots/nfw_Pk.png')
 	plt.close()
-	
 
 	
 	return rho_nfw
@@ -164,7 +174,7 @@ def P1halo_DM(M_insol, z, k):
 
 # Import CAMB nonlinear halofit power spectrum
 
-get_Sigma(pa.Mvir, 0.3)
+get_Sigma(pa.Mvir, 0.32)
 
 (k, P_HF) = np.loadtxt('./txtfiles/NL_kmax4000_z=0.32.dat', unpack=True)
 

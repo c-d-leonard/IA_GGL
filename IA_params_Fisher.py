@@ -44,7 +44,7 @@ rp_max 	=	50.0
 rp_min	=	0.05
 
 # The number of bins of projected radius 
-N_bins	=	7
+N_bins	=	15
 
 #Parameters of the dNdz of sources, if using an analytic distribution.
 alpha 	= 	2.338
@@ -91,6 +91,25 @@ Mvir = 10**(13.08)/ (HH0 / 100.)
 #Mvir = 6. * 10**13 / (HH0 / 100.)
 kpts_wgg = 10000
 kpts_wgp = 5000
+sigz_gwin = 0.001
+ProjMax = 100.
+bs = 1.77
+bd = 1.77
+Ai = 5.0
+C1rho = 0.0134
 
-sigBF_a = './txtfiles/boost_error_from_rachel.txt' # File containing two columns: rp (kpc/h), sigma(Boost-1) for sample a
-sigBF_b ='./txtfiles/boost_error_from_rachel.txt' # Same for b
+# 1 halo IA term parameters
+q11 = 0.005 #0.02056    
+q12 = 5.909
+q13 = 0.3798
+q21 = 0.6 #1.978     
+q22 = 1.087
+q23 = 0.6655
+q31 = 3.1 #4.154     
+q32 = 0.1912
+q33 = 0.4368
+ah =  1. # 0.08
+
+# Files to import error on the boost
+sigBF_a = './txtfiles/boost_error_from_rachel_assoc.txt' # File containing two columns: rp (kpc/h), sigma(Boost-1) for sample a
+sigBF_b ='./txtfiles/boost_error_from_rachel_background.txt' # Same for b
