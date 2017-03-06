@@ -21,9 +21,10 @@ sigz=0.08
  
 # The factor by which the boost is proportional to the projected correlation function
 #Boost_prop = 0.05
-boost_close = 0.2 # Boost at 1 Mpc/h for our associated sample
-boost_tot = 0.04 # Boost at 1 Mpc/h for all the source-lens pairs in the survey (all z)
+boost_assoc = 0.2 # Boost at 1 Mpc/h for our associated sample
+boost_tot = 0.06 # Boost at 1 Mpc/h for all the source-lens pairs in the survey (all z)
 boost_far = 0.03
+boost_close = 0.1
 
 # The number of lenses in the lens sample per square DEGREE
 n_l 	= 	8.7
@@ -58,19 +59,19 @@ zpts	=	1000  # Number of points in the z vector at which we are evaluating dNdz
 delta_z	=	0.17
 
 # The effective redshift of the lens sample
-zeff 	= 	0.32
+zeff 	= 	0.28
 
 # The minimum and maximum redshift to consider in the source sample
 zsmin 	=	0.0
 zsmax 	= 	3.0
-zphmin	=	0.0	
+zphmin	=	zeff
 zphmax	=	5.0
 
 # The maximum separation from a lens to consider part of `rand-close', in Mpc/h
 close_cut = 100 # Mpc/h
 
 # Location of file for plot showing 1 sigma error bars on gamma_IA
-plotfile =	'./plots/varianceplot_withBoost_Feb7.pdf'
+plotfile =	'./plots/varianceplot_Deltacovdirectly.pdf'
 
 # Speed of light in units of m/s
 c=2.99792458*10**(8)
@@ -78,19 +79,33 @@ c=2.99792458*10**(8)
 
 # Cosmological parameters:
 Nnu	=	3.046    # Massless neutrinos
-HH0	=	67.26
+HH0 = 70.
+#HH0	=	67.26
+#HH0 = 72.
 OmR	=	2.47*10**(-5)/(HH0/100.)**2
 OmN	=	Nnu*(7./8.)*(4./11.)**(4./3.)*OmR
-OmB	=	0.02222/(HH0/100.)**2
-OmC	=	0.1199/(HH0/100.)**2
+#OmB	=	0.02222/(HH0/100.)**2
+#OmC	=	0.1199/(HH0/100.)**2
+#OmM=  0.25
+OmB = 0.046
+OmC = 0.236
+OmM = OmB + OmC
 H0	=	10**(5)/c
 
+# Constants / conversions
+mperMpc = 3.0856776*10**22
+Msun = 1.989*10**30 # in kg
+Gnewt = 6.67408*10**(-11)
+
 #
-c14 = 10**(0.7) # Parameter in the concentration / mass relationship (Neto 2007)
-Mvir = 10**(13.08)/ (HH0 / 100.)
-#Mvir = 6. * 10**13 / (HH0 / 100.)
-kpts_wgg = 10000
-kpts_wgp = 5000
+#c14 = 10**(0.7) # Parameter in the concentration / mass relationship (Neto 2007)
+Mvir = 10**(13.08) #/ (HH0 / 100.)
+#Mvir = 3.4 * 10**12 # units Msol/h
+#Mvir = 6. * 10**13 #/ (HH0 / 100.)
+#Mvir = 4.7 * 10**12 #in units of M sol
+#Mvir = 9.3 * 10**13
+kpts_wgg = 1000
+kpts_wgp = 1000
 sigz_gwin = 0.001
 ProjMax = 100.
 bs = 1.77

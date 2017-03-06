@@ -28,14 +28,14 @@ def getcorrfunc():
 	
 	corrfunc1d_gm = corrfunc1d * bias
 	
-	plt.figure()
-	plt.loglog(rvec, corrfunc1d)
-	plt.ylim(0.01, 3000)
-	plt.xlim(0.05, 100)
-	plt.savefig('./plots/corrfunc_bothterms_M6e13h_fixRhoC.png')
-	plt.close()
+	#plt.figure()
+	#plt.loglog(rvec, corrfunc1d)
+	#plt.ylim(0.01, 3000)
+	#plt.xlim(0.05, 100)
+	#plt.savefig('./plots/corrfunc_bothterms_M6e13h_fixRhoC.png')
+	#plt.close()
 	
-	exit()
+	#exit()
 	
 	#Define an array to hold the correlation function as a 2D array in R and Delta 
 	corrfunc2d_gm=np.zeros((len(deltavec),len(Rvec)))
@@ -52,6 +52,8 @@ def getcorrfunc():
 	
 	#Save the correlation function as a function of delta, theta
 	np.savetxt(folderpath+outputfolder+corrfunc2dfile, corrfunc2d_gm)
+	
+	exit()
 
 	return
 
@@ -95,21 +97,21 @@ folderpath 	= 	'/home/danielle/Dropbox/CMU/Research/Intrinsic_Alignments/' #This
 
 # Set parameters which are used to create vectors in Delta and R
 Rpts		=	400 	#Number of points in Rvec
-Rmin 		= 	0.000143
+Rmin 		= 	0.000246558
 Rmax		=	200.
-Dnegmax = 883.
-Dposmax = 3504.
-Deltamin = 0.000143
-zval = 0.32
+Dnegmax = 1000.
+Dposmax = 1000.
+Deltamin = 0.000246558
+zval = 0.28
 kmax=4000 #This is the max k in the power spectrum file.
 
 bias = 1.77
 
 outputfolder	= 	'/txtfiles/'
-corrfunc2dfile	=	'/corr_2d_z='+str(zval)+'_kmax='+str(kmax)+'_M6e13h_fixRhoC.txt'
+corrfunc2dfile	=	'/corr_2d_z='+str(zval)+'_Singh2014params.txt'
 Rintfile	=	'/Rint_z='+str(zval)+'_kmax='+str(kmax)+'_M6e13h_fixRhoC.txt'
 #corrfunc1dfile ='/corr_1d_NL_z='+str(zval)+'_kmax'+str(kmax)+'.txt'
-corrfunc1dfile = '/corr_bothterms_z='+str(zval)+'_M6e13h_fixRhoC.txt'
+corrfunc1dfile = '/corr_z=0.28_Singh2014params.txt'
 
 ##############################################################
 ############## Set up the Delta and R vectors ################
@@ -127,8 +129,8 @@ deltavec = np.append(delta_neg_rev, delta_pos)
 
 Rvec		=	np.logspace(np.log10(Rmin), np.log10(Rmax), Rpts)
 
-deltafile	=	'corr_delta_z='+str(zval)+'_kmax='+str(kmax)+'.txt'
-Rfile		=	'corr_rp_z='+str(zval)+'_kmax='+str(kmax)+'.txt'
+deltafile	=	'corr_delta_z='+str(zval)+'.txt'
+Rfile		=	'corr_rp_z='+str(zval)+'.txt'
 
 ###############################################################
 #################### MAIN FUNCTION CALLS ######################
@@ -140,6 +142,8 @@ savedelta_R()
 print "Get Correlation Function"
 # Get 3D correlation function xi(R,\Delta) (save instead of return, because this takes a while)
 getcorrfunc()
+
+exit()
 
 print "Do R Integral"
 # Perform the integral over R for the first term (again save instead of return)

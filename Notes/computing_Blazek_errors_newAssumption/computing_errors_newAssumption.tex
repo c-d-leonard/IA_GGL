@@ -69,9 +69,34 @@ We will assume that the error from factors of $(B-1+F)$ is dominated by error on
 \sigma^2((B^a-1+F^a)c_z^a \langle \tilde{\Sigma}_c\rangle_{\rm IA}^a - (B^b-1+F^b)c_z^b \langle \tilde{\Sigma}_c\rangle_{\rm IA}^b) = (c_z^a \langle \tilde{\Sigma}_c\rangle_{\rm IA}^a)^2 \sigma^2(B^a-1) + (c_z^b \langle \tilde{\Sigma}_c\rangle_{\rm IA}^b)^2 \sigma^2(B^b-1).
 \label{sigbottom}
 \end{equation}
-{\it At the moment, I am assuming that the boost errors are similar for both samples when I implement this - is this sensible?}
+The variance of the quantity $(B^i-1)$ is at the moment input directly from file as computed by Rachel for each sample.
 
-This means there are several quantities for which we must make some reasonable calculation in a fiducial case: $c_z$, ($B(r_p)-1+F$), $\langle \tilde{\Sigma}_c\rangle_{\rm IA}(r_p)$, $\widetilde{\Delta\Sigma}(r_p)$, and $\bar{\gamma}^{\rm IA}(r_p)$.
+\paragraph{A note on computing $\sigma(\tilde{\Delta \Sigma}^i)$}: 
+The variance of $\tilde{\Delta\Sigma}$ is given by:
+\begin{equation}
+\sigma^2(\tilde{\Delta\Sigma}) = \frac{\sum\limits_{ls} \tilde{w}^2 \tilde{\Sigma_c}^2 \sigma^2_\gamma}{\sum\limits_{ls} \tilde{w}^2}
+\label{varDS}
+\end{equation}
+where sumation indices have been neglected for clarity and $\sigma^2_\gamma$ is equal to the rms ellipticity and measurement error added in quadrature. Since we know that weights are given as $\tilde{w} = (\tilde{\Sigma}_c \sigma_\gamma)^{-2}$, we have:
+\begin{equation}
+\sigma^2(\tilde{\Delta\Sigma}) = \frac{\sum\limits_{ls} \tilde{w}}{\sum\limits_{ls} \tilde{w}^2} = \frac{1}{\sum\limits_{ls} \tilde{w}} = \frac{1}{\sum\limits_{ls} (\tilde{\Sigma}_c \sigma_\gamma)^{-2}}
+\label{varDS_2}
+\end{equation}
+We assume that the measurement noise, which depends on the particular lens-source pair in princple, can be pulled out of the sum along with the rms ellipticity to get:
+\begin{equation}
+\sigma^2(\tilde{\Delta\Sigma}) = \frac{\sigma^2_\gamma}{\sum\limits_{ls} \tilde{\Sigma}_c^{-2}}.
+\label{varDS_3}
+\end{equation}
+The problem is then reduced to finding the correct expression for the denominator of the above equation, which is given by:
+\begin{equation}
+\sum\limits_{ls} (\tilde{\Sigma}_c)^{-2} = N_l N_s^i \frac{\int_{z_{\rm cut_l}}^{z_{\rm cut_h}} dz_p (\tilde{\Sigma}_c)(z_p, z_l)^{-2} \int_{z_{\rm min}}^{z_{\rm max}} dz_s \frac{dN}{dz_s}p(z_s, z_p)}{ \int_{z_{\rm min}}^{z_{\rm max}} dz_p \int_{z_{\rm min}}^{z_{\rm max}} dz_s \frac{dN}{dz_s}p(z_s, z_p)}.
+\label{sum_varDS}
+\end{equation}
+where $N_l$ is number of lenses and $N_s^i$ is the number of sources in projected radial separation bin $i$.
+
+The above only accounts for `random' sources; we need to also account for excess. {\it However, the above cannot even be consistently applied in our current setup, because we only have the surface density for all sources, not just random, meaning we can only compute $N_s^i$ for (excess + random). This means that even in the random-only case, we don't have an appropriate normalization. We could normalize the integral correctly if we were integrating over the full redshift distribution of sources, but we don't have this information for (excess + random) sources. This is an outstanding issue.}
+
+There are several quantities for which we must make some reasonable calculation in a fiducial case: $c_z$, ($B(r_p)-1+F$), $\langle \tilde{\Sigma}_c\rangle_{\rm IA}(r_p)$, $\widetilde{\Delta\Sigma}(r_p)$, and $\bar{\gamma}^{\rm IA}(r_p)$.
 
 \subsection{$B(r_p)-1+F$}
 
@@ -345,7 +370,7 @@ The systematic errors which affect $\gamma_{\rm IA}(r_p)$ measured using this me
 \item{My equations for $w_{gg}$ and $w_{g+}$ neglect photo-z - is that okay? Taken from Singh 2014.}
 \item{Should try computing $w_{gg}^{1h}$ with the NFW profile directly, probably less error-prone.}
 \item{My fiducial values of $\gamma_{\rm IA}$ are somewhat suspiciously large at small $r_p$.}
-\item{I need to include excess galaxies in $N_{ls}$ calculation (already done in shape measurement case).}
+\item{How to incorporate random + excess galaxies in Delta Sigma covariance noise term?}
 \item{Need to figure out and incorporate systematic errors.}
 \item{Should the boost errors be different for different samples, and if so, how?}
 \end{enumerate}
