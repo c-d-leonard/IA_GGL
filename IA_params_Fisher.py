@@ -22,7 +22,7 @@ boost_close = 0.1
 n_l 	= 	8.7
 
 # Area associated with the lens sample in square DEGREES
-Area 	=	7131
+Area_l 	=	7131
 
 # The systematic error to be assumed on the observed Sigma_c excess (from insufficient spec-z calibration sample)
 sys_sigc = 1.0*10**(-5) # This is a dummy number for now.
@@ -119,12 +119,13 @@ sigBF_b ='./txtfiles/boost_error_from_rachel_background.txt' # Same for b
 # 1 halo gal-gal term parameters
 ng = 3. * 10**(-4) # volume density of galaxies for BOSS, in h^3 / Mpc^3
 nh = 2*10**(-4) # volume density of halos. Must be chosen appropriately for Mvir above. This is a super rough approximation.
-Mmin = 1.4 * 10**12 # Taken from Chen 2009, "bright", table 2, in Msol / h
-M1 = 2.0*10**13 # Taken from Chen 2009, "bright", table 2, in Msol / h
-sat_exp = 1.0 # Taken from Chen 2009, "bright", table 2
-Mcut = 2.0*10**12 # Taken from chen 2009, "bright", table 2, in Msol/ h
-logMmin = 11.60 # Taken from Zheng 2007, table 1, M_r < 19 (arbitrarily), Mass in Msol/h
-siglogM = 0.26 # Taken from Zheng 2007, table 1, M_r< 19
+fsat = 0.0636 # Satelite fraction from Reid & Spergel 2008. 
+#Mmin = 1.4 * 10**12 # Taken from Chen 2009, "bright", table 2, in Msol / h
+#M1 = 2.0*10**13 # Taken from Chen 2009, "bright", table 2, in Msol / h
+#sat_exp = 1.0 # Taken from Chen 2009, "bright", table 2
+#Mcut = 2.0*10**12 # Taken from chen 2009, "bright", table 2, in Msol/ h
+#logMmin = 11.60 # Taken from Zheng 2007, table 1, M_r < 19 (arbitrarily), Mass in Msol/h
+#siglogM = 0.26 # Taken from Zheng 2007, table 1, M_r< 19
 
 
 

@@ -64,6 +64,10 @@ and
 \sigma^2((B^a-1+F^a)c_z^a \langle \tilde{\Sigma}_c\rangle_{\rm IA}^a - (B^b-1+F^b)c_z^b \langle \tilde{\Sigma}_c\rangle_{\rm IA}^b) = (c_z^a \langle \tilde{\Sigma}_c\rangle_{\rm IA}^a)^2 \sigma^2(B^a-1+F^a) + (c_z^b \langle \tilde{\Sigma}_c\rangle_{\rm IA}^b)^2 \sigma^2(B^b-1+F^b).
 \label{sigbottom}
 \end{equation}
+
+There are several quantities for which we must make some reasonable calculation in a fiducial case: $c_z$, ($B(r_p)-1+F$), $\langle \tilde{\Sigma}_c\rangle_{\rm IA}(r_p)$, $\widetilde{\Delta\Sigma}(r_p)$, and $\bar{\gamma}^{\rm IA}(r_p)$, as well as $\sigma(\widetilde{\Delta \Sigma})$ and $\sigma(B-1+F)$.
+
+\subsection{$\sigma(B(r_p)-1+F)$}
 We will assume that the error from factors of $(B-1+F)$ is dominated by error on $(B-1)$, because the statistical error on $F$ can be made arbitrarily small (due to the fact that it depends on `random' pairs only). Therefore we in fact use:
 \begin{equation}
 \sigma^2((B^a-1+F^a)c_z^a \langle \tilde{\Sigma}_c\rangle_{\rm IA}^a - (B^b-1+F^b)c_z^b \langle \tilde{\Sigma}_c\rangle_{\rm IA}^b) = (c_z^a \langle \tilde{\Sigma}_c\rangle_{\rm IA}^a)^2 \sigma^2(B^a-1) + (c_z^b \langle \tilde{\Sigma}_c\rangle_{\rm IA}^b)^2 \sigma^2(B^b-1).
@@ -71,32 +75,38 @@ We will assume that the error from factors of $(B-1+F)$ is dominated by error on
 \end{equation}
 The variance of the quantity $(B^i-1)$ is at the moment input directly from file as computed by Rachel for each sample.
 
-\paragraph{A note on computing $\sigma(\tilde{\Delta \Sigma}^i)$}: 
-The variance of $\tilde{\Delta\Sigma}$ is given by:
+\subsection{$\sigma(\widetilde{\Delta \Sigma}(r_p))$}
+Following equation 12 of Mandelbaum et al. 2008 (0709.1692), the variance of $\widetilde{\Delta\Sigma}$ is given by:
 \begin{equation}
-\sigma^2(\tilde{\Delta\Sigma}) = \frac{\sum\limits_{ls} \tilde{w}^2 \tilde{\Sigma_c}^2 \sigma^2_\gamma}{\sum\limits_{ls} \tilde{w}^2}
+\sigma^2(\widetilde{\Delta\Sigma}) = \frac{\sum\limits_i^{ls} \tilde{w}_i^2 \tilde{\Sigma}_{c,i}^2 (\epsilon_{\rm rms}^2 + \sigma_i^2)}{\left(\sum\limits_i^{ls} \tilde{w}_i\right)^2}
 \label{varDS}
 \end{equation}
-where sumation indices have been neglected for clarity and $\sigma^2_\gamma$ is equal to the rms ellipticity and measurement error added in quadrature. Since we know that weights are given as $\tilde{w} = (\tilde{\Sigma}_c \sigma_\gamma)^{-2}$, we have:
+where $\epsilon_{\rm rms}$ is the root-mean-squared ellipticity of the source sample, $\sigma_i$ is the measurement error for each source, and:
 \begin{equation}
-\sigma^2(\tilde{\Delta\Sigma}) = \frac{\sum\limits_{ls} \tilde{w}}{\sum\limits_{ls} \tilde{w}^2} = \frac{1}{\sum\limits_{ls} \tilde{w}} = \frac{1}{\sum\limits_{ls} (\tilde{\Sigma}_c \sigma_\gamma)^{-2}}
+\tilde{w}_i = \frac{1}{\Sigma_{c,i}^2(\epsilon_{\rm rms}^2 + \sigma_i^2)}
+\label{weights}
+\end{equation}
+
+Given this expression for the weights, equation \ref{varDS} simplifies to:
+\begin{equation}
+\sigma^2(\widetilde{\Delta\Sigma}) = \frac{\sum\limits_i^{ls} \tilde{w_i}}{\left(\sum\limits_i^{ls} \tilde{w_i}\right)^2} = \frac{1}{\sum\limits_i^{ls} \tilde{w_i}}.
 \label{varDS_2}
 \end{equation}
-We assume that the measurement noise, which depends on the particular lens-source pair in princple, can be pulled out of the sum along with the rms ellipticity to get:
+The above sum over weights is over all lens-source pairs (random + excess). We can re-write into a sum over random using the boost factor:
 \begin{equation}
-\sigma^2(\tilde{\Delta\Sigma}) = \frac{\sigma^2_\gamma}{\sum\limits_{ls} \tilde{\Sigma}_c^{-2}}.
-\label{varDS_3}
+\sigma^2(\widetilde{\Delta\Sigma}(r_p)) = \frac{1}{B(r_p)\sum\limits_i^{{\rm rand} \, ls} \tilde{w_i}}.
+\label{varDS_2}
 \end{equation}
-The problem is then reduced to finding the correct expression for the denominator of the above equation, which is given by:
+There are other instances where we compute this sum over weights, below. However, in this case, we need to be particularly careful about the normalization of this sum. All over sums over weights are taken as a ratio with a sum of something involving the weights and normalized in the same way, so the normalization is somewhat arbitrary. Here, it must be correct.
+
+Converting sums to integrals and incorporating this normalization, we find:
 \begin{equation}
-\sum\limits_{ls} (\tilde{\Sigma}_c)^{-2} = N_l N_s^i \frac{\int_{z_{\rm cut_l}}^{z_{\rm cut_h}} dz_p (\tilde{\Sigma}_c)(z_p, z_l)^{-2} \int_{z_{\rm min}}^{z_{\rm max}} dz_s \frac{dN}{dz_s}p(z_s, z_p)}{ \int_{z_{\rm min}}^{z_{\rm max}} dz_p \int_{z_{\rm min}}^{z_{\rm max}} dz_s \frac{dN}{dz_s}p(z_s, z_p)}.
+\sigma^2(\widetilde{\Delta\Sigma}(r_p^i)) = \frac{1}{B(r_p^i)} \left(\frac{N_l N_s^i\int_{z_{\rm cut_l}}^{z_{\rm cut_h}} dz_p \tilde{w}(z_p, z_l) \int_{z_{\rm min}}^{z_{\rm max}} dz_s \frac{dN}{dz_s}p(z_s, z_p)}{ \int_{z_{\rm min}}^{z_{\rm max}} dz_p \int_{z_{\rm min}}^{z_{\rm max}} dz_s \frac{dN}{dz_s}p(z_s, z_p)}\right)^{-1}.
 \label{sum_varDS}
 \end{equation}
-where $N_l$ is number of lenses and $N_s^i$ is the number of sources in projected radial separation bin $i$.
+where $N_l$ is number of lenses and $N_s^i$ is the number of sources in projected radial separation bin $i$, obtained via the surface density of sources. 
 
-The above only accounts for `random' sources; we need to also account for excess. {\it However, the above cannot even be consistently applied in our current setup, because we only have the surface density for all sources, not just random, meaning we can only compute $N_s^i$ for (excess + random). This means that even in the random-only case, we don't have an appropriate normalization. We could normalize the integral correctly if we were integrating over the full redshift distribution of sources, but we don't have this information for (excess + random) sources. This is an outstanding issue.}
-
-There are several quantities for which we must make some reasonable calculation in a fiducial case: $c_z$, ($B(r_p)-1+F$), $\langle \tilde{\Sigma}_c\rangle_{\rm IA}(r_p)$, $\widetilde{\Delta\Sigma}(r_p)$, and $\bar{\gamma}^{\rm IA}(r_p)$.
+Note that it is in fact consistent to use the number of density of sources for the full sample to compute $N_s^i$ even though this is used in normalizing a sum over randoms (rather than excess + randoms). This is because when the surface density is computed, it is obtained for the full redshift distribution of all the sources, whereas what consitutes an `excess' source galaxy is specific to each lens. All galaxies, excess + random, are included in this surface density value. (If this feels like cheating, it may be helpful to remember that because $B(r_p)$ accounts for correlations due to galaxy clustering, it is less than $1$ on large scales where the correlation is negative.)
 
 \subsection{$B(r_p)-1+F$}
 
@@ -296,36 +306,46 @@ To get accurate 2-point functions at small scales, we need to include 1-halo ter
 
 $w_{ls}(r_p)$ requires the standard galaxy-galaxy 1-halo term. As before, we assume an NFW profile with definitions for $R_{\rm vir}$, $c_{\rm vir}$, and $\rho_s$ as discussed above. We will then use this to compute $w^{1h}_{ls}(r_p)$, and take $w_{ls} = w_{ls}^{1h} + w_{ls}^{2h}$. {\it Again, halo-exclusion terms are required here.} 
 
-Given the NFW mass profile of equation \ref{nfw}, we can compute its Fourier transform, $u(k, M, z)$:
+Given the NFW mass profile of equation \ref{nfw}, we can compute its Fourier transform, $u(k, M)$:
 \begin{equation}
 u(k, M) = \int_0^{R_{\rm vir}} dr \frac{4 \pi r^2}{M}\frac{\sin(kr)}{kr}\rho(r, M).
 \label{u}
 \end{equation}
 
-We must account for both the `central-satelite' term and the `satelite-satelite' term of the 2-point spectrum. The 1-halo power spectrum which accounts for both of these terms is (taken from D. Grin, Thesis) is:
+We must account for both the `central-satellite' term and the `satellite-satellite' term of the 2-point spectrum. The 1-halo power spectrum which accounts for both of these terms is (taken from D. Grin, Thesis) is:
 \begin{equation}
 P_{gg}^{1h}(k) = \frac{n_H}{n_g^2}\left[\langle N_c N_s \rangle u + \langle N_s^2 \rangle u^2\right]
 \label{1hpgg}
 \end{equation}
-where $n_H$ is the volume density of halos at mass $M$, and $n_g$ is the volume density of galaxies in the survey. $\langle N_c N_s \rangle$ is the variance in the number of central-satelite pairs in a halo of mass $M$, while $\langle N_s^2 \rangle$ is the number of satelite-satelite pairs. (I have specified to a single average mass $M$ here.) 
+where $n_H$ is the volume density of halos at mass $M$, and $n_g$ is the volume density of galaxies in the survey. $\langle N_c N_s \rangle$ is the variance in the number of central-satellite pairs in a halo of mass $M$, while $\langle N_s^2 \rangle$ is the variance in the number of satellite-satellite pairs. (I have specified to a single average mass $M$ here.) 
 
-For Poisson statistics, we have that $\langle N^2 \rangle = \langle N \rangle^2$. However, there may be some deviation from Poisson statistics for small mass halos, which we encapsulate by introducing a parameter $\alpha$ such that $\langle N^2 \rangle = \alpha^2\langle N \rangle^2$. $\alpha$ is given by:
+For Poisson statistics, we have that $\langle N^2 \rangle = \langle N \rangle^2$. However, there may be some deviation from Poisson statistics for small mass halos, which may be encapsulated by introducing a parameter $\alpha$ such that $\langle N^2 \rangle = \alpha^2\langle N \rangle^2$. $\alpha$ is given by:
 \begin{equation}
 \alpha = \log\left(\frac{M}{10^{11}M_\odot h^{-1}}\right)^{0.5}
 \label{alpha}
 \end{equation}
-if $M$ is less than $10^{11}$ in units of $M_\odot / h$, and $\alpha=1$ otherwise. We then use this relationship to get the required variances in equation \ref{1hpgg} in terms of the mean number of satelite and central galaxies in a halo of mass $M$. We take these to be given respectively by:
+if $M$ is less than $10^{11}$ in units of $M_\odot / h$, and $\alpha=1$ otherwise. 
+
+We then use this property of Poisson (or quasi-Poisson) statistics to get $\langle N_c N_s \rangle$ and $\langle N_s^2 \rangle$ in terms of $\langle N_c \rangle$ and $\langle N_s \rangle$. We obtain these latter quantities via the observationally-determined satellite galaxy fraction, which we will call $f_s$. From Reid \& Spergel 2008, we take $f_s = 0.0636$ for SDSS LRGs. We also define the central galaxy fraction, $f_c$, where $f_c + f_s=1$. 
+
+We will make the assumption that there is always one central galaxy per halo. The mean number of central galaxies per halo is hence $\langle N_c \rangle=1$. We can work out the expression for $\langle N_s \rangle$:
 \begin{equation}
-\langle N_s \rangle = \left(\frac{M}{M_1}\right)^a {\rm exp}\left(\frac{-M_{\rm cut}}{M}\right)
+\langle N_s \rangle = \frac{f_s N_g}{N_H} = \frac{f_s N_g}{f_c N_g} = \frac{f_s}{f_c} = \frac{f_s}{1-f_s}
 \label{Nsmean}
 \end{equation}
-from Zheng 2007 and
-\begin{equation}
-\langle N_c \rangle = \frac{1}{2}\left[1 + {\rm erf}\left(\frac{\log{M}-\log{M_{\rm min}}}{\sigma_{\log M}}\right)\right].
-\label{Ncmean}
-\end{equation}
+where $N_H$ is the number of halos, $N_g$ is the total number of galaxies, and the third equality follows from the above assumption that the number of halos is equal to the number of central galaxies.
 
-Then, given $P_{gg}^{1h}(k)$, we Fourier-transform and project to get $w_{ls}^{1h}(r_p)$:
+Having now defined $f_c$ and $f_s$, we can also simplify the prefactor of $\frac{n_H}{n_g^2}$ on equation \ref{1hpgg} by taking advantage of our assumption of a single central galaxy per halo. We have:
+\begin{equation}
+\frac{n_H}{n_g^2} = \frac{f_c n_g}{n_g^2} = \frac{f_c}{n_g} = \frac{1- f_s}{n_g}
+\label{prefac1hpgg}
+\end{equation}
+such that the fully simplified expression for the 1-halo galaxy-galayx power spectrum becomes:
+\begin{equation}
+P_{gg}^{1h}(k) = \frac{1-f_s}{n_g}\left[\alpha^2 \frac{f_s}{1-f_s} u + \alpha^2 \left(\frac{f_s}{1-f_s}\right)^2 u^2\right].
+\label{1hpgg_fs}
+\end{equation}
+We can then Fourier-transform and project to get $w_{ls}^{1h}(r_p)$:
 \begin{equation}
 w_{ls}^{1h}(r_p) = \int_{-\Pi_{\rm max}}^{\Pi_{\rm max}} \frac{1}{2\pi^2} \int dk k^2 \frac{\sin(k\sqrt{r_p^2 + \Pi^2})}{k\sqrt{r_p^2 + \Pi^2}} P_{gg}^{1h}(k)
 \label{wl1h}
