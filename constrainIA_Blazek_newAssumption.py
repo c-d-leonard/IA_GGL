@@ -636,11 +636,11 @@ def wgp_2halo(rp_cents_):
 	wgp_NLA = kp_int_gp * pa.Ai * pa.bd * pa.C1rho * (pa.OmC + pa.OmB) / np.pi**2
 	
 	wgp_stack = np.column_stack((rp_cents_, wgp_NLA))
-	np.savetxt('./txtfiles/wgp_'+str(pa.kpts_wgp)+'pts.txt', wgp_stack)
+	np.savetxt('./txtfiles/wgp_2halo_'+str(pa.kpts_wgp)+'pts.txt', wgp_stack)
 	
 	return wgp_NLA
 
-def Rhalo(M_insol, z):
+def Rhalo(M_insol):
 	""" Get the radius of a halo in COMOVING Mpc/h given its mass."""
 	
 	#E_ofz = ( (pa.OmC+pa.OmB)*(1+z)**3 + OmL + (pa.OmR+pa.OmN) * (1+z)**4 )**(0.5)#the dimensionless part of the hubble parameter
@@ -675,9 +675,9 @@ def rho_s(cvi, Rvi, M_insol):
 	return rhos
 
 def rho_NFW(r_, M_insol, z):
-	""" Returns the density for an NFW profile in real space at distance r from the center (?). Units = units of rhos. (Usually Msol * h^3 / Mpc^3 in comoving distances). r_ MUST be in the same units as Rv; usually Mpc / h."""
+	""" Returns the density for an NFW profile in real space at distance r from the center. Units = units of rhos. (Usually Msol * h^2 / Mpc^3 in comoving distances). r_ MUST be in the same units as Rv; usually Mpc / h."""
 
-	Rv = Rhalo(M_insol, z)
+	Rv = Rhalo(M_insol)
 	cv = cvir(M_insol, z)
 	rhos = rho_s(cv, Rv, M_insol)
 	
@@ -698,12 +698,12 @@ def rho_NFW(r_, M_insol, z):
 	#plt.savefig('./plots/nfw_Mandelbaun2006.png')
 	#plt.close()
 	
-	#plt.figure()
-	#plt.loglog(r_ , rho_nfw  )
-	#plt.ylim(10**(11), 2.*10**18)
-	#plt.xlim(0.001, 3)
-	#plt.savefig('./plots/nfw_Singh2014_z=0.28.png')
-	#plt.close()
+	plt.figure()
+	plt.loglog(r_ , rho_nfw  )
+	plt.ylim(10**(11), 2.*10**18)
+	plt.xlim(0.001, 3)
+	plt.savefig('./plots/nfw_Singh2014_z=0.28.png')
+	plt.close()
 	
 	return rho_nfw
 
@@ -718,16 +718,11 @@ def wgg_1halo(rp_cents_, z_l):
 	rho = rho_NFW(rvec, pa.Mvir, z_l) # Units Msol h^3 / Mpc^3 or Msol h^2 / Mpc^3.
 	rho_interp = scipy.interpolate.interp1d(rvec, rho)
 	
-	#count =0
-	#rho_check = np.zeros(len(rp_cents_)*len(Pivec))
-	#r_check = np.zeros(len(rp_cents_)*len(Pivec))
 	rho_2D = np.zeros((len(rp_cents_), len(Pivec)))
 	for ri in range(0, len(rp_cents_)):
 		for pi in range(0, len(Pivec)):
 			rho_2D[ri, pi] = rho_interp(np.sqrt(rp_cents_[ri]**2 + Pivec[pi]**2))
-			#r_check[count] = np.sqrt(rp_cents_[ri]**2 + Pivec[pi]**2)
-			#rho_check[count] = rho_2D[ri,pi]
-			#count = count + 1
+
 	#plt.figure()
 	#plt.loglog(rvec, rho, 'go')
 	#plt.hold(True)
@@ -750,15 +745,12 @@ def wgg_1halo(rp_cents_, z_l):
 	
 			
 	# Get rho_m (comoving coordinates)
-	#OmL = 1. - pa.OmC - pa.OmB - pa.OmR - pa.OmN
-	#E_ofz = ( (pa.OmC+pa.OmB)*(1+z_l)**3 + OmL + (pa.OmR+pa.OmN) * (1+z_l)**4 )**(0.5)#the dimensionless part of the hubble parameter 
 	#rho_crit = 4.126 * 10** 11 * E_ofz**2 # This is rho_crit in units of Msol h^3 / Mpc^3
-	#OmM = (pa.OmC + pa.OmB)* (1. + z_l)**(3) / ( (pa.OmC+pa.OmB)*(1+z_l)**3 + OmL + (pa.OmR+pa.OmN) * (1+z_l)**4 )
 	rho_crit = 3. * 10**10 * pa.mperMpc / (8. * np.pi * pa.Gnewt * pa.Msun) # Units Msol h^2 / Mpc^3.
 	rho_m = pa. OmM * rho_crit 
 	
 	# Only integrate out to the virial radius
-	Rvir = Rhalo(pa.Mvir, pa.zeff)
+	Rvir = Rhalo(pa.Mvir)
 	indvir = next(j[0] for j in enumerate(Pivec) if j[1]>=(Rvir))
 	
 	wgg_1h = np.zeros(len(rp_cents_))
@@ -774,6 +766,168 @@ def wgg_1halo(rp_cents_, z_l):
 	plt.close()
 
 	return wgg_1h
+
+def wgg_1halo_Four(rp_cents_):
+	""" Gets the 1halo term of wgg via Fourier space, to account for central-satelite pairs and satelite-satelite pairs. """
+	
+	Rvir = Rhalo(pa.Mvir)
+	
+	kvec_FT = np.logspace(-7, 4, 5000000)
+	rvec_NFW = np.logspace(-7, np.log10(Rvir), 1000000)
+	rvec_xi = np.logspace(-4, 4, 1000)
+	Pivec = np.logspace(-7, np.log10(1000./np.sqrt(2.01)), 1000)
+	rpvec = np.logspace(-7, np.log10(1000./np.sqrt(2.01)), 1000)
+	
+	Pk = get_Pkgg_1halo(rvec_NFW, kvec_FT) # Gets the 1halo galaxy power spectrum including c-s and s-s terms. Pass rvec because need to get rho_NFW in here.
+	
+	xi_gg_1h = get_xi_1h(rvec_xi, kvec_FT, Pk) # Function that gets the 1halo galaxy-galaxy correlation function term.
+	xi_interp = scipy.interpolate.interp1d(rvec_xi, xi_gg_1h)
+	
+	xi_2D = np.zeros((len(rp_cents_), len(Pivec)))
+	for ri in range(0, len(rp_cents_)):
+		for pi in range(0, len(Pivec)):
+			xi_2D[ri, pi] = xi_interp(np.sqrt(rp_cents_[ri]**2 + Pivec[pi]**2)) 
+	
+	# Only integrate out to the virial radius
+	Rvir = Rhalo(pa.Mvir)
+	indvir = next(j[0] for j in enumerate(Pivec) if j[1]>=(Rvir))
+	
+	wgg_1h = np.zeros(len(rp_cents_))
+	for ri in range(0,len(rp_cents_)):
+		wgg_1h[ri] = scipy.integrate.simps(xi_2D[ri, :][0:indvir], Pivec[0:indvir])
+		
+	plt.figure()
+	plt.loglog(rp_cents_, wgg_1h, 'go')
+	plt.xlim(0.05, 20.)
+	plt.ylim(10**(-3), 10**(4))
+	plt.ylabel('$w_{gg}$, Mpc/h com')
+	plt.savefig('./plots/wgg_1h_CS-SS.png')
+	plt.close()
+	
+	plt.figure()
+	plt.semilogx(rp_cents_, rp_cents_*wgg_1h, 'go')
+	plt.xlim(0.1, 200.)
+	plt.ylim(0, 300)
+	plt.ylabel('$r_p w_{gg}$, Mpc^2/h^2 com')
+	plt.xlabel('$r_p$, Mpc/h com')
+	plt.savefig('./plots/Rwgg_1h_CS-SS.png')
+	plt.close()
+	
+	return wgg_1h
+	
+def get_xi_1h(r, kvec, Pofk):
+	""" Returns the 1 halo galaxy correlation function including cen-sat and sat-sat terms, from the power spectrum via Fourier transform."""
+	
+	xi = np.zeros(len(r))
+	for ri in range(0,len(r)):
+		xi[ri] = scipy.integrate.simps(Pofk * kvec**2 * np.sin(kvec*r[ri]) / (kvec * r[ri]) / 2. / np.pi**2 , kvec)
+	
+	plt.figure()
+	plt.loglog(r, xi, 'go')
+	plt.savefig('./plots/xigg_1h_fourier.png')
+	plt.close()
+	
+	return xi
+	
+def get_Pkgg_1halo(rvec_nfw, kvec_ft):
+	""" Returns the 1halo galaxy power spectrum with c-s and s-s terms."""
+	
+	
+	# Get ingredients we need here:
+	y = gety(rvec_nfw, pa.Mvir, pa.zeff, kvec_ft) # Mass-averaged Fourier transform of the density profile
+
+	alpha = get_alpha(pa.Mvir) # The number which accounts for deviation from Poisson statistics
+	Ncenavg = get_Nc(pa.Mvir) # The mean number of central galaxies in the halo (between 0 and 1).
+	Nsatavg = get_Ns(pa.Mvir) # The mean number of satellite galaxies in the halo
+	print "alpha=", alpha
+	print "Ncen=", Ncenavg
+	print "Nsatavg=", Nsatavg
+
+	NcNs = NcenNsat(alpha, Ncenavg, Nsatavg) # The average number of central-satelite pairs in a halo of mass M
+	NsNs = NsatNsat(alpha, Nsatavg) # The average number of satelite-satelite pairs in a halo of mass M
+	
+	print "NcNs=", NcNs
+	print "NsNs=", NsNs
+	
+	#Pkgg = 1. / (2. * np.pi)**3 / (pa.ng**2) * pa.nh * (NcNs * y + NsNs * y **2)
+	Pkgg = 1. / (pa.ng**2) * pa.nh * (NcNs * y + NsNs * y **2)
+
+
+	plt.figure()
+	plt.loglog(kvec_ft, Pkgg, 'b+')
+	plt.savefig('./plots/Pkgg_1halo.png')
+	plt.close()
+
+	return Pkgg
+	
+def gety(rvec, M, z, kvec):
+	""" Fourier transforms the density profile to get the power spectrum. """
+	
+	# Get the nfw density profile at the correct mass and redshift and at a variety of r
+	rho = rho_NFW(rvec, M, z)  # Units Msol h^2 / Mpc^3, comoving.
+	print "in gety - got rho"
+	
+	# Use a downsampled kvec to speed computation
+	kvec_gety = np.logspace(np.log10(kvec[0]), np.log10(kvec[-1]), 1000) 
+	print "in gety - got downsampled kvec"
+	
+	u_ = np.zeros(len(kvec_gety))
+	for ki in range(0,len(kvec_gety)):
+		u_[ki] = 4. * np.pi / M * scipy.integrate.simps( rvec * np.sin(kvec_gety[ki]*rvec)/ kvec_gety[ki] * rho, rvec) # unitless / dimensionless.
+		
+	print "in gety - got u"
+		
+	# Interpolate in k and use the higher-sampled k to output
+	u_interp = scipy.interpolate.interp1d(kvec_gety, u_)
+	u_morepoints = u_interp(kvec) 
+		
+	plt.figure()
+	plt.loglog(kvec, u_morepoints, 'b+')
+	#plt.ylim(0.01, 2)
+	#plt.xlim(0.002, 100000)
+	plt.savefig('./plots/u.png')
+	plt.close()
+	
+	return u_morepoints
+	
+def get_alpha(M):
+	""" Gets the parameter that accounts for the deviation from Poisson statistics. M is in Msol / h. """
+	
+	if (M<10**11):
+		alpha = np.sqrt(np.log(M / 10**11))
+	else:
+		alpha = 1.
+		
+	return alpha
+	
+def get_Nc(M):
+	""" Gets the average number of central galaxies per halo. M is in Msol/h, as in pa.Mmin."""
+	
+	Ncen = 0.5 * (1. + scipy.special.erf((np.log(M) -pa.logMmin) / pa.siglogM))
+	
+	return Ncen 
+	
+def get_Ns(M):
+	""" Gets the average number of satelite galaxies per halo. M is in Msol/h, as are Mcut and M1."""
+	
+	Nsat = (M / pa.M1)**(pa.sat_exp) * np.exp(-pa.Mcut / M)
+
+	return Nsat 
+	
+def NcenNsat(alpha, Ncen, Nsat):
+	""" Returns the average number of pairs of central and satelite galaxies per halo of mass M. """
+	
+	NcNs = alpha**2 * Ncen * Nsat
+	
+	return NcNs
+	
+def NsatNsat(alpha, Nsat):
+	""" Returns the average number of pairs of satelite galaxies per halo. """
+	
+	NsNs = alpha**2 * Nsat**2
+	
+	return NsNs
+	
 	
 def wgg_2halo(rp_cents_):
 	""" Returns wgg for the 2-halo term only."""
@@ -821,8 +975,12 @@ def wgg_2halo(rp_cents_):
 def wgg_full(rp_c):
 	""" Combine 1 and 2 halo terms of wgg """
 	
-	wgg_1h = wgg_1halo(rp_c, pa.zeff)
+	#wgg_1h = wgg_1halo(rp_c, pa.zeff)
+	print "GETTING 1HALO WGG"
+	wgg_1h = wgg_1halo_Four(rp_c)
+	#print "DONE WITH 1HALO WGG, GETTING 2HALO"
 	#wgg_2h = wgg_2halo(rp_c)
+	#print "DONE WITH 2HALO WGG"
 	(rp_cen, wgg_2h) = np.loadtxt('./txtfiles/wgg_2halo_'+str(pa.kpts_wgg)+'pts.txt', unpack=True)
 	
 	wgg_tot = wgg_1h + wgg_2h 
@@ -831,14 +989,14 @@ def wgg_full(rp_c):
 	plt.semilogx(rp_c, rp_c* wgg_tot, 'go')
 	plt.xlim(0.01, 200.)
 	plt.ylim(0., 300.)
-	plt.savefig('./plots/Rwgg_tot_NFW.png')
+	plt.savefig('./plots/Rwgg_tot_incSatSat.png')
 	plt.close()
 	
 	plt.figure()
 	plt.loglog(rp_c, wgg_tot, 'go')
 	plt.xlim(0.01, 200.)
 	#plt.ylim(0., 300.)
-	plt.savefig('./plots/wgg_tot_NFW.png')
+	plt.savefig('./plots/wgg_tot_incSatSat.png')
 	plt.close()
 	
 	return wgg_tot
@@ -846,11 +1004,12 @@ def wgg_full(rp_c):
 def wgp_full(rp_c):
 	""" Combine 1 and 2 halo terms of wgg """
 	
-	print "wgp 1h, before"
+	print "GETTING WGP_1H"
 	wgp_1h = wgp_1halo(rp_c)
-	print "wgp 1h, after"
+	#print "DONE WITH WGP_1H, ON TO WGP 2H"
 	#wgp_2h = wgp_2halo(rp_c)
-	(rp_cen, wgp_2h) = np.loadtxt('./txtfiles/wgp_'+str(pa.kpts_wgp)+'pts.txt', unpack=True)
+	#print "DONE WITH 2 HALO WGP"
+	(rp_cen, wgp_2h) = np.loadtxt('./txtfiles/wgp_2halo_'+str(pa.kpts_wgp)+'pts.txt', unpack=True)
 	
 	wgp_tot = wgp_1h + wgp_2h 
 	
@@ -962,10 +1121,10 @@ def get_gammaIA_cov_stat(rp_bins, rp_bins_c):
 	plt.xlabel('$r_p$')
 	plt.ylabel('$\sigma(\gamma_{IA})$')
 	plt.xlim(0.04, 20)
-	plt.savefig('./plots/variance_alone_components_Blazek_Deltacovdirectly.pdf')
+	plt.savefig('./plots/variance_alone_components_Blazek_incSatSat.pdf')
 	plt.close()
 
-	return gammaIA_stat_cov
+	return (gammaIA_stat_cov, g_IA_fid)
 	
 def gamma_fid_check(rp_bins, rp_bins_c):
 	""" Returns the fiducial gamma as calculated from the things we put together (not from a fiducial model), just as a check that it looks okay. """
@@ -1110,7 +1269,7 @@ def plot_quant_vs_rp(quant, rp_cent, file):
 
 	return
 	
-def plot_variance(cov_1, fidvalues_1, bin_centers, filename):
+def plot_variance(cov_1, fidvalues_1, bin_centers):
 	""" Takes a covariance matrix, a vector of the fiducial values of the object in question, and the edges of the projected radial bins, and makes a plot showing the fiducial values and 1-sigma error bars from the diagonal of the covariance matrix. Outputs this plot to location 'filename'."""
 
 	fig_sub=plt.subplot(111)
@@ -1124,7 +1283,7 @@ def plot_variance(cov_1, fidvalues_1, bin_centers, filename):
 	fig_sub.tick_params(axis='both', which='major', labelsize=12)
 	fig_sub.tick_params(axis='both', which='minor', labelsize=12)
 	plt.tight_layout()
-	plt.savefig('./plots/variance_log_Deltacovdirectly.pdf')
+	plt.savefig('./plots/variance_log_incSatSat.pdf')
 	plt.close()
 	
 	fig_sub=plt.subplot(111)
@@ -1138,13 +1297,13 @@ def plot_variance(cov_1, fidvalues_1, bin_centers, filename):
 	fig_sub.tick_params(axis='both', which='major', labelsize=12)
 	fig_sub.tick_params(axis='both', which='minor', labelsize=12)
 	plt.tight_layout()
-	plt.savefig('./plots/variance_notlog__Deltacovdirectly.pdf')
+	plt.savefig('./plots/variance_notlog_incSatSat.pdf')
 	plt.close()
 	
 	plt.figure()
 	plt.loglog(bin_centers,np.sqrt(np.diag(cov_1)), 'go')
 	plt.xlim(0.04, 20)
-	plt.savefig('./plots/variance_alone_Blazek_Deltacovdirectly.pdf')
+	plt.savefig('./plots/variance_alone_Blazek_incSatSat.pdf')
 	plt.close()
 
 	return  
@@ -1166,13 +1325,13 @@ z_of_com = z_interpof_com()
 #gammaIA = gamma_fid(rp_cent)
 
 # Get the statistical error on gammaIA
-Cov_stat_gIA = get_gammaIA_cov_stat(rp_bins, rp_cent)
+(Cov_stat_gIA, fid_gIA) = get_gammaIA_cov_stat(rp_bins, rp_cent)
 
 # Get the fiducial value of gamma_IA in each projected radial bin
-fid_gIA		=	gamma_fid(rp_cent)
+#fid_gIA		=	gamma_fid(rp_cent)
 
 # Output a plot showing the 1-sigma error bars on gamma_IA in projected radial bins 
-plot_variance(Cov_stat_gIA, fid_gIA, rp_cent, pa.plotfile)
+plot_variance(Cov_stat_gIA, fid_gIA, rp_cent)
 
 exit()
 # Below this is Fisher matrix stuff - don't worry about it for now.

@@ -276,10 +276,10 @@ P_{1h}(k,z) \int dM \frac{M^2}{\bar{\rho}_M^2} \frac{dn}{dM} (u(k, M, z))^2.
 \end{equation}
 The integral over $M$ here averages over mass, with $\frac{dn}{dM}$ providing the halo mass function in units of counts per volume per mass. For simplicity, we fix to an average mass for now, such that $M_{\rm vir}$ is an input parameter given the mass of an average halo, and 
 \begin{equation}
-P_{1h}(k,z) \frac{M_{\rm vir}}{\bar{\rho}_M} u(k,M_{\rm vir})^2 = \frac{M_{\rm vir}}{\Omega_M(z) \rho_c} u(k,M_{\rm vir})^2.
+P_{1h}(k,z) \frac{M_{\rm vir}^2}{\bar{\rho}_M^2} n_h u(k,M_{\rm vir})^2 = \frac{M_{\rm vir}}{\Omega_M(z) \rho_c} u(k,M_{\rm vir})^2
 \label{P1h_onemass}
 \end{equation}
-A choice of $M_{\rm vir} = 4 \times 10^{12} M_{\odot}$ given a 1-halo term that roughly matches $w_{gg}$ from Singh et al. 2014. {\it However, the halo mass measured for the sample is $13.18 \pm 0.05$. Picking this mass gives $w_{gg}$ that does not match at all.}
+where $n_h$ is the volume number density of halos. A choice of $M_{\rm vir} = 4 \times 10^{12} M_{\odot}$ given a 1-halo term that roughly matches $w_{gg}$ from Singh et al. 2014. {\it However, the halo mass measured for the sample is $13.18 \pm 0.05$. Picking this mass gives $w_{gg}$ that does not match at all.}
 
 $w_{g+}(r_p)$ also requires a 1-halo term, this time given by the halo model for intrinsic alignments. This time, we will calculate $w_{g+}^{1h}(r_p)$ separately, and do $w_{g+}^{\rm tot}(r_p) = w_{g+}(r_p) + w_{g+}^{1h}(r_p)$. We follow Singh et al. 2014 and Schneider \& Bridle 2010 in computing the following.
 
@@ -304,7 +304,8 @@ w_{g+}^{1h}(r_p) = \int \frac{dk_\perp}{k_\perp}{2\pi} P_{1h}(k_\perp,z) J_0(r_p
 \subsection*{Random + excess}
 Recall, though, that we would like to assume that not only excess galaxies, but also nearby galaxies which form part of the smooth background, can contribute to IA. This means that we must account for `random' terms in equation \ref{gamma_blazek}, rather than just excess.
 
-We begin with the task of adding a `random' contribution to the denominator of equation \ref{gamma_blazek}; that is, adding the random contribution to the number of lens-source pairs. From equations 4.8 and 4.10 of Blazek et al. 2012, it can be deduced that the sum over random pairs, in case of perfect spectroscopic redshifts and an effective lens redshift, is given by:
+The random and excess galaxies are affected in the same way by intrinsic alignments, so there is no need to alter the numerator of equation \ref{gamma_blazek}.
+ We do, however, need to add the random contribution to the number of lens-source pairs in the denominator. From equations 4.8 and 4.10 of Blazek et al. 2012, it can be deduced that the sum over random pairs, in case of perfect spectroscopic redshifts and an effective lens redshift, is given by:
 \begin{equation}
 \int dz_s \frac{dN}{dz_s} 
 \end{equation}
@@ -315,10 +316,15 @@ where I have dropped the weights as they will cancel. Adding this to the sum ove
 \end{equation}
 This is intuitively sensible. We expect the number of lense source pairs from excess galaxies to vary as a function of $r_p$ due to clustering, but we expect that from random galaxies to be independent of separation, other than a slight dependence on $z_s$ via $\Pi$. Mapping this to the form of equation \ref{wAB}, we find:
 \begin{equation}
-\int d\Pi (\xi_{ls}(r_p, \Pi, z_l) + 1) = w_{ls}(r_p) + \Pi_{\rm max} - \Pi_{\rm min}.
+\int d\Pi (\xi_{ls}(r_p, \Pi, z_l) + 1) = w_{ls}(r_p) + 2 \Pi_{\rm max} 
 \label{wl}
 \end{equation}
-However, the equivalent inclusion of random galaxies in the numerator is trickier. We expect that the intrinsic tangential shear of random galaxies will decrease as a function of $r_p$ and $\Pi$. {\it I don't know how to account for this. This needs to be sorted out.}
+The result is that equation \ref{gamma_blazek} is modified to be:
+\begin{equation}
+\bar{\gamma}_{\rm IA}(r_p) \approx \frac{w_{l+}(r_p)}{w_{ls}(r_p) + 2 \Pi_{\rm max}}.
+\label{gamma_blazek_randoms}
+\end{equation}
+
 
 
 
@@ -369,7 +375,6 @@ Currently no effect but could have an effect if weights were redshift-dependent:
 \item{The definition of fiducial $\gamma_{\rm IA}$ from Blazek 2012 says it is approximately equal to a ratio of projected correlation functions, but this is using a different definition than the standard definition for correlation functions. Is this where the `approximately' comes in?}
 \item{Is it acceptable to use the dark matter 1-halo term for $w_{gg}$ or do I need to account for central and satellite galaxy stuff?}
 \item{Choosing the measured sample mass of LOWZ from Singh 2014 gives a $w_{gg}$ that doesn't match the figure in that paper (while choosing a slightly lower mass does match). Is this expected, perhaps due to not averaging over the HMF?}
-\item{How to include random galaxy tangential shear in the fiducial $\gamma_{IA}$ calculation.}
 \item{How to deal with off-diagonal elements of the contribution to the statistical error from the boost?}
 \end{enumerate}
 %-------------------------------------------------------------------------------

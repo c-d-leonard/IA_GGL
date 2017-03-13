@@ -2,13 +2,6 @@
 
 import numpy as np
 
-# The parameter labels to be constrainted in the Fisher forecast
-A	=	0
-beta	=	1
-par	=	[A, beta]
-A_fid	=	0.059
-beta_fid	=	-0.73
-
 # The rms ellipticity of sample a and b.
 e_rms_a = 	0.3
 e_rms_b	=	0.3
@@ -20,7 +13,6 @@ S_to_N = 15.
 sigz=0.08
  
 # The factor by which the boost is proportional to the projected correlation function
-#Boost_prop = 0.05
 boost_assoc = 0.2 # Boost at 1 Mpc/h for our associated sample
 boost_tot = 0.06 # Boost at 1 Mpc/h for all the source-lens pairs in the survey (all z)
 boost_far = 0.03
@@ -49,11 +41,8 @@ N_bins	=	15
 
 #Parameters of the dNdz of sources, if using an analytic distribution.
 alpha 	= 	2.338
-#beta 	= 	1.5
-#zm 	= 	0.5  #0.4
 zs	=	0.303
 zpts	=	1000  # Number of points in the z vector at which we are evaluating dNdz
-
 
 # The width of the redshift slice which begins at the lens and ends at the top of sample a
 delta_z	=	0.17
@@ -70,8 +59,6 @@ zphmax	=	5.0
 # The maximum separation from a lens to consider part of `rand-close', in Mpc/h
 close_cut = 100 # Mpc/h
 
-# Location of file for plot showing 1 sigma error bars on gamma_IA
-plotfile =	'./plots/varianceplot_Deltacovdirectly.pdf'
 
 # Speed of light in units of m/s
 c=2.99792458*10**(8)
@@ -97,15 +84,15 @@ mperMpc = 3.0856776*10**22
 Msun = 1.989*10**30 # in kg
 Gnewt = 6.67408*10**(-11)
 
-#
+
 #c14 = 10**(0.7) # Parameter in the concentration / mass relationship (Neto 2007)
 Mvir = 10**(13.08) #/ (HH0 / 100.)
 #Mvir = 3.4 * 10**12 # units Msol/h
 #Mvir = 6. * 10**13 #/ (HH0 / 100.)
 #Mvir = 4.7 * 10**12 #in units of M sol
 #Mvir = 9.3 * 10**13
-kpts_wgg = 1000
-kpts_wgp = 1000
+kpts_wgg = 10000
+kpts_wgp = 2000
 sigz_gwin = 0.001
 ProjMax = 100.
 bs = 1.77
@@ -128,3 +115,19 @@ ah =  1. # 0.08
 # Files to import error on the boost
 sigBF_a = './txtfiles/boost_error_from_rachel_assoc.txt' # File containing two columns: rp (kpc/h), sigma(Boost-1) for sample a
 sigBF_b ='./txtfiles/boost_error_from_rachel_background.txt' # Same for b
+
+# 1 halo gal-gal term parameters
+ng = 3. * 10**(-4) # volume density of galaxies for BOSS, in h^3 / Mpc^3
+nh = 2*10**(-4) # volume density of halos. Must be chosen appropriately for Mvir above. This is a super rough approximation.
+Mmin = 1.4 * 10**12 # Taken from Chen 2009, "bright", table 2, in Msol / h
+M1 = 2.0*10**13 # Taken from Chen 2009, "bright", table 2, in Msol / h
+sat_exp = 1.0 # Taken from Chen 2009, "bright", table 2
+Mcut = 2.0*10**12 # Taken from chen 2009, "bright", table 2, in Msol/ h
+logMmin = 11.60 # Taken from Zheng 2007, table 1, M_r < 19 (arbitrarily), Mass in Msol/h
+siglogM = 0.26 # Taken from Zheng 2007, table 1, M_r< 19
+
+
+
+
+
+
