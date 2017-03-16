@@ -1,4 +1,4 @@
-# This is a script which constrains the (amplitude? parameters of a model?) of intrinsic alignments, using multiple shape measurement methods.
+# This is a script which forecasts constraints on IA using multiple shape measurement methods.
 
 import numpy as np
 import scipy
@@ -124,7 +124,6 @@ def get_perbin_N_ls(rp_bins_, zeff_, ns_, nl_, A, rp_cents_):
 
 	return N_ls_pbin
 
-
 ###### LINEAR  / NONLINEAR ALIGNMENT MODEL + 1 HALO TERMS FOR FIDUCIAL GAMMA_IA ######
 
 def window(tag):
@@ -238,292 +237,398 @@ def get_P1haloIA(z, k):
 	p1 = get_pi(pa.q11, pa.q12, pa.q13, z)
 	p2 = get_pi(pa.q21, pa.q22, pa.q23, z)
 	p3 = get_pi(pa.q31, pa.q32, pa.q33, z)
-
 	
-	P1halo = np.zeros((len(k), len(z)))
-	for ki in range(0,len(k)):
-		for zi in range(0,len(z)):
-			P1halo[ki, zi]  = pa.ah * ( k[ki] / p1[zi] )**2 / ( 1. + ( k[ki] /p2[zi] )** p3[zi])
+	P1halo = pa.ah * ( k / p1 )**2 / ( 1. + ( k /p2 )** p3)
 	
 	return P1halo
 	
 def wgp_1halo(rp_c_):
 	""" Returns the 1 halo term of wg+(rp) """
 	
-	(z, w) = window('g+') # Same window function as for the NLA term.
+	#(z, w) = window('g+') # Same window function as for the NLA term.
 	
 	# Set up a k vector to integrate over:
-	k = np.logspace(-5., 4., 1000000)
+	k = np.logspace(-5., 7., 100000)
 	
 	# Get the `power spectrum' term
-	P1h = get_P1haloIA(z, k)
+	P1h = get_P1haloIA(0.393, k)
 	
 	# First do the integral over z:
-	zint = np.zeros(len(k))
-	for ki in range(0,len(k)):
-		zint[ki] = scipy.integrate.simps(P1h[ki, :] * w , z)
+	#zint = np.zeros(len(k))
+	#for ki in range(0,len(k)):
+	#	zint[ki] = scipy.integrate.simps(P1h[ki, :] * w , z)
 		
 	#plot_quant_vs_quant(k, zint, './zint.png')
 		
 	# Now do the integral in k
 	ans = np.zeros(len(rp_c_))
 	for rpi in range(0,len(rp_c_)):
-		integrand = k * zint * scipy.special.j0(rp_c_[rpi] * k)
-		ans[rpi] = scipy.integrate.simps(k * zint * scipy.special.j0(rp_c_[rpi] * k), k)
+		#integrand = k * zint * scipy.special.j0(rp_c_[rpi] * k)
+		ans[rpi] = scipy.integrate.simps(k * P1h * scipy.special.j0(rp_c_[rpi] * k), k)
 		
 	wgp1h = ans / (2. * np.pi)
+	
+	plt.figure()
+	plt.loglog(rp_c_, wgp1h, 'bo')
+	plt.xlim(0.1, 200)
+	plt.ylim(0.01, 30)
+	plt.xlabel('$r_p$, Mpc/h com')
+	plt.ylabel('$w_{g+}$, Mpc/ h com')
+	plt.savefig('./plots/wg+_1h_check_shapes.pdf')
+	plt.close()
 		
 	return wgp1h
 
-# 1 halo for DM with NFW profile (gg) (see e.g. Giocolo 2010):
-
-def Delta_virial(z_):
-	""" Get Delta_virial in terms of z, which is used to match the Mass / Radius relationship in Giocoli 2010. """
+# 1 halo for DM with NFW profile (gg):
 	
-	# Follow Giocoli 2010 and simply read the points of Delta_virial as a function of Omega_tot (All omega except for OmegaLambda) off Figure 1 of Eke et al 2006
-	OmTot = np.asarray([0.35, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9])
-	Dvir = np.asarray([107., 113., 126., 138., 148., 158., 169])
+def Rhalo(M_insol):
+	""" Get the radius of a halo in COMOVING Mpc/h given its mass."""
 	
-	# Get Omegatot (everything but Lambda) as a function of redshift from theory
-	OmL = 1. - pa.OmC - pa.OmB - pa.OmR - pa.OmN
-	z = np.linspace(100000, 0., 1000000)
-	Omtot_the = ( (pa.OmC+pa.OmB)*(1+z)**3 + (pa.OmR+pa.OmN) * (1+z)**4 ) / ( (pa.OmC+pa.OmB)*(1+z)**3 + OmL + (pa.OmR+pa.OmN) * (1+z)**4 )
+	#rho_crit = 3. * 10**10 * pa.mperMpc / (8. * np.pi * pa.Gnewt * pa.Msun * (pa. HH0 / 100.)) # Msol h^3 / Mpc^3, for use with M in Msol.
+	rho_crit = 3. * 10**10 * pa.mperMpc / (8. * np.pi * pa.Gnewt * pa.Msun)  # Msol h^2 / Mpc^3, for use with M in Msol / h
+	rho_m = rho_crit * pa.OmM
 	
-	# Interpolate
-	z_of_Omtot = scipy.interpolate.interp1d(Omtot_the, z)
-	
-	# now, interpolate so that we can get Delta as a function of z:
-	Dvir_of_z = scipy.interpolate.interp1d(z_of_Omtot(OmTot), Dvir)
-	
-	Dv = Dvir_of_z(z_)
-	
-	return Dv
-
-def Rhalo(M_insol, z):
-	""" Get the radius of a halo in Mpc/h given its mass IN SOLAR MASSES. Uses the Rvir / Mvir relationship from Giocolo 2010, which employs Delta_virial, from Eke et al 1996."""
-	
-	OmL = 1. - pa.OmC - pa.OmB - pa.OmR - pa.OmN
-	E_ofz = ( (pa.OmC+pa.OmB)*(1+z)**3 + OmL + (pa.OmR+pa.OmN) * (1+z)**4 )**(0.5)#the dimensionless part of the hubble parameter 
-	#rho_crit = 4.65 * 10**10 * E_ofz**2 # This is rho_crit in units of Msol h^3 / Mpc^3
-	rho_crit = 4.126 * 10** 11 * E_ofz**2 # This is rho_crit in units of Msol h^3 / Mpc^3
-	OmM = (pa.OmC+pa.OmB)*(1+z)**3 / ( (pa.OmC+pa.OmB)*(1+z)**3 + OmL + (pa.OmR+pa.OmN) * (1+z)**4 )
-	Dv = Delta_virial(z)
-	
-	#Rvir = ( 3. * M_insol * OmM / (4. * np.pi * rho_crit * Dv))**(1./3.)
-	Rvir = ( 3. * M_insol / (4. * np.pi * 180. * rho_crit * OmM))**(1./3.)
-	
-	#print "Rvir=", Rvir
+	Rvir = ( 3. * M_insol / (4. * np.pi * rho_m * 180.))**(1./3.)
+	print "Rvir=", Rvir # in Mpc/h
 	
 	return Rvir
 	
-def cvir(M_insol, z):
-	""" Returns the concentration parameter of the NFW profile, c_{vir}. Uses the Neto 2007 definition, referenced in Giocoli 2010 """
+def cvir(M_insol):
+	""" Returns the concentration parameter of the NFW profile, c_{vir}. """
 	
-	cvi = pa.c14 / (1. + z) * (M_insol / 10**14)**(-0.11)
+	#cvi = pa.c14 / (1. + z) * (M_insol / 10**14)**(-0.11)
 	
 	# This is the mass concentration relation used in Singh 2014, for comparison
 	#cvi = 5. * (M_insol * (pa.HH0 / 100.) / 10**14 ) ** (-0.1)
+	cvi = 5. * (M_insol / 10**14)**(-0.1)
 	
 	return cvi 
 	
 def rho_s(cvi, Rvi, M_insol):
-	""" Returns rho_s, the NFW parameter representing the density at the `scale radius', Rvir / cvir. Units: Msol * ( 1 / (Rvir units)**3), usualy Msol * h^3 / Mpc^3. """
+	""" Returns rho_s, the NFW parameter representing the density at the `scale radius', Rvir / cvir. Units: Mvir units * ( 1 / (Rvir units)**3), usualy Msol * h^3 / Mpc^3 with comoving distances. Sometimes also Msol h^2 / Mpc^3 (when Mvir is in Msol / h). """
 	
 	rhos = M_insol / (4. * np.pi) * ( cvi / Rvi)**3 * (np.log(1. + cvi) - (cvi / (1. + cvi)))**(-1)
-	
-	
 	
 	return rhos
 	
 def rho_NFW(r_, M_insol, z):
 	""" Returns the density for an NFW profile in real space at distance r from the center (?). Units = units of rhos. (Usually Msol * h^3 / Mpc^3). r_ MUST be in the same units as Rv; usually Mpc / h."""
 	
-	Rv = Rhalo(M_insol, z)
-	cv = cvir(M_insol, z)
+	Rv = Rhalo(M_insol)
+	cv = cvir(M_insol)
 	rhos = rho_s(cv, Rv, M_insol)
 	
 	rho_nfw = rhos  / ( (cv * r_ / Rv) * (1. + cv * r_ / Rv)**2)
 	
 	return rho_nfw
 	
-def get_u(M_insol, z, kvec):
+def wgg_1halo_Four(rp_cents_):
+	""" Gets the 1halo term of wgg via Fourier space, to account for central-satelite pairs and satelite-satelite pairs. """
+	
+	Rvir = Rhalo(pa.Mvir)
+	
+	kvec_FT = np.logspace(-7, 4, 1000000)
+	rvec_NFW = np.logspace(-7, np.log10(Rvir), 1000000)
+	rvec_xi = np.logspace(-4, 4, 1000)
+	Pivec = np.logspace(-7, np.log10(1000./np.sqrt(2.01)), 1000)
+	rpvec = np.logspace(-7, np.log10(1000./np.sqrt(2.01)), 1000)
+	
+	Pk = get_Pkgg_1halo(rvec_NFW, kvec_FT) # Gets the 1halo galaxy power spectrum including c-s and s-s terms. Pass rvec because need to get rho_NFW in here.
+	
+	xi_gg_1h = get_xi_1h(rvec_xi, kvec_FT, Pk) # Function that gets the 1halo galaxy-galaxy correlation function term.
+	xi_interp = scipy.interpolate.interp1d(rvec_xi, xi_gg_1h)
+	
+	xi_2D = np.zeros((len(rp_cents_), len(Pivec)))
+	for ri in range(0, len(rp_cents_)):
+		for pi in range(0, len(Pivec)):
+			xi_2D[ri, pi] = xi_interp(np.sqrt(rp_cents_[ri]**2 + Pivec[pi]**2)) 
+	
+	# Only integrate out to the virial radius
+	Rvir = Rhalo(pa.Mvir)
+	indvir = next(j[0] for j in enumerate(Pivec) if j[1]>=(Rvir))
+	
+	wgg_1h = np.zeros(len(rp_cents_))
+	for ri in range(0,len(rp_cents_)):
+		wgg_1h[ri] = scipy.integrate.simps(xi_2D[ri, :][0:indvir], Pivec[0:indvir])
+		
+	plt.figure()
+	plt.loglog(rp_cents_, wgg_1h, 'go')
+	plt.xlim(0.05, 20.)
+	plt.ylim(10**(-3), 10**(4))
+	plt.xlabel('$r_p$, Mpc/h com')
+	plt.ylabel('$w_{gg}$, Mpc/h com')
+	plt.savefig('./plots/wgg_1h_shapes.png')
+	plt.close()
+	
+	plt.figure()
+	plt.semilogx(rp_cents_, rp_cents_*wgg_1h, 'go')
+	plt.xlim(0.1, 200.)
+	plt.ylim(0, 300)
+	plt.ylabel('$r_p w_{gg}$, Mpc^2/h^2 com')
+	plt.xlabel('$r_p$, Mpc/h com')
+	plt.savefig('./plots/Rwgg_1h_shapes.png')
+	plt.close()
+	
+	return wgg_1h
+
+def get_xi_1h(r, kvec, Pofk):
+	""" Returns the 1 halo galaxy correlation function including cen-sat and sat-sat terms, from the power spectrum via Fourier transform."""
+	
+	xi = np.zeros(len(r))
+	for ri in range(0,len(r)):
+		xi[ri] = scipy.integrate.simps(Pofk * kvec**2 * np.sin(kvec*r[ri]) / (kvec * r[ri]) / 2. / np.pi**2 , kvec)
+	
+	plt.figure()
+	plt.loglog(r, xi, 'go')
+	plt.ylabel('$\\xi(r)$')
+	plt.xlabel('$r$, Mpc/h com')
+	plt.xlim(0.001, 100)
+	plt.savefig('./plots/xigg_1h_shapes.png')
+	plt.close()
+	
+	return xi
+
+def get_Pkgg_1halo(rvec_nfw, kvec_ft):
+	""" Returns the 1halo galaxy power spectrum with c-s and s-s terms."""
+	
+	# Get ingredients we need here:
+	y = gety(rvec_nfw, pa.Mvir, pa.zeff, kvec_ft) # Mass-averaged Fourier transform of the density profile
+
+	alpha = get_alpha(pa.Mvir) # The number which accounts for deviation from Poisson statistics
+	Ncenavg = 1. # We assume that every halo has a central galaxy, so the mean number of central galaxies / halo is 1.
+	
+	fcen = 1. - pa.fsat # fraction of central galaxies = 1 - fraction of satelite galaxies
+	Nsatavg = pa.fsat / fcen # Mean number of satelite galaxies per halo
+
+	NcNs = NcenNsat(alpha, Ncenavg, Nsatavg) # The average number of central-satelite pairs in a halo of mass M
+	NsNs = NsatNsat(alpha, Nsatavg) # The average number of satelite-satelite pairs in a halo of mass M
+
+	Pkgg = (1. - pa.fsat) / pa.ng * (NcNs * y + NsNs * y **2)
+
+	plt.figure()
+	plt.loglog(kvec_ft, Pkgg, 'b+')
+	plt.ylabel('$P_{gg}^{1h}(k)$, $(Mpc/h)^3$, com')
+	plt.xlabel('$k$, h/Mpc, com')
+	plt.savefig('./plots/Pkgg_1halo_shapes.png')
+	plt.close()
+
+	return Pkgg
+
+def gety(rvec, M, z, kvec):
 	""" Fourier transforms the density profile to get the power spectrum. """
 	
-	Rv = Rhalo(M_insol, z)
-	cv = cvir(M_insol, z)
-	
 	# Get the nfw density profile at the correct mass and redshift and at a variety of r
-	rvec = np.logspace(-7, np.log10(Rv), 10000) # Min r = 10^{-7} is sufficient for convergence. 4000 pts is more than sufficient.
-	rho = rho_NFW(rvec, M_insol, z)
+	rho = rho_NFW(rvec, M, z)  # Units Msol h^2 / Mpc^3, comoving.
+	print "in gety - got rho"
 	
-	u_ = np.zeros(len(kvec))
-	for ki in range(0,len(kvec)):
-		u_[ki] = 4. * np.pi / M_insol * scipy.integrate.simps( rvec**2 * np.sin(kvec[ki]*rvec)/ (kvec[ki]*rvec) * rho, rvec)
+	# Use a downsampled kvec to speed computation
+	kvec_gety = np.logspace(np.log10(kvec[0]), np.log10(kvec[-1]), 1000) 
+	print "in gety - got downsampled kvec"
 	
-	return u_
-	
-def P1halo_DM(M_insol, z_vec, k):
-	""" Gets the 1 halo dark matter power spectrum as a function of z and k. """
-	
-	P1h = np.zeros((len(z_vec), len(k)))
-	for zi in range(0,len(z_vec)):
+	u_ = np.zeros(len(kvec_gety))
+	for ki in range(0,len(kvec_gety)):
+		u_[ki] = 4. * np.pi / M * scipy.integrate.simps( rvec * np.sin(kvec_gety[ki]*rvec)/ kvec_gety[ki] * rho, rvec) # unitless / dimensionless.
 		
-		z = z_vec[zi]
-		# Get u
-		u = get_u(M_insol, z, k)
+	print "in gety - got u"
+		
+	# Interpolate in k and use the higher-sampled k to output
+	u_interp = scipy.interpolate.interp1d(kvec_gety, u_)
+	u_morepoints = u_interp(kvec) 
+		
+	plt.figure()
+	plt.loglog(kvec, u_morepoints, 'b+')
+	#plt.ylim(0.01, 2)
+	#plt.xlim(0.002, 100000)
+	plt.ylabel('u')
+	plt.xlabel('$k$, h/Mpc, com')
+	plt.savefig('./plots/u_shapes.png')
+	plt.close()
 	
-		# Need the average matter density  = rho_crit * OmegaM
-		OmL = 1. - pa.OmC - pa.OmB - pa.OmR - pa.OmN
-		E_ofz = ( (pa.OmC+pa.OmB)*(1+z)**3 + OmL + (pa.OmR+pa.OmN) * (1+z)**4 )**(0.5)#the dimensionless part of the hubble parameter 
-		#rho_crit = 4.65 * 10**10 * E_ofz**2 # This is rho_crit in units of Msol h^3 / Mpc^3
-		rho_crit = 4.126 * 10** 11 * E_ofz**2 # This is rho_crit in units of Msol h^3 / Mpc^3
-		OmM = (pa.OmC + pa.OmB)* (1. + z)**(3) / ( (pa.OmC+pa.OmB)*(1+z)**3 + OmL + (pa.OmR+pa.OmN) * (1+z)**4 )
-		rho_m = OmM * rho_crit # units of Msol h^3 / Mpc^3
-	
-		#P1h[zi, :] = M_insol / rho_m * u**2 
-		P1h[zi, :] = (M_insol / rho_m)**2 * 3.0*10**(-4) * u**2
-	
-	return P1h
-	
-def wgg_wgp(rp_cents_):
-	""" Returns wgg and wg+ (nla + 1 halo terms) """
+	return u_morepoints
 
+def get_alpha(M):
+	""" Gets the parameter that accounts for the deviation from Poisson statistics. M is in Msol / h. """
+	
+	if (M<10**11):
+		alpha = np.sqrt(np.log(M / 10**11))
+	else:
+		alpha = 1.
+		
+	return alpha
+
+def NcenNsat(alpha, Ncen, Nsat):
+	""" Returns the average number of pairs of central and satelite galaxies per halo of mass M. """
+	
+	NcNs = alpha**2 * Ncen * Nsat
+	
+	return NcNs
+	
+def NsatNsat(alpha, Nsat):
+	""" Returns the average number of pairs of satelite galaxies per halo. """
+	
+	NsNs = alpha**2 * Nsat**2
+	
+	return NsNs	
+
+# 2 halo terms:
+	
+def wgg_2halo(rp_cents_):
+	""" Returns wgg for the 2-halo term only."""
+	
 	# Get the redshift window functions
 	z_gg, win_gg = window('gg')
-	z_gp, win_gp = window('g+')
 	
-	# Get the NL DM power spectrum from camb (no 1 halo term yet)
+	# Get the NL DM power spectrum from camb (this is only for the 2-halo term)
 	(k_gg, P_gg) = get_Pk(z_gg, 'gg')
-	# Now get the 1 halo DM power spectrum to add to this, at the same k and z's
-	P1hgg = P1halo_DM(pa.Mvir, z_gg, k_gg)
-	# Add these to get the total gg power spectrum
-	Pgg_tot = P_gg + P1hgg
 	
-	# Get the galaxy-shapes power spectrum from camb - we will add wg+_1halo, calculated separately, at the end
-	(k_gp, P_gp) = get_Pk(z_gp, 'gp')
-	# Get the growth factor, needed for wg+
-	D_gp = growth(z_gp)
-	
-	# First  do the integrals over z for wgg and wg+. Don't yet interpolate in k.
-	
-	# gg: z int
+	# First do the integral over z. Don't yet interpolate in k.
 	zint_gg = np.zeros(len(k_gg))
 	for ki in range(0,len(k_gg)):
-		zint_gg[ki] = scipy.integrate.simps(win_gg * Pgg_tot[:, ki], z_gg)
-
-	# g+: z int
-	zint_gp = np.zeros(len(k_gp))
-	for ki in range(0,len(k_gp)):
-		zint_gp[ki] = scipy.integrate.simps(win_gp * P_gp[:, ki] / D_gp, z_gp)
+		zint_gg[ki] = scipy.integrate.simps(win_gg * P_gg[:, ki], z_gg)
 		
-	# Define vectors of kp (kperpendicual) and kz. The sampling of these affects the answer a fair bit at large scales.
+	# Define vectors of kp (kperpendicual) and kz. Must have sufficiently high sampling to get the right answer, especially at large scales.
 	kp_gg = np.logspace(np.log10(k_gg[0]), np.log10(k_gg[-1]/ np.sqrt(2.01)), pa.kpts_wgg)
-	kp_gp = np.logspace(np.log10(k_gp[0]), np.log10(k_gp[-1]/ np.sqrt(2.01)), pa.kpts_wgp)
 	kz_gg = np.logspace(np.log10(k_gg[0]), np.log10(k_gg[-1]/ np.sqrt(2.01)), pa.kpts_wgg)
-	kz_gp = np.logspace(np.log10(k_gp[0]), np.log10(k_gp[-1]/ np.sqrt(2.01)), pa.kpts_wgp)
 	
-	# Interpolate the answers to the z integrals in k to get it in terms of kperp and kz
+	# Interpolate in terms of kperp and kz
 	kinterp_gg = scipy.interpolate.interp1d(k_gg, zint_gg)
-	kinterp_gp = scipy.interpolate.interp1d(k_gp, zint_gp)
 	
-	# Get the result of the z integrals in terms of kperp and kz
-	
-	# gg: interpolate in kp and kz
+	# Get the result of the z integral in terms of kperp and kz
 	kpkz_gg = np.zeros((len(kp_gg), len(kz_gg)))
 	for kpi in range(0,len(kp_gg)):
 		for kzi in range(0, len(kz_gg)):
 			kpkz_gg[kpi, kzi] = kinterp_gg(np.sqrt(kp_gg[kpi]**2 + kz_gg[kzi]**2))
 			
-			
-	# g+: interpolate in kp and kz
+	# Do the integrals in kz
+	kz_int_gg = np.zeros(len(kp_gg))
+	for kpi in range(0,len(kp_gg)):
+		kz_int_gg[kpi] = scipy.integrate.simps(kpkz_gg[kpi,:] * kp_gg[kpi] / kz_gg * np.sin(kz_gg*pa.ProjMax), kz_gg)
+		
+	# Do the integral in kperp
+	kp_int_gg = np.zeros(len(rp_cents_))
+	for rpi in range(0,len(rp_cents_)):
+		kp_int_gg[rpi] = scipy.integrate.simps(scipy.special.j0(rp_cents_[rpi]* kp_gg) * kz_int_gg, kp_gg)
+		
+	wgg_2h = kp_int_gg * pa.bs * pa. bd / np.pi**2
+	wgg_stack = np.column_stack((rp_cents_, wgg_2h))
+	np.savetxt('./txtfiles/wgg_2halo_'+str(pa.kpts_wgg)+'pts.txt', wgg_stack)
+	
+	return wgg_2h
+		
+def wgp_2halo(rp_cents_):
+	""" Returns wgp from the nonlinear alignment model (2-halo term only). """
+	
+	# Get the redshift window function
+	z_gp, win_gp = window('g+')
+	
+	# Get the required matter power spectrum from camb 
+	(k_gp, P_gp) = get_Pk(z_gp, 'gp')
+	
+	# Get the growth factor
+	D_gp = growth(z_gp)
+	
+	# First do the integral over z. Don't yet interpolate in k.
+	zint_gp = np.zeros(len(k_gp))
+	for ki in range(0,len(k_gp)):
+		zint_gp[ki] = scipy.integrate.simps(win_gp * P_gp[:, ki] / D_gp, z_gp)
+		
+	# Define vectors of kp (kperpendicual) and kz. 
+	kp_gp = np.logspace(np.log10(k_gp[0]), np.log10(k_gp[-1]/ np.sqrt(2.01)), pa.kpts_wgp)
+	kz_gp = np.logspace(np.log10(k_gp[0]), np.log10(k_gp[-1]/ np.sqrt(2.01)), pa.kpts_wgp)
+	
+	# Interpolate the answers to the z integral in k to get it in terms of kperp and kz
+	kinterp_gp = scipy.interpolate.interp1d(k_gp, zint_gp)
+	
+	# Get the result of the z integral in terms of kperp and kz
 	kpkz_gp = np.zeros((len(kp_gp), len(kz_gp)))
 	for kpi in range(0,len(kp_gp)):
 		for kzi in range(0, len(kz_gp)):
 			kpkz_gp[kpi, kzi] = kinterp_gp(np.sqrt(kp_gp[kpi]**2 + kz_gp[kzi]**2))
 			
-	# Do the integrals in kz
-	
-	# gg: integral in kz
-	kz_int_gg = np.zeros(len(kp_gg))
-	for kpi in range(0,len(kp_gg)):
-		kz_int_gg[kpi] = scipy.integrate.simps(kpkz_gg[kpi,:] * kp_gg[kpi] / kz_gg * np.sin(kz_gg*pa.ProjMax), kz_gg)
-	
 	# g+: integral in kz	
 	kz_int_gp = np.zeros(len(kp_gp))
 	for kpi in range(0,len(kp_gp)):
 		kz_int_gp[kpi] = scipy.integrate.simps(kpkz_gp[kpi,:] * kp_gp[kpi]**3 / ( (kp_gp[kpi]**2 + kz_gp**2)*kz_gp) * np.sin(kz_gp*pa.ProjMax), kz_gp)
-	
+			
 	# Finally, do the integrals in kperpendicular
-	
-	# gg and g+: integral in kperp
-	kp_int_gg = np.zeros(len(rp_cents_))
 	kp_int_gp = np.zeros(len(rp_cents_))
 	for rpi in range(0,len(rp_cents_)):
-		kp_int_gg[rpi] = scipy.integrate.simps(scipy.special.j0(rp_cents_[rpi]* kp_gg) * kz_int_gg, kp_gg)
 		kp_int_gp[rpi] = scipy.integrate.simps(scipy.special.jv(2, rp_cents_[rpi]* kp_gp) * kz_int_gp, kp_gp)
 		
-	wgg = kp_int_gg * pa.bs * pa. bd / np.pi**2 
 	wgp_NLA = kp_int_gp * pa.Ai * pa.bd * pa.C1rho * (pa.OmC + pa.OmB) / np.pi**2
 	
-	# Get the wgp 1 halo term, added separately:
-	wgp_1h = wgp_1halo(rp_cents_)
-	wgp = wgp_NLA + wgp_1h
+	wgp_stack = np.column_stack((rp_cents_, wgp_NLA))
+	np.savetxt('./txtfiles/wgp_2halo_'+str(pa.kpts_wgp)+'pts.txt', wgp_stack)
+	
+	return wgp_NLA
+
+# Put 1 halo and 2 halo together
+
+def wgg_full(rp_c):
+	""" Combine 1 and 2 halo terms of wgg """
+	
+	#wgg_1h = wgg_1halo(rp_c, pa.zeff)
+	print "GETTING 1HALO WGG"
+	wgg_1h = wgg_1halo_Four(rp_c)
+	#print "DONE WITH 1HALO WGG, GETTING 2HALO"
+	#wgg_2h = wgg_2halo(rp_c)
+	#print "DONE WITH 2HALO WGG"
+	(rp_cen, wgg_2h) = np.loadtxt('./txtfiles/wgg_2halo_'+str(pa.kpts_wgg)+'pts.txt', unpack=True)
+	
+	wgg_tot = wgg_1h + wgg_2h 
 	
 	plt.figure()
-	plt.loglog(rp_cents_, wgp_NLA, 'bo')
-	plt.hold(True)
-	plt.loglog(rp_cents_, wgp_1h, 'go')
-	plt.hold(True)
-	plt.loglog(rp_cents_, wgp, 'ro')
-	plt.ylim(10**(-2), 20)
-	plt.xlim(10**(-1), 200)
-	plt.savefig('./plots/wg+_both_'+str(pa.kpts_wgp)+'pts.png')
+	plt.semilogx(rp_c, rp_c* wgg_tot, 'go')
+	plt.xlim(0.01, 200.)
+	plt.ylim(0., 300.)
+	plt.ylabel('$r_p w_{gg}$, $(Mpc/h)^2$, com')
+	plt.xlabel('$r_p$, Mpc/h, com')
+	plt.savefig('./plots/Rwgg_tot_SatFrac_fixprefac_fixcovDS.png')
 	plt.close()
 	
-	wgg_stack = np.column_stack((rp_cents_, wgg))
-	wgp_stack = np.column_stack((rp_cents_, wgp))
-	np.savetxt('./txtfiles/wgg_'+str(pa.kpts_wgg)+'pts.txt', wgg_stack)
-	np.savetxt('./txtfiles/wgp_'+str(pa.kpts_wgp)+'pts.txt', wgp_stack)
+	plt.figure()
+	plt.loglog(rp_c, wgg_tot, 'go')
+	plt.xlim(0.01, 200.)
+	#plt.ylim(0., 300.)
+	plt.ylabel('$w_{gg}$, Mpc/h, com')
+	plt.xlabel('$r_p$, Mpc/h, com')
+	plt.savefig('./plots/wgg_tot_SatFrac_fixprefac_fixcovDS.png')
+	plt.close()
 	
-	return (wgg, wgp)
+	return wgg_tot
+		
+def wgp_full(rp_c):
+	""" Combine 1 and 2 halo terms of wgg """
+	
+	print "GETTING WGP_1H"
+	wgp_1h = wgp_1halo(rp_c)
+	#print "DONE WITH WGP_1H, ON TO WGP 2H"
+	#wgp_2h = wgp_2halo(rp_c)
+	#print "DONE WITH 2 HALO WGP"
+	(rp_cen, wgp_2h) = np.loadtxt('./txtfiles/wgp_2halo_'+str(pa.kpts_wgp)+'pts.txt', unpack=True)
+	
+	wgp_tot = wgp_1h + wgp_2h 
+	
+	plt.figure()
+	plt.loglog(rp_c, wgp_tot, 'go')
+	plt.xlim(0.01, 200.)
+	plt.ylim(0.01, 20)
+	plt.ylabel('$w_{gp}$, Mpc/h, com')
+	plt.xlabel('$r_p$, Mpc/h')
+	plt.savefig('./plots/wgp_tot_check.png')
+	plt.close()
+	
+	return wgp_tot		
 	
 def gamma_fid(rp):
 	""" Returns the fiducial gamma_IA from a combination of terms from different models which are valid at different scales """
 	
-	#(wgg, wgp) = wgg_wgp(rp)
-	
-	(rp_hold, wgg) = np.loadtxt('./txtfiles/wgg_'+str(pa.kpts_wgg)+'pts.txt', unpack=True)
-	(rp_hold, wgp) = np.loadtxt('./txtfiles/wgp_'+str(pa.kpts_wgp)+'pts.txt', unpack=True)
-	
-	wgg_interp = scipy.interpolate.interp1d(rp_hold, wgg)
-	wgp_interp = scipy.interpolate.interp1d(rp_hold, wgp)
-	
-	wgg_rp = wgg_interp(rp)
-	wgp_rp = wgp_interp(rp)
+	wgg_rp = wgg_full(rp)
+	wgp_rp = wgp_full(rp)
 	
 	gammaIA = wgp_rp / (wgg_rp + 2. * pa.close_cut) 
-	gammaIA_excessonly = wgp_rp / wgg_rp
 	
-	plt.figure()
-	plt.loglog(rp, wgp_rp, 'bo')
-	#plt.hold(True)
-	#plt.loglog(rp, wgp_1h, 'go')
-	plt.ylim(10**(-2), 20)
-	plt.xlim(10**(-1), 200)
-	plt.savefig('./plots/wg+_both_'+str(pa.kpts_wgg)+'pts.png')
-	plt.close()
-	
-	plt.figure()
-	plt.semilogx(rp, rp* wgg_rp, 'go')
-	plt.ylim(0, 300)
-	plt.xlim(10**(-1), 200)
-	plt.savefig('./plots/wgg_both_'+str(pa.kpts_wgp)+'pts_nexpM2e13.png')
-	plt.close()
-	
-	plt.figure()
-	plt.loglog(rp, gammaIA, 'bo')
-	plt.savefig('./plots/gammaIA_randomsin_'+str(pa.kpts_wgg)+'ggpts_'+str(pa.kpts_wgp)+'gppts_Feb1.png')
-	plt.close()
+	print "FIDUCIAL VALUES OF GAM_IA SUSPICIOUSLY HIGH AT LOW RP - CHECK"
 	
 	return gammaIA
 	
@@ -632,17 +737,6 @@ def p_z(z_ph, z_sp, sigz):
 	
 	return p_z_
 
-def get_fid_gIA(rp_bins_c):
-	""" This function computes the fiducial value of gamma_IA in each projected radial bin."""
-	
-	# This is a dummy thing for now.
-	#fidvals = np.zeros(len(rp_bins_c))
-	#fidvals = pa.A_fid * np.asarray(rp_bins_c)**pa.beta_fid
-	
-	fidvals = gamma_fid(rp_bins_c)
-
-	return fidvals
-
 def setup_shapenoise_cov(e_rms, N_ls_pbin):
 	""" Returns a diagonal covariance matrix in bins of projected radius for a measurement dominated by shape noise. Elements are e_{rms}^2 / (N_ls) where N_ls is the number of l/s pairs relevant to each projected radius bin.""" 
 
@@ -684,7 +778,7 @@ def get_gammaIA_stat_cov(Cov_1, Cov_2, rp_cents_, gIA_fid):
 	plt.figure()
 	plt.loglog(rp_cents, np.sqrt(np.diag(stat_mat)))
 	plt.xlim(0.04, 20)
-	plt.savefig('./plots/variance_alone_shapes.pdf')
+	plt.savefig('./plots/variance_alone_shapes_newfid.pdf')
 	plt.close()
 
 	return stat_mat
@@ -831,23 +925,6 @@ def par_const_output(Fish_, par_Cov):
 # Import the parameter file:
 import IA_params_shapes as pa
 
-#Dv = Delta_virial(0.32)
-
-#print "Dv=", Dv
-
-#Rv = Rhalo(10**(10), 0.32)
-#print "Rv=", Rv
-#cv = cvir(10.**(10), 0.32)
-#print "Rv=", Rv
-#rhos = rho_s(cv, Rv, 10.**(10))
-#print "rhos=", rhos
-#rho_nfw = rho_NFW(Rv / cv, 10.**10, 0.32)
-#print "rho_nfw=", rho_nfw
-
-#u = get_u(10.**(10), 0.32)
-
-#P1halo_DM(10.**(10), 0.32)
-
 # Set up projected radial bins
 rp_bins 	= 	setup_rp_bins(pa.rp_min, pa.rp_max, pa.N_bins) # Edges
 rp_cents	=	rp_bins_mid(rp_bins) # Centers
@@ -855,18 +932,14 @@ rp_cents	=	rp_bins_mid(rp_bins) # Centers
 # Set up to get z as a function of comoving distance
 z_of_com 	= 	z_interpof_com()
 
-# Get the redshift corresponding to the maximum separation from the effective lens redshift at which we assume IA may be present (pa.close_cut is the separation in Mpc/h)
+# Get the redshift corresponding to the maximum separation from the effective lens redshift at which we assume IA may be present (pa.close_cut is the separation in comoving Mpc/h)
 (z_close_high, z_close_low)	= 	get_z_close(pa.zeff, pa.close_cut)
-
-#gamma_fid(rp_cents)
-
-#exit()
 
 # Get the number of lens source pairs for the source sample in projected radial bins
 N_ls_pbin	=	get_perbin_N_ls(rp_bins, pa.zeff, pa.n_s, pa.n_l, pa.Area, rp_cents)
 
 # Get the fiducial value of gamma_IA in each projected radial bin (this takes a while so only do it once
-fid_gIA		=	get_fid_gIA(rp_cents)
+fid_gIA		=	gamma_fid(rp_cents)
 
 # Get the covariance matrix in projected radial bins of gamma_t for both shape measurement methods
 Cov_a		=	setup_shapenoise_cov(pa.e_rms_a, N_ls_pbin)
@@ -874,12 +947,13 @@ Cov_b		=	setup_shapenoise_cov(pa.e_rms_b, N_ls_pbin)
 
 # Combine the constituent covariance matrices to get the covariance matrix for gamma_IA in projected radial bins
 Cov_stat	=	get_gammaIA_stat_cov(Cov_a, Cov_b, rp_cents, fid_gIA) 
-Cov_sys 	=	get_gammaIA_sys_cov(rp_cents, pa.sig_sys_dNdz, pa.sig_sys_dp, fid_gIA)
+#Cov_sys 	=	get_gammaIA_sys_cov(rp_cents, pa.sig_sys_dNdz, pa.sig_sys_dp, fid_gIA)
 
-Cov_tot		=	get_gamma_tot_cov(Cov_sys, Cov_stat)
+#Cov_tot		=	get_gamma_tot_cov(Cov_sys, Cov_stat)
 
+print "PLOTTING ONLY STATISTICAL ERROR - NEED TO RECALIBRATE SYSTEMATIC ERROR."
 # Output a plot showing the 1-sigma error bars on gamma_IA in projected radial bins
-plot_variance(Cov_tot, fid_gIA, rp_cents, pa.plotfile)
+plot_variance(Cov_stat, fid_gIA, rp_cents, pa.plotfile)
 
 print "fid_gIA=", fid_gIA
 

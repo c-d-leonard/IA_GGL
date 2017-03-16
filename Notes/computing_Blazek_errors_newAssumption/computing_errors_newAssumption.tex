@@ -179,17 +179,16 @@ b_z+1 = \frac{B(r_p) \sum\limits^{\rm lens}_{j} \tilde{w}_j \tilde{\Sigma}_{c,j}
 \end{equation}
 We already have the denominator (equation \ref{sumrandweights}). The numerator can be written as:
 \begin{equation}
-\sum\limits^{\rm rand}_{j} \tilde{w}_j \tilde{\Sigma}_{c,j} \Sigma_{c,j}^{-1}  = \frac{\int_{\bar{z}_{\rm s}^{\rm min}}^{\bar{z}_{\rm s}^{\rm max}}dz_{\rm s} \frac{dN^s}{dz^s} \tilde{w}(b_{\Sigma}(z_{\rm s}), z_l) b_\Sigma(z_{\rm s})}{ \int_{\bar{z}_{\rm s}^{\rm min}}^{\bar{z}_{\rm s}^{\rm max}}dz_{\rm s} \frac{dN^s}{dz^s}}
+\sum\limits^{\rm rand}_{j} \tilde{w}_j \tilde{\Sigma}_{c,j} \Sigma_{c,j}^{-1}  = \frac{\int_{z_{\rm p}^{\rm min}}^{z_{\rm p}^{\rm max}}dz_{\rm p} b_{sw}(z_{\rm p}, z_l) \int_{z_{\rm s}^{\rm min}}^{z_{\rm s}^{\rm max}}dz_{\rm s} \frac{dN^s}{dz^s} p(z_{\rm p}, z_{\rm s})}{\int_{z_{\rm p}^{\rm min}}^{z_{\rm p}^{\rm max}}dz_{\rm p}\int_{z_{\rm s}^{\rm min}}^{z_{\rm s}^{\rm max}}dz_{\rm s} \frac{dN^s}{dz^s} p(z_{\rm p}, z_{\rm s})}
 \label{photoz}
 \end{equation}
-where it is important to note that here $\bar{z}_{\rm s}^{\rm min}$ and $\bar{z}_{\rm s}^{\rm max}$ are the spectroscopic redshifts corresponding to the min and max {\it photo}-z of the sample. These will not be perfectly aligned but if $p(z_{\rm s}, z_{\rm p})$ is Gaussian, setting these to our photo-z cuts shouldn't bias our results {\it (I think)}. 
-
-We have defined a factor $b_{\Sigma}(z_{\rm s})$, which encapsulates the bias to $\Sigma_c$ due to photo-z bias, allowing us to write the estimated $\Sigma_c$ in terms of spectroscopic source redshift 
-\begin{equation}
-\tilde{\Sigma}_c(z_{\rm s}, z_l) = b_\Sigma(z_{\rm s}) \Sigma_c(z_{\rm s}, z_l).
-\label{bsig}
-\end{equation}
-$b_\Sigma(z_{\rm s})$ should be estimated by sampling from $p(z_{\rm s}, z_{\rm p})$ and constructing $\Sigma_c$ values for these samples, then fitting. {\it I need to do this.}
+where we have defined a factor $b_{sw}(z_{\rm p}, z_l)$. This factor is obtained in the following way:
+\begin{itemize}
+\item{For a given $z_{\rm p}$, draw from $p(z_{\rm s}, z_{\rm p})$ a number of $z_{\rm s}$ values. These are true-redshift values which could correspond to the measured $z_{\rm p}$.}
+\item{For each of these $z_{\rm s}$ values, compute the value of $\tilde{w}(z_{\rm p}, z_l) \tilde{\Sigma}_c(z_{\rm p}, z_l) \Sigma_c(z_{\rm s}, z_l)$.}
+\item{Find the mean of these values. This is the value of $b_{sw}(z_{\rm p})$.}
+\end{itemize}
+For a Gaussian $p(z_{\rm p}, z_{\rm s})$, $b_z+1$ typically ranges from $0.9$ to $0.99$ provided $\sigma_z$ is within the range of what is expected for current and future surveys.
 
 \subsection{$\widetilde{\Delta \Sigma}$}
 From equation 3.9 of Blazek et al., the estimated $\widetilde{\Delta \Sigma}$ is given by:
