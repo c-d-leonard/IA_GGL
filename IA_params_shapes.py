@@ -4,18 +4,23 @@ import numpy as np
 
 # Cosmological parameters and constants (required to convert between z and comoving distance)
 c		=		2.99792458*10**(8) # Speed of light in units of m/s
-Nnu     =       3.046    # Massless neutrinos
-HH0     =       67.26
-OmR     =       2.47*10**(-5)/(HH0/100.)**2
-OmN     =       Nnu*(7./8.)*(4./11.)**(4./3.)*OmR
-OmB     =       0.02222/(HH0/100.)**2
-OmC     =       0.1199/(HH0/100.)**2
-H0      =       10**(5)/c
-OmM		= 		OmB + OmC
+Nnu	=	3.046    # Massless neutrinos
+HH0 = 70.
+#HH0	=	67.26
+#HH0 = 72.
+OmR	=	2.47*10**(-5)/(HH0/100.)**2
+OmN	=	Nnu*(7./8.)*(4./11.)**(4./3.)*OmR
+#OmB	=	0.02222/(HH0/100.)**2
+#OmC	=	0.1199/(HH0/100.)**2
+#OmM=  0.25
+OmB = 0.046
+OmC = 0.236
+OmM = OmB + OmC
+H0	=	10**(5)/c
 
 # Survey properties: 
-e_rms_a = 	0.32 # The rms ellipticity under measurement method a.
-e_rms_b	=	0.35 # The rms ellipticity under measurement method b.
+e_rms_a = 	0.29 # The rms ellipticity under measurement method a.
+e_rms_b	=	0.31 # The rms ellipticity under measurement method b.
 n_l     =   8.7 # The number of lenses in the lens sample per square DEGREE
 Area    =   7131 # Area associated with the lens sample in square DEGREES
 n_s     =   1.2 # The number density of sources in the sample per square ARCMINUTE
@@ -52,7 +57,7 @@ beta_fid        =       -0.73
 cov_perc = 0.6 #percentage covariance between methods
 sig_sys_dNdz = np.asarray([ 0.0014777 ,  0.0037014 ,  0.00917435,  0.02051145,  0.03701631, 0.05260886,  0.06284505]) # systematic error from dNdz in Ncorr. Estimated from varying alpha and zs, with sigz=0.08 and Boost(1Mpc/h) = 1.2
 sig_sys_dp = np.asarray( [ 0.00654311,  0.01624936,  0.0396385 ,  0.08656573,  0.15238458, 0.21256654,  0.2512192 ] ) # systematic error from p(z) in Ncorr
-sigz=0.09 # Uncertainty on photo z (Gaussian model, sigma = sigz*(1+z))
+sigz=0.08 # Uncertainty on photo z (Gaussian model, sigma = sigz*(1+z))
 plotfile =	'./plots/fid_gIA_randoms_in_newfid.pdf'  # Location of file for plot showing 1 sigma error bars on gamma_IA
 boost_samp = 0.2 # Boost at 1 Mpc/h for our associated sample
 boost_tot = 0.04 # Boost at 1 Mpc/h for all the source-lens pairs in the survey (all z)
@@ -92,4 +97,7 @@ Mvir = 10.**(13.18)
 ng = 3. * 10**(-4) # volume density of galaxies for BOSS, in h^3 / Mpc^3
 nh = 2*10**(-4) # volume density of halos. Must be chosen appropriately for Mvir above. This is a super rough approximation.
 fsat = 0.0636 # Satelite fraction from Reid & Spergel 2008. 
+
+# Files to import error on the boost
+sigBF_a = './txtfiles/boost_error_from_rachel_assoc.txt' # File containing two columns: rp (kpc/h), sigma(Boost-1) for sample a
 

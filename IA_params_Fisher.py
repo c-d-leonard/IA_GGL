@@ -86,7 +86,7 @@ Gnewt = 6.67408*10**(-11)
 
 
 #c14 = 10**(0.7) # Parameter in the concentration / mass relationship (Neto 2007)
-Mvir = 10**(13.08) #/ (HH0 / 100.)
+Mvir = 10**(13.18) #/ (HH0 / 100.)
 #Mvir = 3.4 * 10**12 # units Msol/h
 #Mvir = 6. * 10**13 #/ (HH0 / 100.)
 #Mvir = 4.7 * 10**12 #in units of M sol
@@ -101,13 +101,13 @@ Ai = 5.0
 C1rho = 0.0134
 
 # 1 halo IA term parameters, from Singh et al. 2014 Table 1
-q11 = 0.02056  #0.005  
+q11 = 0.005   #0.02056  
 q12 = 5.909
 q13 = 0.3798
-q21 = 1.978 #0.6     
+q21 = 0.6    # 1.978  
 q22 = 1.087
 q23 = 0.6655
-q31 = 4.154  #3.1    
+q31 = 3.1    #4.154  
 q32 = 0.1912
 q33 = 0.4368
 ah =  1.

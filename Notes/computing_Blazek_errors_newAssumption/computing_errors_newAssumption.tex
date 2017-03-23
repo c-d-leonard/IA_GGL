@@ -229,9 +229,9 @@ R_{\rm vir}(M) = \left(\frac{3 M_{\rm vir}}{4 \pi 180 \rho_c \Omega_{\rm M}} \ri
 \end{equation}
 Note that we are using comoving coordinates, such that densities and hence the virial radius are independent of redshift.
 
-$c_{\rm vir}(M)$ is a concentration parameter. There are several empirical fits to its scaling with mass; at the moment we are using one from Neto et al. 2007, quoted in Giocolo et al. 2010:
+$c_{\rm vir}(M)$ is a concentration parameter. There are several empirical fits to its scaling with mass; at the moment we are using:
 \begin{equation}
-c_{\rm vir}(M) = \frac{0.7}{(1+z)}\left(\frac{M}{10^{14}M_{\odot}}\right)^{-0.11}.
+c_{\rm vir}(M) = 5\left(\frac{M}{10^{14}h^{-1}M_{\odot}}\right)^{-0.1}.
 \label{cvir}
 \end{equation}
 
@@ -344,9 +344,14 @@ such that the fully simplified expression for the 1-halo galaxy-galayx power spe
 P_{gg}^{1h}(k) = \frac{1-f_s}{n_g}\left[\alpha^2 \frac{f_s}{1-f_s} u + \alpha^2 \left(\frac{f_s}{1-f_s}\right)^2 u^2\right].
 \label{1hpgg_fs}
 \end{equation}
-We can then Fourier-transform and project to get $w_{ls}^{1h}(r_p)$:
+We can then Fourier-transform to get $\xi^{1h}_{ls}(r)$:
 \begin{equation}
-w_{ls}^{1h}(r_p) = \int_{-\Pi_{\rm max}}^{\Pi_{\rm max}} \frac{1}{2\pi^2} \int dk k^2 \frac{\sin(k\sqrt{r_p^2 + \Pi^2})}{k\sqrt{r_p^2 + \Pi^2}} P_{gg}^{1h}(k)
+\xi_{ls}^{1h}(r) = \frac{1}{2\pi^2} \int dk k^2 \frac{\sin(kr)}{kr} P_{gg}^{1h}(k).
+\label{xils1h}
+\end{equation}
+Because in equation \ref{u} we have integrated up to only $R_{\rm vir}$, we have already assumed a lack of inter-halo correlation above the virial radius. Any non-zero values at $r$ greater than this will simply be a result of noise in the Fourier transform, so we set $\xi_{ls}^{1h}(r)$ to zero above $r= R_{\rm vir}$. We then project to get $w_{ls}^{1h}(r_p)$:
+\begin{equation}
+w_{ls}^{1h}(r_p) = \int_{-\Pi_{\rm max}}^{\Pi_{\rm max}} \xi_{ls}^{1h}(\sqrt{r_p^2 + \Pi^2}).
 \label{wl1h}
 \end{equation}
 
@@ -362,13 +367,15 @@ where
 p_i = q_{i1} {\rm exp}(q_{i2} z^{q_{i3}}).
 \label{pi}
 \end{equation}
-The parametes $q_{ij}$ are provided in both Schneider \& Bridle 2010 and Singh et al. 2014 for their respective galaxy samples.
+The parametes $q_{ij}$ are provided in both Schneider \& Bridle 2010 and Singh et al. 2014 for their respective galaxy samples. {\it At the moment we are finding that we have to set $a_h=1$ in the Singh et al. 2014 case although this is not the value provided in the paper in order to obtain results matching what is plotted in that work.}
 
 Equation 15 of Singh et al. 2014 can be expanded, as well as restricted to a single lens redshift, to obtain:
 \begin{equation}
 w_{g+}^{1h}(r_p) = \int \frac{dk_\perp}{k_\perp}{2\pi} P_{1h}(k_\perp,z) J_0(r_p k_\perp).
 \label{wg1h}
 \end{equation}
+
+Once again, we do not expect the inter-halo correlations to be meaningful physical values at much larger separations than the virial radius. In this case, we set $w_{g+}^{1h}(r_p)$ to zero above $r_p = 2 R_{\rm vir}$. We allow for correlations at slightly higher than the virial radius because in this case we have made no inherent assumption that the halo ends sharply at $R_{\rm vir}$, and we physically expect some correlation above this value. The choice of $r_p = 2 R_{\rm vir}$ also allows for non-zero correlation out to $1$ Mpc/h, the point to which we expect significant contributions from the 1-halo term. Finally, $r_p$ is a projected radius while the virial radius is a 3D separation, so allowing this flexibility avoids inadvertently cutting inter-halo structure by setting $w_{g+}^{1h}(r_p)$ to zero strictly above $r_p = R_{\rm vir}$. {\it This choice of cutoff is a bit ad-hoc.}
 
 \subsubsection*{Random + excess}
 The random and excess galaxies are affected in the same way by intrinsic alignments, so there is no need to alter the numerator of equation \ref{gamma_blazek}.

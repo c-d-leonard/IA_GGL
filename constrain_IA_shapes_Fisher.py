@@ -251,7 +251,7 @@ def wgp_1halo(rp_c_):
 	k = np.logspace(-5., 7., 100000)
 	
 	# Get the `power spectrum' term
-	P1h = get_P1haloIA(0.393, k)
+	P1h = get_P1haloIA(pa.zeff, k)
 	
 	# First do the integral over z:
 	#zint = np.zeros(len(k))
@@ -266,16 +266,25 @@ def wgp_1halo(rp_c_):
 		#integrand = k * zint * scipy.special.j0(rp_c_[rpi] * k)
 		ans[rpi] = scipy.integrate.simps(k * P1h * scipy.special.j0(rp_c_[rpi] * k), k)
 		
+	# Set this to zero above about 2 * virial radius (I've picked this value somewhat aposteriori, should do better). This is to not include 1halo contributions well outside the halo.
+	Rvir = Rhalo(pa.Mvir)
+	for ri in range(0,len(rp_c_)):
+		if (rp_c_[ri]> 2.*Rvir):
+			ans[ri] = 0.
+		
 	wgp1h = ans / (2. * np.pi)
 	
-	plt.figure()
-	plt.loglog(rp_c_, wgp1h, 'bo')
-	plt.xlim(0.1, 200)
-	plt.ylim(0.01, 30)
-	plt.xlabel('$r_p$, Mpc/h com')
-	plt.ylabel('$w_{g+}$, Mpc/ h com')
-	plt.savefig('./plots/wg+_1h_check_shapes.pdf')
-	plt.close()
+	#plt.figure()
+	#plt.loglog(rp_c_, wgp1h, 'bo')
+	#plt.xlim(0.1, 200)
+	#plt.ylim(0.01, 30)
+	#plt.xlabel('$r_p$, Mpc/h com')
+	#plt.ylabel('$w_{g+}$, Mpc/ h com')
+	#plt.savefig('./plots/wg+_1h_check_shapes.pdf')
+	#plt.close()
+	
+	wgp_save = np.column_stack((rp_c_, wgp1h))
+	np.savetxt('./txtfiles/wgp_1halo_shapes.txt', wgp_save)
 		
 	return wgp1h
 
@@ -287,9 +296,7 @@ def Rhalo(M_insol):
 	#rho_crit = 3. * 10**10 * pa.mperMpc / (8. * np.pi * pa.Gnewt * pa.Msun * (pa. HH0 / 100.)) # Msol h^3 / Mpc^3, for use with M in Msol.
 	rho_crit = 3. * 10**10 * pa.mperMpc / (8. * np.pi * pa.Gnewt * pa.Msun)  # Msol h^2 / Mpc^3, for use with M in Msol / h
 	rho_m = rho_crit * pa.OmM
-	
 	Rvir = ( 3. * M_insol / (4. * np.pi * rho_m * 180.))**(1./3.)
-	print "Rvir=", Rvir # in Mpc/h
 	
 	return Rvir
 	
@@ -328,28 +335,51 @@ def wgg_1halo_Four(rp_cents_):
 	Rvir = Rhalo(pa.Mvir)
 	
 	kvec_FT = np.logspace(-7, 4, 1000000)
-	rvec_NFW = np.logspace(-7, np.log10(Rvir), 1000000)
+	rvec_NFW = np.logspace(-7, np.log10(Rvir), 10000000)
 	rvec_xi = np.logspace(-4, 4, 1000)
 	Pivec = np.logspace(-7, np.log10(1000./np.sqrt(2.01)), 1000)
 	rpvec = np.logspace(-7, np.log10(1000./np.sqrt(2.01)), 1000)
 	
 	Pk = get_Pkgg_1halo(rvec_NFW, kvec_FT) # Gets the 1halo galaxy power spectrum including c-s and s-s terms. Pass rvec because need to get rho_NFW in here.
+	#(k_dummy, Pk) = np.loadtxt('./txtfiles/Pkgg_1h.txt', unpack=True)
 	
 	xi_gg_1h = get_xi_1h(rvec_xi, kvec_FT, Pk) # Function that gets the 1halo galaxy-galaxy correlation function term.
+	
+	plt.figure()
+	plt.loglog(rvec_xi, xi_gg_1h, 'go')
+	plt.ylabel('$\\xi(r)$')
+	plt.xlabel('$r$, Mpc/h com')
+	plt.xlim(10**(-7), 50)
+	plt.savefig('./plots/xigg_1h_FFT.png')
+	plt.close()
+	
+	# Set xi_gg_1h to zero above Rvir - we have made this assumption; anything else is Fourier transform noise.
+	for ri in range(0, len(rvec_xi)):
+		if (rvec_xi[ri]>Rvir):
+			xi_gg_1h[ri] = 0.0
+			
+	plt.figure()
+	plt.loglog(rvec_xi, xi_gg_1h, 'go')
+	plt.ylabel('$\\xi(r)$')
+	plt.xlabel('$r$, Mpc/h com')
+	#plt.xlim(0.5, 0.6)
+	plt.savefig('./plots/xigg_1h_FFT_mod.png')
+	plt.close()
+	
 	xi_interp = scipy.interpolate.interp1d(rvec_xi, xi_gg_1h)
 	
 	xi_2D = np.zeros((len(rp_cents_), len(Pivec)))
 	for ri in range(0, len(rp_cents_)):
 		for pi in range(0, len(Pivec)):
 			xi_2D[ri, pi] = xi_interp(np.sqrt(rp_cents_[ri]**2 + Pivec[pi]**2)) 
-	
+			
 	# Only integrate out to the virial radius
-	Rvir = Rhalo(pa.Mvir)
-	indvir = next(j[0] for j in enumerate(Pivec) if j[1]>=(Rvir))
+	#Rvir = Rhalo(pa.Mvir)
+	#indvir = next(j[0] for j in enumerate(Pivec) if j[1]>=(Rvir))
 	
 	wgg_1h = np.zeros(len(rp_cents_))
 	for ri in range(0,len(rp_cents_)):
-		wgg_1h[ri] = scipy.integrate.simps(xi_2D[ri, :][0:indvir], Pivec[0:indvir])
+		wgg_1h[ri] = scipy.integrate.simps(xi_2D[ri, :], Pivec)
 		
 	plt.figure()
 	plt.loglog(rp_cents_, wgg_1h, 'go')
@@ -360,14 +390,8 @@ def wgg_1halo_Four(rp_cents_):
 	plt.savefig('./plots/wgg_1h_shapes.png')
 	plt.close()
 	
-	plt.figure()
-	plt.semilogx(rp_cents_, rp_cents_*wgg_1h, 'go')
-	plt.xlim(0.1, 200.)
-	plt.ylim(0, 300)
-	plt.ylabel('$r_p w_{gg}$, Mpc^2/h^2 com')
-	plt.xlabel('$r_p$, Mpc/h com')
-	plt.savefig('./plots/Rwgg_1h_shapes.png')
-	plt.close()
+	wgg_save = np.column_stack((rp_cents_, wgg_1h))
+	np.savetxt('./txtfiles/wgg_1halo_mod_shapes.txt', wgg_save)
 	
 	return wgg_1h
 
@@ -377,15 +401,7 @@ def get_xi_1h(r, kvec, Pofk):
 	xi = np.zeros(len(r))
 	for ri in range(0,len(r)):
 		xi[ri] = scipy.integrate.simps(Pofk * kvec**2 * np.sin(kvec*r[ri]) / (kvec * r[ri]) / 2. / np.pi**2 , kvec)
-	
-	plt.figure()
-	plt.loglog(r, xi, 'go')
-	plt.ylabel('$\\xi(r)$')
-	plt.xlabel('$r$, Mpc/h com')
-	plt.xlim(0.001, 100)
-	plt.savefig('./plots/xigg_1h_shapes.png')
-	plt.close()
-	
+
 	return xi
 
 def get_Pkgg_1halo(rvec_nfw, kvec_ft):
@@ -405,12 +421,15 @@ def get_Pkgg_1halo(rvec_nfw, kvec_ft):
 
 	Pkgg = (1. - pa.fsat) / pa.ng * (NcNs * y + NsNs * y **2)
 
-	plt.figure()
-	plt.loglog(kvec_ft, Pkgg, 'b+')
-	plt.ylabel('$P_{gg}^{1h}(k)$, $(Mpc/h)^3$, com')
-	plt.xlabel('$k$, h/Mpc, com')
-	plt.savefig('./plots/Pkgg_1halo_shapes.png')
-	plt.close()
+	#plt.figure()
+	#plt.loglog(kvec_ft, Pkgg, 'b+')
+	#plt.ylabel('$P_{gg}^{1h}(k)$, $(Mpc/h)^3$, com')
+	#plt.xlabel('$k$, h/Mpc, com')
+	#plt.savefig('./plots/Pkgg_1halo_shapes.png')
+	#plt.close()
+	
+	Pkgg_save = np.column_stack((kvec_ft, Pkgg))
+	np.savetxt('./txtfiles/Pkgg_1h.txt', Pkgg_save)
 
 	return Pkgg
 
@@ -435,14 +454,14 @@ def gety(rvec, M, z, kvec):
 	u_interp = scipy.interpolate.interp1d(kvec_gety, u_)
 	u_morepoints = u_interp(kvec) 
 		
-	plt.figure()
-	plt.loglog(kvec, u_morepoints, 'b+')
+	#plt.figure()
+	#plt.loglog(kvec, u_morepoints, 'b+')
 	#plt.ylim(0.01, 2)
 	#plt.xlim(0.002, 100000)
-	plt.ylabel('u')
-	plt.xlabel('$k$, h/Mpc, com')
-	plt.savefig('./plots/u_shapes.png')
-	plt.close()
+	#plt.ylabel('u')
+	#plt.xlabel('$k$, h/Mpc, com')
+	#plt.savefig('./plots/u_shapes.png')
+	#plt.close()
 	
 	return u_morepoints
 
@@ -568,8 +587,9 @@ def wgg_full(rp_c):
 	""" Combine 1 and 2 halo terms of wgg """
 	
 	#wgg_1h = wgg_1halo(rp_c, pa.zeff)
-	print "GETTING 1HALO WGG"
-	wgg_1h = wgg_1halo_Four(rp_c)
+	#print "GETTING 1HALO WGG"
+	#wgg_1h = wgg_1halo_Four(rp_c)
+	(rp_cen, wgg_1h) = np.loadtxt('./txtfiles/wgg_1halo_mod_shapes.txt', unpack=True)
 	#print "DONE WITH 1HALO WGG, GETTING 2HALO"
 	#wgg_2h = wgg_2halo(rp_c)
 	#print "DONE WITH 2HALO WGG"
@@ -577,31 +597,32 @@ def wgg_full(rp_c):
 	
 	wgg_tot = wgg_1h + wgg_2h 
 	
-	plt.figure()
-	plt.semilogx(rp_c, rp_c* wgg_tot, 'go')
-	plt.xlim(0.01, 200.)
-	plt.ylim(0., 300.)
-	plt.ylabel('$r_p w_{gg}$, $(Mpc/h)^2$, com')
-	plt.xlabel('$r_p$, Mpc/h, com')
-	plt.savefig('./plots/Rwgg_tot_SatFrac_fixprefac_fixcovDS.png')
-	plt.close()
-	
-	plt.figure()
-	plt.loglog(rp_c, wgg_tot, 'go')
-	plt.xlim(0.01, 200.)
+	#plt.figure()
+	#plt.semilogx(rp_c, rp_c* wgg_tot, 'go')
+	#plt.xlim(0.01, 200.)
 	#plt.ylim(0., 300.)
-	plt.ylabel('$w_{gg}$, Mpc/h, com')
-	plt.xlabel('$r_p$, Mpc/h, com')
-	plt.savefig('./plots/wgg_tot_SatFrac_fixprefac_fixcovDS.png')
-	plt.close()
+	#plt.ylabel('$r_p w_{gg}$, $(Mpc/h)^2$, com')
+	#plt.xlabel('$r_p$, Mpc/h, com')
+	#plt.savefig('./plots/Rwgg_tot_SatFrac_fixprefac_fixcovDS.png')
+	#plt.close()
+	
+	#plt.figure()
+	#plt.loglog(rp_c, wgg_tot, 'go')
+	#plt.xlim(0.01, 200.)
+	#plt.ylim(0., 300.)
+	#plt.ylabel('$w_{gg}$, Mpc/h, com')
+	#plt.xlabel('$r_p$, Mpc/h, com')
+	3plt.savefig('./plots/wgg_tot_shapes_mod.png')
+	#plt.close()
 	
 	return wgg_tot
 		
 def wgp_full(rp_c):
 	""" Combine 1 and 2 halo terms of wgg """
 	
-	print "GETTING WGP_1H"
-	wgp_1h = wgp_1halo(rp_c)
+	#print "GETTING WGP_1H"
+	#wgp_1h = wgp_1halo(rp_c)
+	(rp_cen, wgp_1h) = np.loadtxt('./txtfiles/wgp_1halo_shapes.txt', unpack=True)
 	#print "DONE WITH WGP_1H, ON TO WGP 2H"
 	#wgp_2h = wgp_2halo(rp_c)
 	#print "DONE WITH 2 HALO WGP"
@@ -609,14 +630,32 @@ def wgp_full(rp_c):
 	
 	wgp_tot = wgp_1h + wgp_2h 
 	
-	plt.figure()
-	plt.loglog(rp_c, wgp_tot, 'go')
-	plt.xlim(0.01, 200.)
-	plt.ylim(0.01, 20)
-	plt.ylabel('$w_{gp}$, Mpc/h, com')
-	plt.xlabel('$r_p$, Mpc/h')
-	plt.savefig('./plots/wgp_tot_check.png')
-	plt.close()
+	#plt.figure()
+	#plt.loglog(rp_c, wgp_1h, 'go')
+	#plt.xlim(0.1, 200.)
+	#plt.ylim(0.01, 30)
+	#plt.ylabel('$w_{gp}$, Mpc/h, com')
+	#plt.xlabel('$r_p$, Mpc/h')
+	#plt.savefig('./plots/wgp_1h_shapes.png')
+	#plt.close()
+	
+	#plt.figure()
+	#plt.loglog(rp_c, wgp_2h, 'go')
+	#plt.xlim(0.1, 200.)
+	#plt.ylim(0.01, 30)
+	#plt.ylabel('$w_{gp}$, Mpc/h, com')
+	#plt.xlabel('$r_p$, Mpc/h')
+	#plt.savefig('./plots/wgp_2h_shapes.png')
+	#plt.close()
+	
+	#plt.figure()
+	#plt.loglog(rp_c, wgp_tot, 'go')
+	#plt.xlim(0.1, 200.)
+	#plt.ylim(0.01, 30)
+	#plt.ylabel('$w_{gp}$, Mpc/h, com')
+	#plt.xlabel('$r_p$, Mpc/h')
+	#plt.savefig('./plots/wgp_tot_shapes.png')
+	#plt.close()
 	
 	return wgp_tot		
 	
@@ -628,7 +667,13 @@ def gamma_fid(rp):
 	
 	gammaIA = wgp_rp / (wgg_rp + 2. * pa.close_cut) 
 	
-	print "FIDUCIAL VALUES OF GAM_IA SUSPICIOUSLY HIGH AT LOW RP - CHECK"
+	"""plt.figure()
+	plt.loglog(rp, gammaIA, 'go')
+	plt.ylim(10**(-4), 0.1)
+	plt.ylabel('$\gamma_{IA}^{fid}$')
+	plt.xlabel('$r_p$, Mpc/h')
+	plt.savefig('./plots/gIA_fid_shapes.png')
+	plt.close()"""
 	
 	return gammaIA
 	
@@ -704,16 +749,31 @@ def N_corr(rp_cent):
 	
 	return Corr_fac
 
-def N_corr_stat_err(rp_cents_):
+def N_corr_stat_err(rp_cents_, boost_error_file):
 	""" Gets the error on N_corr from statistical error on the boost. """
 	
 	N_tot = N_in_samp(pa.zmin, pa.zmax, pa.e_rms_mean)
 	N_close = N_in_samp(z_close_low, z_close_high, pa.e_rms_mean)
 	boost = get_boost(rp_cents_, pa.boost_samp)
+	boost_err = boost_errors(rp_cents_, boost_error_file)
 	
-	sig_Ncorr = (pa.sigB / boost**2) * np.sqrt(1. - N_close / N_tot)
-	
+	sig_Ncorr = (boost_err / boost**2) * np.sqrt(1. - N_close / N_tot)
+
 	return sig_Ncorr
+
+def boost_errors(rp_bins_c, filename):
+	""" Imports a file with 2 columns, [rp (kpc/h), sigma(boost-1)]. Interpolates and returns the value of the error on the boost at the center of each bin. """
+	
+	(rp_kpc, boost_error_raw) = np.loadtxt(filename, unpack=True)
+	
+	# Convert the projected radius to Mpc/h
+	rp_Mpc = rp_kpc / 1000.
+	
+	interpolate_boost_error = scipy.interpolate.interp1d(rp_Mpc, boost_error_raw)
+	
+	boost_error = interpolate_boost_error(rp_bins_c)
+	
+	return boost_error
 
 def sigma_e(z_s_, s_to_n):
 	""" Returns a value for the model for the per-galaxy noise as a function of source redshift"""
@@ -766,19 +826,22 @@ def get_gammaIA_stat_cov(Cov_1, Cov_2, rp_cents_, gIA_fid):
 	
 	corr_fac = N_corr(rp_cents_)  # factor correcting for galaxies which have higher spec-z than the sample but which end up in the sample.
 
-	corr_fac_err = N_corr_stat_err(rp_cents_) # statistical error on that from the boost
+	corr_fac_err = N_corr_stat_err(rp_cents_, pa.sigBF_a) # statistical error on that from the boost
 
 	stat_mat = np.diag(np.zeros(len(np.diag(Cov_1))))
-
+	boost_term = np.zeros(len(np.diag(Cov_1)))
+	shape_term = np.zeros(len(np.diag(Cov_1)))
 	for i in range(0,len(np.diag(Cov_1))):	
 		stat_mat[i, i] = (1.-pa.a_con)**2 * gIA_fid[i]**2 * ( corr_fac_err[i]**2 / corr_fac[i]**2 + subtract_var(Cov_1[i,i], Cov_2[i,i], covar[i]) / (corr_fac[i]**2 * (1.-pa.a_con)**2 * gIA_fid[i]**2))
+		#boost_term[i] = ( corr_fac_err[i]**2 / corr_fac[i]**2 )
+		#shape_term[i]  = (subtract_var(Cov_1[i,i], Cov_2[i,i], covar[i]) / (corr_fac[i]**2 * (1.-pa.a_con)**2 * gIA_fid[i]**2))
 		
-	print "stat=", np.sqrt(np.diag(stat_mat))
+	print "stat=",  np.sqrt(np.diag(stat_mat))
 	
 	plt.figure()
-	plt.loglog(rp_cents, np.sqrt(np.diag(stat_mat)))
+	plt.loglog(rp_cents, np.sqrt(np.diag(stat_mat)), 'mo')
 	plt.xlim(0.04, 20)
-	plt.savefig('./plots/variance_alone_shapes_newfid.pdf')
+	plt.savefig('./plots/statvariance_alone_shapes_modwgg.pdf')
 	plt.close()
 
 	return stat_mat
@@ -810,25 +873,25 @@ def get_gamma_tot_cov(sys_mat, stat_mat):
 
 ####### PLOTTING / OUTPUT #######
 
-def plot_variance(cov_1, fidvalues_1, bin_centers, filename):
+def plot_variance(cov_1, fidvalues_1, bin_centers):
 	""" Takes a covariance matrix, a vector of the fiducial values of the object in question, and the edges of the projected radial bins, and makes a plot showing the fiducial values and 1-sigma error bars from the diagonal of the covariance matrix. Outputs this plot to location 'filename'."""
-	
-	print "fid inside plot=", fidvalues_1
 
-	fig=plt.figure()
+	fig_sub=plt.subplot(111)
 	plt.rc('font', family='serif', size=20)
-	fig_sub=fig.add_subplot(111) #, aspect='equal')
+	#fig_sub=fig.add_subplot(111) #, aspect='equal')
 	fig_sub.set_xscale("log")
 	fig_sub.set_yscale("log")
-	#fig_sub.set_yscale("log")
-	fig_sub.errorbar(bin_centers,fidvalues_1*(1-pa.a_con), yerr = np.sqrt(np.diag(cov_1)), fmt='o')
+	fig_sub.errorbar(bin_centers,fidvalues_1*(1-pa.a_con), yerr = np.sqrt(np.diag(cov_1)), fmt='mo')
+	#fig_sub.errorbar(bin_centers,fidvalues_1, yerr = np.sqrt(np.diag(cov_1)), fmt='mo')
 	fig_sub.set_xlabel('$r_p$')
 	fig_sub.set_ylabel('$\gamma_{IA}(1-a)$')
+	#fig_sub.set_ylabel('$\gamma_{IA}$')
 	fig_sub.set_ylim(10**(-5), 0.05)
+	#fig_sub.set_ylim(10**(-4), 0.1)
 	fig_sub.tick_params(axis='both', which='major', labelsize=12)
 	fig_sub.tick_params(axis='both', which='minor', labelsize=12)
 	plt.tight_layout()
-	plt.savefig(filename)
+	plt.savefig('./plots/errorplot_statonly_shapes_modwgg.pdf')
 
 	return  
 
@@ -951,11 +1014,11 @@ Cov_stat	=	get_gammaIA_stat_cov(Cov_a, Cov_b, rp_cents, fid_gIA)
 
 #Cov_tot		=	get_gamma_tot_cov(Cov_sys, Cov_stat)
 
+Cov_tot = Cov_stat
+
 print "PLOTTING ONLY STATISTICAL ERROR - NEED TO RECALIBRATE SYSTEMATIC ERROR."
 # Output a plot showing the 1-sigma error bars on gamma_IA in projected radial bins
-plot_variance(Cov_stat, fid_gIA, rp_cents, pa.plotfile)
-
-print "fid_gIA=", fid_gIA
+plot_variance(Cov_tot, fid_gIA, rp_cents)
 
 exit() # Below is Fisher stuff, don't worry about this yet
 
