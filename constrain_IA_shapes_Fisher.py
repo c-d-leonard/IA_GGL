@@ -612,7 +612,7 @@ def wgg_full(rp_c):
 	#plt.ylim(0., 300.)
 	#plt.ylabel('$w_{gg}$, Mpc/h, com')
 	#plt.xlabel('$r_p$, Mpc/h, com')
-	3plt.savefig('./plots/wgg_tot_shapes_mod.png')
+	#plt.savefig('./plots/wgg_tot_shapes_mod.png')
 	#plt.close()
 	
 	return wgg_tot
@@ -838,6 +838,9 @@ def get_gammaIA_stat_cov(Cov_1, Cov_2, rp_cents_, gIA_fid):
 		
 	print "stat=",  np.sqrt(np.diag(stat_mat))
 	
+	save_variance = np.column_stack((rp_cents_, np.sqrt(np.diag(stat_mat)) / ((1.-pa.a_con) * gIA_fid)))
+	np.savetxt('./txtfiles/fractional_error_shapes_sigz='+str(pa.sigz)+'_covperc='+str(pa.cov_perc)+'_a='+str(pa.a_con)+'.txt', save_variance)
+	
 	plt.figure()
 	plt.loglog(rp_cents, np.sqrt(np.diag(stat_mat)), 'mo')
 	plt.xlim(0.04, 20)
@@ -891,7 +894,7 @@ def plot_variance(cov_1, fidvalues_1, bin_centers):
 	fig_sub.tick_params(axis='both', which='major', labelsize=12)
 	fig_sub.tick_params(axis='both', which='minor', labelsize=12)
 	plt.tight_layout()
-	plt.savefig('./plots/errorplot_statonly_shapes_modwgg.pdf')
+	plt.savefig('./plots/errorplot_statonly_shapes.pdf')
 
 	return  
 

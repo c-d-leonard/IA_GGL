@@ -306,46 +306,29 @@ def get_Sig_IA(z_l, z_ph_min_samp, z_ph_max_samp, erms, rp_bins_, rp_bin_c_, boo
 	denom_rand_close = sum_weights(z_l, z_close_low, z_close_high, pa.zsmin, pa.zsmax, z_ph_min_samp, z_ph_max_samp, z_ph_min_samp, z_ph_max_samp, erms, rp_bins_, rp_bin_c_)
 	denom_rand = sum_weights(z_l, pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, z_ph_min_samp, z_ph_max_samp, z_ph_min_samp, z_ph_max_samp, erms, rp_bins_, rp_bin_c_)
 	denom_excess = (boost - 1.) * denom_rand
-
-	#print "denom rand close=", denom_rand_close
-	#print "denom excess=", denom_excess
-	#print "denom =", (denom_excess + denom_rand_close)
 	
 	# The two in the numerator require summing over weights and Sigma_C. 
 	
 	#For the sum over rand-close in the numerator, this follows directly from the same type of expression as when summing weights:
 	num_rand_close = sum_weights_SigC(z_l, z_close_low, z_close_high, pa.zsmin, pa.zsmax, z_ph_min_samp, z_ph_max_samp, z_ph_min_samp, z_ph_max_samp, erms, rp_bins_, rp_bin_c_)
-	
-	#print "num_rand_close=", num_rand_close
 			
-	# The other numerator sum is a term which represents the a sum over excess. Product of a sum over randoms and a boost factor. (Not sure if this is exactly right).
-	# We take the randoms as being all at the lens, which simplifies the sum. Do it directly here:
+	# The other numerator sum is a term which represents the a sum over excess. We have to get the normalization indirectly so there are a bunch of terms here. See notes.
+	# We assume all excess galaxies are at the lens redshift.
+	
+	# We first compute a sum over excess of weights and Sigma_C with arbitrary normalization:
 	z_ph = scipy.linspace(z_ph_min_samp, z_ph_max_samp, 5000)
+	exc_wSigC_arbnorm = scipy.integrate.simps(weights_times_SigC(erms, z_ph, z_l) * p_z(z_ph, z_l, pa.sigz), z_ph)
 	
-	rand_for_excess = scipy.integrate.simps(weights_times_SigC(erms, z_ph, z_l) * p_z(z_ph, z_l, pa.sigz), z_ph)
-	#print "rand for num excess=", rand_for_excess
+	# We do the same for a sum over excess of just weights with the same arbitrary normalization:
+	exc_w_arbnorm = scipy.integrate.simps(weights(erms, z_ph, z_l) * p_z(z_ph, z_l, pa.sigz), z_ph)
 	
-	# This takes the same normalization as the others though.
-	(z_s_norm, N_ofzs_norm) = get_NofZ_unnormed(pa.alpha, pa.zs, pa.zsmin, pa.zsmax, 5000)
-	z_ph_norm = scipy.linspace(z_ph_min_samp, z_ph_max_samp, 5000)
-	zsint = np.zeros(len(z_ph_norm))
-	for i in range(0,len(z_ph_norm)):
-		zsint[i] = scipy.integrate.simps(N_ofzs_norm * p_z(z_ph_norm[i], z_s_norm, pa.sigz), z_s_norm)
-		
-	norm_rand_for_excess = scipy.integrate.simps(zsint, z_ph_norm)
-	#print "norm_rand_for_excess=", norm_rand_for_excess
+	# We already have an appropriately normalized sum over excess weights, from above (denom_excess), via the relationship with the boost.
+	# Put these components together to get the appropriately normalized sum over excess of weights and SigmaC:
 	
-	
-	#norm_rand_for_excess = scipy.integrate.simps(, z_ph)
-	#print "norm=", norm_rand_for_excess
-	num_excess = (boost-1.) * rand_for_excess / norm_rand_for_excess
-	
-	#print "excess num=", num_excess
-	#print "num=", (num_excess + num_rand_close)
-	#print "####################################################################"
+	num_excess = exc_wSigC_arbnorm / exc_w_arbnorm * np.asarray(denom_excess)
 	
 	# Sigma_C_inv is in units of pc^2 / (h Msol) (comoving), so Sig_IA is in units of h Msol / pc^2 (comoving).
-	Sig_IA = (num_excess + num_rand_close) / (denom_excess + denom_rand_close) 
+	Sig_IA = (np.asarray(num_excess) + np.asarray(num_rand_close)) / (np.asarray(denom_excess) + np.asarray(denom_rand_close)) 
 
 	return Sig_IA  
 
@@ -755,7 +738,7 @@ def wgg_1halo_Four(rp_cents_):
 	plt.ylabel('$\\xi(r)$')
 	plt.xlabel('$r$, Mpc/h com')
 	plt.xlim(10**(-7), 50)
-	plt.savefig('./plots/xigg_1h_FFT.png')
+	plt.savefig('./plots/xigg_1h_FFT_M2013.png')
 	plt.close()
 	
 	# Set xi_gg_1h to zero above Rvir - we have made this assumption; anything else is Fourier transform noise.
@@ -768,7 +751,7 @@ def wgg_1halo_Four(rp_cents_):
 	plt.ylabel('$\\xi(r)$')
 	plt.xlabel('$r$, Mpc/h com')
 	#plt.xlim(0.5, 0.6)
-	plt.savefig('./plots/xigg_1h_FFT_mod.png')
+	plt.savefig('./plots/xigg_1h_FFT_M2013.png')
 	plt.close()
 	
 	#xi_gg_1h = get_xi_1h(rvec_xi, kvec_FT, Pk) # Function that gets the 1halo galaxy-galaxy correlation function term.
@@ -793,11 +776,11 @@ def wgg_1halo_Four(rp_cents_):
 	plt.ylim(10**(-3), 10**(4))
 	plt.xlabel('$r_p$, Mpc/h com')
 	plt.ylabel('$w_{gg}$, Mpc/h com')
-	plt.savefig('./plots/wgg_1h.png')
+	plt.savefig('./plots/wgg_1h_M2013.png')
 	plt.close()
 	
 	wgg_save = np.column_stack((rp_cents_, wgg_1h))
-	np.savetxt('./txtfiles/wgg_1halo_mod.txt', wgg_save)
+	np.savetxt('./txtfiles/wgg_1halo_M2013.txt', wgg_save)
 	
 	return wgg_1h
 	
@@ -943,7 +926,7 @@ def wgg_full(rp_c):
 	
 	#print "GETTING 1HALO WGG"
 	#wgg_1h = wgg_1halo_Four(rp_c)
-	(rp_cen, wgg_1h) = np.loadtxt('./txtfiles/wgg_1halo_mod.txt', unpack=True)
+	(rp_cen, wgg_1h) = np.loadtxt('./txtfiles/wgg_1halo_M2013.txt', unpack=True)
 	#print "DONE WITH 1HALO WGG, GETTING 2HALO"
 	#wgg_2h = wgg_2halo(rp_c)
 	#print "DONE WITH 2HALO WGG"
@@ -959,6 +942,35 @@ def wgg_full(rp_c):
 	#plt.xlabel('$r_p$, Mpc/h, com')
 	#plt.savefig('./plots/wgg_tot_mod.png')
 	#plt.close()
+	
+	#plt.figure()
+	#plt.loglog(rp_c, wgg_1h, 'go')
+	#plt.xlim(0.4, 80.)
+	#plt.ylim(0., 300.)
+	#plt.ylabel('$w_{gg}$, Mpc/h, com')
+	#plt.xlabel('$r_p$, Mpc/h, com')
+	#plt.savefig('./plots/wgg_1h_M2013.png')
+	#plt.close()
+	
+	plt.figure()
+	plt.loglog(rp_c, wgg_2h, 'go')
+	plt.xlim(0.4, 80.)
+	plt.ylim(1, 1000.)
+	plt.ylabel('$w_{gg}$, Mpc/h, com')
+	plt.xlabel('$r_p$, Mpc/h, com')
+	plt.savefig('./plots/wgg_2h_M2013.png')
+	plt.close()
+	
+	print "wgg=", zip(rp_c, wgg_tot)
+	
+	plt.figure()
+	plt.loglog(rp_c, wgg_tot, 'mo')
+	plt.xlim(0.4, 80.)
+	plt.ylim(1., 1000.)
+	plt.ylabel('$w_{gg}$, Mpc/h, com')
+	plt.xlabel('$r_p$, Mpc/h, com')
+	plt.savefig('./plots/wgg_tot_M13compare.png')
+	plt.close()
 	
 	return wgg_tot
 
@@ -976,23 +988,23 @@ def wgp_full(rp_c):
 	
 	wgp_tot = wgp_1h + wgp_2h 
 	
-	#plt.figure()
-	#plt.loglog(rp_cen, wgp_1h, 'go')
-	#plt.xlim(0.1, 200.)
+	plt.figure()
+	plt.loglog(rp_cen, wgp_1h, 'go')
+	plt.xlim(0.1, 200.)
 	#plt.ylim(0.01, 30)
-	#plt.ylabel('$w_{gp}$, Mpc/h, com')
-	#plt.xlabel('$r_p$, Mpc/h')
-	#plt.savefig('./plots/wgp_1h.png')
-	#plt.close()
+	plt.ylabel('$w_{gp}$, Mpc/h, com')
+	plt.xlabel('$r_p$, Mpc/h')
+	plt.savefig('./plots/wgp_1h.png')
+	plt.close()
 	
-	#plt.figure()
-	#plt.loglog(rp_cen, wgp_2h, 'go')
-	#plt.xlim(0.1, 200.)
+	plt.figure()
+	plt.loglog(rp_cen, wgp_2h, 'go')
+	plt.xlim(0.1, 200.)
 	#plt.ylim(0.01, 30)
-	#plt.ylabel('$w_{gp}$, Mpc/h, com')
-	#plt.xlabel('$r_p$, Mpc/h')
-	#plt.savefig('./plots/wgp_2h.png')
-	#plt.close()
+	plt.ylabel('$w_{gp}$, Mpc/h, com')
+	plt.xlabel('$r_p$, Mpc/h')
+	plt.savefig('./plots/wgp_2h.png')
+	plt.close()
 	
 	#plt.figure()
 	#plt.loglog(rp_c, wgp_tot, 'go')
@@ -1046,39 +1058,13 @@ def get_gammaIA_cov_stat(rp_bins, rp_bins_c):
 	F_a = get_F(pa.e_rms_a, pa.zeff, pa.zeff+pa.delta_z, rp_bins, rp_bins_c)
 	F_b = get_F(pa.e_rms_b, pa.zeff+pa.delta_z, pa.zphmax, rp_bins, rp_bins_c)
 	
-	#print "boost -1 + F=", Boost_a -1. + F_a
-	#print "boost -1 + F=", Boost_b -1. + F_b
-	
-	#plt.figure()
-	#plt.loglog(rp_bins_c,F_a, 'bo')
-	#plt.savefig('./plots/fa_sig0.08.pdf')
-	#plt.close()
-	
 	# Sig IA 
 	Sig_IA_a = get_Sig_IA(pa.zeff, pa.zeff, pa.zeff+pa.delta_z, pa.e_rms_a, rp_bins, rp_bins_c, Boost_a)
 	Sig_IA_b = get_Sig_IA(pa.zeff, pa.zeff+pa.delta_z, pa.zphmax, pa.e_rms_b, rp_bins, rp_bins_c, Boost_b)
 	
-	#print "Sig_IA_a=", Sig_IA_a
-	#print "Sig_IA_b=", Sig_IA_b
-
-	#plt.figure()
-	#plt.loglog(rp_bins_c,Sig_IA_a, 'bo')
-	#plt.savefig('./plots/SigIA_a_sig'+str(pa.sigz)+'.pdf')
-	#plt.close()
-	
-	#plt.figure()
-	#plt.loglog(rp_bins_c,Sig_IA_b, 'bo')
-	#plt.savefig('./plots/SigIA_b_sig'+str(pa.sigz)+'.pdf')
-	#plt.close()
-	
 	# Photometric biases to estimated Delta Sigmas
 	cz_a = get_cz(pa.zeff, pa.zeff, pa.zeff + pa.delta_z, pa.e_rms_a, rp_bins, rp_bins_c)
 	cz_b = get_cz(pa.zeff, pa.zeff+pa.delta_z, pa.zphmax, pa.e_rms_b, rp_bins, rp_bins_c)   
-	#print "cz_a=", cz_a
-	#print "cz_b=", cz_b    
-	
-	#print "cza * boost term * SigIa=", cz_a * (Boost_a -1. + F_a) * Sig_IA_a
-	#print "czb * boost term * SigIa=", cz_b * (Boost_b -1. + F_b) * Sig_IA_b
 	
 	# Fiducial gamma IA:
 	g_IA_fid = gamma_fid(rp_bins_c)
@@ -1091,10 +1077,7 @@ def get_gammaIA_cov_stat(rp_bins, rp_bins_c):
 	DeltaCov_a = shapenoise_cov(pa.e_rms_a, pa.zeff, pa.zeff+pa.delta_z, Boost_a, rp_bins_c, rp_bins)
 	DeltaCov_b = shapenoise_cov(pa.e_rms_b, pa.zeff+pa.delta_z, pa.zphmax, Boost_b, rp_bins_c, rp_bins)
 	
-	#print "DeltaCov_a=", DeltaCov_a
-	#print "DeltaCov_b=", DeltaCov_b
-	
-	# Get the errors on B-1 for each sample from file
+	# Get the statistical errors on B-1 for each sample from file
 	sigBa = boost_errors(rp_bins_c, pa.sigBF_a)
 	sigBb = boost_errors(rp_bins_c, pa.sigBF_b)
 	
@@ -1108,9 +1091,10 @@ def get_gammaIA_cov_stat(rp_bins, rp_bins_c):
 		boost_contribution[i,i] = g_IA_fid[i]**2 * ((cz_a**2 * Sig_IA_a[i]**2 * sigBa[i]**2 + cz_b**2 * Sig_IA_b[i]**2 * sigBb[i]**2) / (cz_a * Sig_IA_a[i] * (Boost_a[i] - 1. + F_a[i]) - cz_b * Sig_IA_b[i] * (Boost_b[i]-1.+F_b[i]))**2)
 		
 		shape_contribution[i,i] = g_IA_fid[i]**2 * ((cz_a**2 *DeltaCov_a[i] + cz_b**2 *DeltaCov_b[i]) / (cz_a * DeltaSig_est_a[i] - cz_b * DeltaSig_est_b[i])**2 )	
-	
-	#print "num, shape contribution=", (cz_a**2 *DeltaCov_a + cz_b**2 *DeltaCov_b)
-	#print "denom, shape contribution=", (cz_a * DeltaSig_est_a - cz_b * DeltaSig_est_b)**22
+		
+	# Save the total variance
+	save_variance = np.column_stack((rp_bins_c, np.sqrt(np.diag(gammaIA_stat_cov)) / g_IA_fid))
+	np.savetxt('./txtfiles/frac_error_Blazek_sigz='+str(pa.sigz)+'.txt', save_variance)
 		
 	plt.figure()
 	plt.loglog(rp_bins_c,DeltaCov_a, 'go', label='a')
@@ -1120,7 +1104,7 @@ def get_gammaIA_cov_stat(rp_bins, rp_bins_c):
 	plt.xlabel('$r_p$')
 	plt.ylabel('$\sigma(\Delta \Sigma)$')
 	plt.xlim(0.04, 20)
-	plt.savefig('./plots/variance_DS_sigz='+str(pa.sigz)+'_fixwg+.pdf')
+	plt.savefig('./plots/variance_DS_sigz='+str(pa.sigz)+'_fixSigIA.pdf')
 	plt.close()
 	
 	plt.figure()
@@ -1131,7 +1115,7 @@ def get_gammaIA_cov_stat(rp_bins, rp_bins_c):
 	plt.xlabel('$r_p$')
 	plt.ylabel('$\tilde(\Delta \Sigma)$')
 	plt.xlim(0.04, 20)
-	plt.savefig('./plots/est_DS_sigz='+str(pa.sigz)+'_fixwg+.pdf')
+	plt.savefig('./plots/est_DS_sigz='+str(pa.sigz)+'_fixSigIA.pdf')
 	plt.close()
 	
 	plt.figure()
@@ -1144,8 +1128,9 @@ def get_gammaIA_cov_stat(rp_bins, rp_bins_c):
 	plt.xlabel('$r_p$')
 	plt.ylabel('$\sigma(\gamma_{IA})$')
 	plt.xlim(0.04, 20)
-	plt.savefig('./plots/variance_alone_components_Blazek_sigz='+str(pa.sigz)+'_fixwg+.pdf')
+	plt.savefig('./plots/variance_alone_components_Blazek_sigz='+str(pa.sigz)+'_fixSigIA.pdf')
 	plt.close()
+	
 
 	return (gammaIA_stat_cov, g_IA_fid)
 	
@@ -1193,6 +1178,12 @@ def gamma_fid(rp):
 	wgp_rp = wgp_full(rp)
 	
 	gammaIA = wgp_rp / (wgg_rp + 2. * pa.close_cut) 
+	
+	print "rp=", rp
+	print "wgp_rp=", wgp_rp
+	print "wgg_rp =", wgg_rp
+	print "close cut=", pa.close_cut
+	exit()
 	
 	return gammaIA
 
@@ -1303,7 +1294,7 @@ def plot_variance(cov_1, fidvalues_1, bin_centers):
 	fig_sub.tick_params(axis='both', which='major', labelsize=12)
 	fig_sub.tick_params(axis='both', which='minor', labelsize=12)
 	plt.tight_layout()
-	plt.savefig('./plots/variance_log_sigz='+str(pa.sigz)+'_fixwg+.pdf')
+	plt.savefig('./plots/variance_log_sigz='+str(pa.sigz)+'_fixSigIA.pdf')
 	plt.close()
 	
 	fig_sub=plt.subplot(111)
@@ -1314,10 +1305,12 @@ def plot_variance(cov_1, fidvalues_1, bin_centers):
 	#fig_sub.set_yscale("log") #, nonposy='clip')
 	fig_sub.set_xlabel('$r_p$')
 	fig_sub.set_ylabel('$\gamma_{IA}$')
+	fig_sub.set_ylim(-0.02, 0.015)
+	fig_sub.set_xlim(0.05, 20)
 	fig_sub.tick_params(axis='both', which='major', labelsize=12)
 	fig_sub.tick_params(axis='both', which='minor', labelsize=12)
 	plt.tight_layout()
-	plt.savefig('./plots/variance_notlog_sigz='+str(pa.sigz)+'_fixwg+.pdf')
+	plt.savefig('./plots/variance_notlog_sigz='+str(pa.sigz)+'_fixSigIA.pdf')
 	plt.close()
 	
 	plt.figure()
@@ -1325,7 +1318,7 @@ def plot_variance(cov_1, fidvalues_1, bin_centers):
 	plt.xlim(0.04, 20)
 	plt.ylabel('$\sigma(\gamma_{IA}$')
 	plt.xlabel('$r_p$')
-	plt.savefig('./plots/variance_alone_Blazek_sigz='+str(pa.sigz)+'_fixwg+.pdf')
+	plt.savefig('./plots/variance_alone_Blazek_sigz='+str(pa.sigz)+'_fixSigIA.pdf')
 	plt.close()
 
 	return  

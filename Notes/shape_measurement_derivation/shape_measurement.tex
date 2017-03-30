@@ -187,13 +187,13 @@ Uncertainty in either $\frac{dN}{dz_s}$ or $p(z_s, z_l)$ leads to uncertainty in
 
 The systematic error contributions from these sources are given by:
 \begin{align}
-S_{dN}^2 &= \sigma_{dN}^2 (1-a_{\rm fid})^2 N_{\rm corr}^{{\rm fid}}(r_p) N_{\rm corr}^{{\rm fid}}(r_p')\gamma_{\rm IA}^{\rm fid}(r_p) \gamma_{\rm IA}^{\rm fid}(r_p') \nonumber \\
-S_{p}^2 &= \sigma_{p}^2 (1-a_{\rm fid})^2 N_{\rm corr}^{{\rm fid}}(r_p) N_{\rm corr}^{{\rm fid}}(r_p')\gamma_{\rm IA}^{\rm fid}(r_p) \gamma_{\rm IA}^{\rm fid}(r_p') 
+S_{dN}^2 &=  \sigma_{dN}^2 (\tilde{\gamma}(r_p) - \tilde{\gamma}^\prime(r_p)) (\tilde{\gamma}(r_p^\prime) - \tilde{\gamma}^\prime(r_p^\prime)) =\sigma_{dN}^2 (1-a_{\rm fid})^2 N_{\rm corr}^{{\rm fid}}(r_p) N_{\rm corr}^{{\rm fid}}(r_p')\gamma_{\rm IA}^{\rm fid}(r_p) \gamma_{\rm IA}^{\rm fid}(r_p') \nonumber \\
+S_{p}^2 &= \sigma_{p}^2 (\tilde{\gamma}(r_p) - \tilde{\gamma}^\prime(r_p)) (\tilde{\gamma}(r_p^\prime) - \tilde{\gamma}^\prime(r_p^\prime)) =\sigma_{p}^2 (1-a_{\rm fid})^2 N_{\rm corr}^{{\rm fid}}(r_p) N_{\rm corr}^{{\rm fid}}(r_p')\gamma_{\rm IA}^{\rm fid}(r_p) \gamma_{\rm IA}^{\rm fid}(r_p') 
 \label{S2}
 \end{align}
 where `fid' indicates a fiducial value.
 
-In order to get an estimate for $\sigma_{\rm dN}$, we would vary $\frac{dN}{dz}$. This could be done, for example, by varying the parameters of $\frac{dN}{dz}$ over the range of their uncertainty (given in Nakajima 2011 for SDSS). Then, for each of these choices of $\frac{dN}{dz}$, we would compute $\frac{1}{N_{\rm corr}}$. The range of resultant $N_{\rm corr}$ would allow for an estimate of $\sigma_{\rm dN}$. A similar scheme could be used to account for $\sigma_{\rm p}$.
+In order to get an estimate for $\sigma_{\rm dN}$, we would vary $\frac{dN}{dz}$. This could be done, for example, by varying the parameters of $\frac{dN}{dz}$ over the range of their uncertainty (given in Nakajima 2011 for SDSS). Then, for each of these choices of $\frac{dN}{dz}$, we would compute $\frac{1}{N_{\rm corr}}$. The range of resultant $\frac{1}{N_{\rm corr}}$ would allow for an estimate of $\sigma_{\rm dN}$. A similar scheme could be used to account for $\sigma_{\rm p}$.
 
 \subsection{Fiducial $\gamma^{\rm IA}(r_p)$}
 To calculate both the systematic and statistical error, we need a fiducial model for $\gamma^{\rm IA}(r_p)$.

@@ -24,7 +24,7 @@ e_rms_b	=	0.31 # The rms ellipticity under measurement method b.
 n_l     =   8.7 # The number of lenses in the lens sample per square DEGREE
 Area    =   7131 # Area associated with the lens sample in square DEGREES
 n_s     =   1.2 # The number density of sources in the sample per square ARCMINUTE
-a_con	=	1./1.4	# Fiducial constant offset, approximated from Singh 2016 assuming unprimed method isophotal and primed ReGaussianisation
+a_con	=	1./1.8	# Fiducial constant offset, approximated from Singh 2016 assuming unprimed method isophotal and primed ReGaussianisation
 
 #Parameters of the dNdz of sources, if using an analytic distribution.
 alpha 	= 	2.338 
@@ -54,14 +54,14 @@ A_fid   		=       0.059
 beta_fid        =       -0.73
 
 # Other
-cov_perc = 0.6 #percentage covariance between methods
+cov_perc = 0.7 #percentage covariance between methods
 sig_sys_dNdz = np.asarray([ 0.0014777 ,  0.0037014 ,  0.00917435,  0.02051145,  0.03701631, 0.05260886,  0.06284505]) # systematic error from dNdz in Ncorr. Estimated from varying alpha and zs, with sigz=0.08 and Boost(1Mpc/h) = 1.2
 sig_sys_dp = np.asarray( [ 0.00654311,  0.01624936,  0.0396385 ,  0.08656573,  0.15238458, 0.21256654,  0.2512192 ] ) # systematic error from p(z) in Ncorr
-sigz=0.08 # Uncertainty on photo z (Gaussian model, sigma = sigz*(1+z))
+sigz=0.11 # Uncertainty on photo z (Gaussian model, sigma = sigz*(1+z))
 plotfile =	'./plots/fid_gIA_randoms_in_newfid.pdf'  # Location of file for plot showing 1 sigma error bars on gamma_IA
 boost_samp = 0.2 # Boost at 1 Mpc/h for our associated sample
-boost_tot = 0.04 # Boost at 1 Mpc/h for all the source-lens pairs in the survey (all z)
-sigB	= 0.0 # The statistical error from the boost in Ncorr.
+boost_tot = 0.06 # Boost at 1 Mpc/h for all the source-lens pairs in the survey (all z)
+#sigB	= 0.0 # The statistical error from the boost in Ncorr.
 ProjMax = 100.
 
 # Constants / conversions

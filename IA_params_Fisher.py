@@ -10,7 +10,7 @@ e_rms_b	=	0.3
 S_to_N = 15.
 
 # The photometric redshift error given a Gaussian photo_z model
-sigz=0.08
+sigz=0.11
  
 # The factor by which the boost is proportional to the projected correlation function
 boost_assoc = 0.2 # Boost at 1 Mpc/h for our associated sample
@@ -73,10 +73,12 @@ OmR	=	2.47*10**(-5)/(HH0/100.)**2
 OmN	=	Nnu*(7./8.)*(4./11.)**(4./3.)*OmR
 #OmB	=	0.02222/(HH0/100.)**2
 #OmC	=	0.1199/(HH0/100.)**2
-#OmM=  0.25
-OmB = 0.046
-OmC = 0.236
-OmM = OmB + OmC
+OmC =0.2
+OmB=0.05
+OmM=  0.25
+#OmB = 0.046
+#OmC = 0.236
+#OmM = OmB + OmC
 H0	=	10**(5)/c
 
 # Constants / conversions
@@ -91,7 +93,7 @@ Mvir = 10**(13.18) #/ (HH0 / 100.)
 #Mvir = 6. * 10**13 #/ (HH0 / 100.)
 #Mvir = 4.7 * 10**12 #in units of M sol
 #Mvir = 9.3 * 10**13
-kpts_wgg = 10000
+kpts_wgg = 5000#10000
 kpts_wgp = 2000
 sigz_gwin = 0.001
 ProjMax = 100.

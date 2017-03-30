@@ -115,7 +115,7 @@ The boost is known to scale like the projected correlation function, which can b
 (B(r_p)-1) \propto (r_p)^{-0.8}.
 \label{boost}
 \end{equation}
-The amplitude depends on factors including the photometric redshift properties. We include a tunable parameter with value $(B(1 {\rm Mpc/h})-1)$.
+The amplitude depends on factors including the photometric redshift properties. We include a tunable parameter with value $(B(1 {\rm Mpc/h})-1)$. It is important to note that the boost depends on the accuracy of photometric redshifts, especially for the source sample defined by $z_p>z_l+\Delta z$ (sample `b'). For this sample, if photometric redshifts are very good, the boost may be very near unity. {\it I need to incorporate a method to relate the boost proportionality factor to $\sigma_z$.}
 
 $F$ is given by:
 \begin{equation}
@@ -134,14 +134,16 @@ where $p(z_{\rm s}, z_{\rm p})$ is the probability of measuring a photometric re
 \end{equation}
 In this context $\sigma_e(z_{\rm p})$ can be assumed to be redshift-independent, and is roughly $2 / (S/N)$, where the signal to noise for the SDSS sample of Blazek et al. is roughly 15.
 
-Note that in equation \ref{sumrandweights} for the sum of weights over random lens-source pairs, the denominator represents a factor which normalizes the smooth redshift distribution. Because we will work exclusively with ratios of such sums here, it is actually unimportant whether or not we include this normalizing factor. However, since we have chosen to include it here, it must be included consistently in each such sum that follows.
+In equation \ref{sumrandweights} for the sum of weights over random lens-source pairs, the denominator represents a factor which normalizes such that the total number is set to 1. Because we are here working with ratios of such sums, it is actually unimportant whether or not we include this normalizing factor. However, since we have chosen to include it here, it must be included consistently.
 
-The numerator of equation \ref{F} can similarly be written:
+The numerator of equation \ref{F} can be written:
 \begin{equation}
 \sum\limits_{j}^{\rm rand-close}\tilde{w}_j = \frac{\int_{z_{\rm p}^{\rm min}}^{z_{\rm p}^{\rm max}} d z_{\rm p} \tilde{w}(z_l, z_{\rm p}) \int_{z_{\rm s}^{\rm close, min}}^{z_{\rm s}^{\rm close, max}} dz_{\rm s} \frac{dN}{dz_{\rm s}} p(z_{\rm s}, z_{\rm p})}{\int_{z_{\rm p}^{\rm min}}^{z_{\rm p}^{\rm max}} d z_{\rm p} \int_{z_{\rm s}^{\rm min}}^{z_{\rm s}^{\rm max}} dz_{\rm s} \frac{dN}{dz_{\rm s}} p(z_{\rm s}, z_{\rm p})}
 \label{sumrandcloseweights}
 \end{equation}
 where $z_{\rm s}^{\rm close,max}$ and $z_{\rm s}^{\rm close,min}$ are respectively the maximum and minimum redshifts at which we consider sources to be close enough to the lens to contribute to IA. To be abundantly clear, this cut is made on spectroscopic redshifts because it is the physical redshift of the object which determines if it contributes to the IA signal (not the photometric redshift). 
+
+Note that the numerator in particular of $F$ is subject to considerable variation due to changes in the quality of photometric redshift estimation. If the variance of the photo-z distribution is small, the true and photometric redshifts are usually close together. Therefore, in this case, most of the galaxies which have true redshift near enough the lens to be subject to intrinsic alignments will have photo-z within this range as well. Thus, their weights (which are determined by photo-z's) will be heavily suppressed. This means that for a sample defined by $z_l<z<z_l+\Delta z$ (sample `a' here), $F$ is reduced as photo-z improve. $F$ is also reduced as photo-z improve for the sample defined by $z>z_l+\Delta z$, for the simpler reason that with low-variance photometric redshifts, very few galaxies which truly have redshift very near the lens are scattered into the higher-redshift sample.
 
 \subsection{$\langle \tilde{\Sigma}_c\rangle_{\rm IA}(r_p)$}
 
@@ -159,16 +161,31 @@ The sum of weights and $\tilde{\Sigma}_{c}$ over `rand-close' in the numerator i
 \label{sumrandcloseweightsSigC}
 \end{equation}
 
-To compute the other sum in the numerator, we first assume that all excess source galaxies have spec-z at the lens redshift. To get a sum that has contributions from the weights and critical density values at the the correct photometric redshifts, we consider a similar expression to equation \ref{sumrandcloseweightsSigC}, but set $\frac{dN}{dz_s} = \delta(z_s-z_l)$. We would have:
-\begin{align}
-\frac{\int_{z_{\rm p}^{\rm min}}^{z_{\rm p}^{\rm max}} dz_{\rm p}\tilde{w}(z_l, z_{\rm p}) \tilde{\Sigma}_c(z_l, z_{\rm p}) \int_{z_s^{\rm min}}^{z_s^{\rm max}} dz_s \delta(z_s - z_l) p(z_s, z_{\rm p})}{\int_{z_{\rm p}^{\rm min}}^{z_{\rm p}^{\rm max}} d z_{\rm p} \int_{z_{\rm s}^{\rm min}}^{z_{\rm s}^{\rm max}} dz_{\rm s} \delta(z_s - z_l) p(z_{\rm s}, z_{\rm p})} = \frac{\int_{z_{\rm p}^{\rm min}}^{z_{\rm p}^{\rm max}} dz_{\rm p}\tilde{w}(z_l, z_{\rm p}) \tilde{\Sigma}_c(z_l, z_{\rm p}) p(z_l, z_{\rm p})}{\int_{z_{\rm p}^{\rm min}}^{z_{\rm p}^{\rm max}} d z_{\rm p} p(z_l, z_{\rm p})}.
-\label{rand_atzl}
-\end{align}
-Equation \ref{rand_atzl} has the correct relative contributions from weights and critical density with respect to photometric redshift. However, it is normalized in the manner in which we would normalize over random sources. To fix this, recall that $(B(r_p) -1)$ provides the weighted ratio of excess galaxies to random galaxies. We can think about $(B(r_p) -1)$ as a numerical factor that renormalizes equation \ref{rand_atzl} to have the correct normalization for excess galaxies. We get:
+Computing the other sum in the numerator requires slightly more caution. The difficulty is in ensuring that it is consistently normalized. The normalization convention we use here (and for most of the calculation, with the exception of computing the covariance matrix) is such that the total number of sources in the sample is equal to 1. This is relativley simple for cases in which we sum over all sources in the sample: we simply divide by the appropriate integral over the number distribution. However, we don't have an equivalent and consistent way of directly normalizing over the number of excess galaxies, because we don't know this number apriori. 
+
+To resolve this issue, first consider that when we have refered to $\tilde{w}$ and $\tilde{w}(z_p)$ in these notes, we have really meant arbitrarily normalized weights. Let us now temporarily call these arbitrarily normalized weights $\tilde{w}^a$ or $\tilde{w}^a(z_p)$, and refer to weigths which are corretly noramlized as $\tilde{w}^n$ or $\tilde{w}^n(z_p)$. We can then write:
 \begin{equation}
-\sum\limits_{j}^{\rm excess} \tilde{w}_j \tilde{\Sigma}_{c,j} = (B(r_p) - 1) \frac{\int_{z_{\rm p}^{\rm min}}^{z_{\rm p}^{\rm max}} dz_{\rm p} \tilde{w}(z_l, z_{\rm p}) \tilde{\Sigma}_c(z_l, z_{\rm p}) p(z_l, z_{\rm p})}{\int_{z_{\rm p}^{\rm min}}^{z_{\rm p}^{\rm max}} d z_{\rm p} p(z_l, z_{\rm p})}.
-\label{sumexcesswSigC}
+\sum\limits_{j}^{\rm excess} \tilde{w}^n_j \tilde{\Sigma}_{c,j} = \frac{\sum\limits_{j}^{\rm excess} \tilde{w}^a_j \tilde{\Sigma}_{c,j}}{ \sum\limits_{j}^{\rm excess} \tilde{w}^a_j} \sum\limits_{j}^{\rm excess} \tilde{w}^n_j.
+\label{normSigIA1}
 \end{equation}
+This holds as long as both sets of arbitrarily normalized weights are arbitrarily normalized in the same way. 
+
+We can now compute each of the three terms requires for equation \ref{normSigIA1}. To do so, we assume that all excess source galaxies have spec-z at the lens redshift; this is a reasonable assumption because excess galaxies result from clustering, which is most prominent locally. We therefore consider a similar expression to the numerator of equation \ref{sumrandcloseweightsSigC}, but set $\frac{dN}{dz_s} = \delta(z_s-z_l)$. We have:
+\begin{align}
+\sum\limits_{j}^{\rm excess} \tilde{w}^a_j \tilde{\Sigma}_{c,j} = \int_{z_{\rm p}^{\rm min}}^{z_{\rm p}^{\rm max}} dz_{\rm p}\tilde{w}^a(z_l, z_{\rm p}) \tilde{\Sigma}_c(z_l, z_{\rm p}) \int_{z_s^{\rm min}}^{z_s^{\rm max}} dz_s \delta(z_s - z_l) p(z_s, z_{\rm p}) = \int_{z_{\rm p}^{\rm min}}^{z_{\rm p}^{\rm max}} dz_{\rm p}\tilde{w}(z_l, z_{\rm p}) \tilde{\Sigma}_c(z_l, z_{\rm p}) p(z_l, z_{\rm p}).
+\label{wSigc_atzl}
+\end{align}
+We can similarly compute the sum over arbitrarily normalized weights of excess sources:
+\begin{align}
+\sum\limits_{j}^{\rm excess} \tilde{w}^a_j= \int_{z_{\rm p}^{\rm min}}^{z_{\rm p}^{\rm max}} dz_{\rm p}\tilde{w}^a(z_l, z_{\rm p}) \int_{z_s^{\rm min}}^{z_s^{\rm max}} dz_s \delta(z_s - z_l) p(z_s, z_{\rm p}) = \int_{z_{\rm p}^{\rm min}}^{z_{\rm p}^{\rm max}} dz_{\rm p}\tilde{w}(z_l, z_{\rm p})  p(z_l, z_{\rm p}).
+\label{excess_w_arb}
+\end{align}
+The sum over {\it appropriately} normalized weights of excess sources is given by using the relationship which defines the boost factor to turn it into a sum over random sources and normalize in the usual way:
+\begin{equation}
+\sum\limits_{j}^{\rm excess} \tilde{w}^n_j = (B(r_p)-1) \frac{ \int_{z_{\rm p}^{\rm min}}^{z_{\rm p}^{\rm max}} dz_{\rm p}\tilde{w}^a(z_l, z_{\rm p}) \int_{z_s^{\rm min}}^{z_s^{\rm max}} dz_s \frac{dN}{dz_s} p(z_s, z_{\rm p})}{\int_{z_{\rm p}^{\rm min}}^{z_{\rm p}^{\rm max}} dz_{\rm p} \int_{z_s^{\rm min}}^{z_s^{\rm max}} dz_s \frac{dN}{dz_s} p(z_s, z_{\rm p})}.
+\label{excess_w_normed}
+\end{equation}
+Given then the three components of equation \ref{normSigIA1}, we can compute $\sum\limits_{j}^{\rm excess} \tilde{w}^n_j \tilde{\Sigma}_{c,j}$, and hence $\langle \tilde{\Sigma}_c\rangle_{\rm IA}(r_p)$.
 
 \subsection{$c_z$}
 
@@ -400,26 +417,50 @@ The result is that equation \ref{gamma_blazek} is modified to be:
 \end{equation} 
 
 \section{Systematic errors}
-The systematic errors which affect $\gamma_{\rm IA}(r_p)$ measured using this method are are:
+Recall that systematic errors in this case are those which introduce a correlated change in the results between projected $r_p$ bins. The systematic errors which may affect $\gamma_{\rm IA}(r_p)$ measured using this method are:
 \begin{itemize}
-\item{error as a result of not knowing the source galaxy $\frac{dN}{dz}$ perfectly (not having a sufficient representative sample of sources).}
-\item{error as a result of photo-z bias affecting the measured value of $\tilde{\Sigma}_c$ (as it propagates into $\langle \tilde{\Sigma}_c\rangle_{\rm IA}$ and anything containing estimated weights)}
+\item{error as a result of not knowing the source galaxy $\frac{dN}{dz_s}$ perfectly (not having a sufficient representative sample of sources). This propagates into $\langle \tilde{\Sigma}_c\rangle_{\rm IA}$, $F$, and $c_z$.}
+\item{error as a result of an imperfect knowledge of the photometric redshift probability distribution $p(z_p, z_s)$. This also propagates into $\langle \tilde{\Sigma}_c\rangle_{\rm IA}$, $F$, and $c_z$.}
+\item{error on the boost factor as a result of large-scale structure fluctuations and variations in lens density due to observing conditions. This affects only the boost $B(r_p)$.}
 \end{itemize}
-{\it For now we look just at the statistical errors. We treat anything that contributes negligible statistical error as constant. This needs work.}
+
+Recall that the expression for $\gamma_{\rm IA}(r_p)$ under this method is:
+\begin{equation}
+\bar{\gamma}^{\rm IA} = \frac{c_z^a \widetilde{\Delta\Sigma}^a - c_z^b \widetilde{\Delta\Sigma}^b}{(B^a-1+F^a)c_z^a \langle \tilde{\Sigma_c}\rangle_{\rm IA}^a -(B^b-1+F^b)c_z^b \langle \tilde{\Sigma_c}\rangle_{\rm IA}^b}.
+\label{gamma_sol}
+\end{equation}
+
+This expression is complex enough that I think the easiest way to compute the systematic error from each of the three above sources is the following:
+\begin{enumerate}
+\item{Vary the quantity which sources the systematic error (either $\frac{dN}{dz_s}$, $p(z_p, z_s)$, or $B(r_p)$) and propagate this effect to the corresponding changes on other quantities (if any).}
+\item{Compute the change to $\gamma_{\rm IA}(r_p)$ from this systematic error by computing the value of $\gamma_{\rm IA}(r_p)$ with these modified quantities and subtracting the fiducial value of $\gamma_{\rm IA}(r_p)$.}
+\end{enumerate}
+
+To be more specific, the systematic error due to uncertainty in $\frac{dN}{dz_s}$ would be:
+\begin{align}
+\sigma_{dN} &= \frac{(c^a_{z} + \delta c_{N}^{a}) \widetilde{\Delta\Sigma}^a - (c^b_{z} + \delta c_{N}^{b}) \widetilde{\Delta\Sigma}^b}{(B^a-1+F^a + \delta F^a_{N})(c^a_{z} + \delta c_{N}^{a}) (\langle \tilde{\Sigma_c}\rangle_{\rm IA}^a + \delta \langle \tilde{\Sigma_c}\rangle_{N}^{a}) -(B^b-1+F^b + \delta F^b_{N})(c^b_{z} + \delta c_{N}^{b}) (\langle \tilde{\Sigma_c}\rangle_{\rm IA}^b + \delta \langle \tilde{\Sigma_c}\rangle_{N}^{b})} - \gamma_{\rm IA}(r_p).
+\label{sigmadNsys}
+\end{align}
+The systematic error due to uncertainty in the photometric redshift distribution would be:
+\begin{align}
+\sigma_{pz} &= \frac{(c^a_{z} + \delta c_{p}^{a}) \widetilde{\Delta\Sigma}^a - (c^b_{z} + \delta c_{p}^{b}) \widetilde{\Delta\Sigma}^b}{(B^a-1+F^a + \delta F^a_{p})(c^a_{z} + \delta c_{p}^{a}) (\langle \tilde{\Sigma_c}\rangle_{\rm IA}^a + \delta \langle \tilde{\Sigma_c}\rangle_{p}^{a}) -(B^b-1+F^b + \delta F^b_{p})(c^b_{z} + \delta c_{p}^{b}) (\langle \tilde{\Sigma_c}\rangle_{\rm IA}^b + \delta \langle \tilde{\Sigma_c}\rangle_{p}^{b})} - \gamma_{\rm IA}(r_p).
+\label{sigmapzsys}
+\end{align}
+And the systematic error due to systematic uncertainty in the boost is given by: 
+\begin{equation}
+\bar{\gamma}^{\rm IA} = \frac{c_z^a \widetilde{\Delta\Sigma}^a - c_z^b \widetilde{\Delta\Sigma}^b}{(B^a +\delta B^a-1+F^a)c_z^a \langle \tilde{\Sigma_c}\rangle_{\rm IA}^a -(B^b + \delta B^b-1+F^b)c_z^b \langle \tilde{\Sigma_c}\rangle_{\rm IA}^b}- \gamma_{\rm IA}(r_p) .
+\label{sigmaBsys}
+\end{equation}
+In all three above cases, quantities other than changes due to systematic uncertainty are calcuated at fiducial values.
+
 
 \section{Open questions / issues}
 \begin{enumerate}
 \item{How to treat the off-diagonal elements of the covariance matrix?}
-\item{For computing $\sum\limits_{j}^{\rm excess} \tilde{w}_j \tilde{\Sigma}_{c,j}$: $B(r_p) - 1$ only corrects for weights, not weights and $\Sigma_c$. Is my expression right?}
-\item{Need to estimate $b_{\Sigma}$.}
 \item{Need to include halo-exclusion term in calculation of $\Delta \Sigma$ and $w_{gg}$.}
 \item{The definition of $\gamma_{\rm IA}$ from Blazek et al uses something slightly different than the standard projection function definition - is this okay?}
 \item{My equations for $w_{gg}$ and $w_{g+}$ neglect photo-z - is that okay? Taken from Singh 2014.}
-\item{Should try computing $w_{gg}^{1h}$ with the NFW profile directly, probably less error-prone.}
-\item{My fiducial values of $\gamma_{\rm IA}$ are somewhat suspiciously large at small $r_p$.}
-\item{How to incorporate random + excess galaxies in Delta Sigma covariance noise term?}
-\item{Need to figure out and incorporate systematic errors.}
-\item{Should the boost errors be different for different samples, and if so, how?}
+\item{Need to incorporate systematic errors in the code.}
 \end{enumerate}
 
 
