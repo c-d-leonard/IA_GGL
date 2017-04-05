@@ -177,23 +177,28 @@ Also to note is the fact that equation \ref{Nls} gives the weighted fraction of 
 
 \section*{Systematic error}
 
-There are similarly two obvious sources of systematic error in equation \ref{IAsol}:
+There are three main sources of systematic error in equation \ref{IAsol}:
 \begin{enumerate}
 \item{$\frac{dN}{dz_s}$: We may have an imperfect knowledge of $\frac{dN}{dz_s}$ due to an inadequate spectroscopic subsample, especially for dim source galaxies.}
 \item{$p(z_s, z_p)$: We will not necessarily have an accurate model of how likely we are to measure $z_p$ given $z_s$.}
+\item{$B(r_p)$: As stated in Blazek et al. 2012, we expect systematic error on the boost at roughly a 3\% level due to large-scale structure effects.}
 \end{enumerate}
 
-Uncertainty in either $\frac{dN}{dz_s}$ or $p(z_s, z_l)$ leads to uncertainty in the $\frac{1}{N_{\rm corr}}$ term of equation \ref{IAsol}. This manifests as a systematic error here because it affects the measurements of the IA term in each projected $r_p$ bin in the same way. For example, if $\frac{1}{N_{\rm corr}}$ is high, then $(1-a)\gamma_{\rm IA}(r_p)$ would be high in each bin. This introduces a correlation between $r_p$ bins as well as a contribution to the diagonal elements to the covariance. {\it For the moment, we are only considering the diagonal elements of the covariance.}
+Uncertainty in either $\frac{dN}{dz_s}$, $p(z_s, z_l)$, or $B(r_p)$ leads to uncertainty in $N_{\rm corr}$. This manifests as a systematic error here because it affects the measurements of the IA term in each projected $r_p$ bin in the same way. For example, if $\frac{1}{N_{\rm corr}}$ is high, then $(1-a)\gamma_{\rm IA}(r_p)$ would be high in each bin. This introduces a correlation between $r_p$ bins as well as a contribution to the diagonal elements to the covariance. {\it For the moment, we are only considering the diagonal elements of the covariance.}
 
-The systematic error contributions from these sources are given by:
+The covariance matrix contribution for each source of systematic error given by:
 \begin{align}
-S_{dN}^2 &=  \sigma_{dN}^2 (\tilde{\gamma}(r_p) - \tilde{\gamma}^\prime(r_p)) (\tilde{\gamma}(r_p^\prime) - \tilde{\gamma}^\prime(r_p^\prime)) =\sigma_{dN}^2 (1-a_{\rm fid})^2 N_{\rm corr}^{{\rm fid}}(r_p) N_{\rm corr}^{{\rm fid}}(r_p')\gamma_{\rm IA}^{\rm fid}(r_p) \gamma_{\rm IA}^{\rm fid}(r_p') \nonumber \\
-S_{p}^2 &= \sigma_{p}^2 (\tilde{\gamma}(r_p) - \tilde{\gamma}^\prime(r_p)) (\tilde{\gamma}(r_p^\prime) - \tilde{\gamma}^\prime(r_p^\prime)) =\sigma_{p}^2 (1-a_{\rm fid})^2 N_{\rm corr}^{{\rm fid}}(r_p) N_{\rm corr}^{{\rm fid}}(r_p')\gamma_{\rm IA}^{\rm fid}(r_p) \gamma_{\rm IA}^{\rm fid}(r_p') 
-\label{S2}
+S_{\rm sys}^2(r_p, r_p^\prime) &= \left(\frac{1}{N_{\rm corr}^{\rm sys}(r_p)} - \frac{1}{N_{\rm corr}^{\rm fid}(r_p)}\right)(\tilde{\gamma}(r_p) - \tilde{\gamma}^\prime(r_p))  \left(\frac{1}{N_{\rm corr}^{\rm sys}(r_p^\prime)} - \frac{1}{N_{\rm corr}^{\rm fid}(r_p^\prime)}\right)(\tilde{\gamma}(r_p^\prime) - \tilde{\gamma}^\prime(r_p^\prime)) \nonumber \\
+& = (1-a)^2 \left(\frac{N_{\rm corr}^{\rm fid}(r_p)}{N_{\rm corr}^{\rm sys}(r_p)}-1.\right) \gamma_{\rm IA}^{\rm fid}(r_p) \left(\frac{N_{\rm corr}^{\rm fid}(r_p)}{N_{\rm corr}^{\rm sys}(r_p)}-1.\right)\gamma_{\rm IA}^{\rm fid}(r_p'),
+\label{sys_general}
 \end{align}
-where `fid' indicates a fiducial value.
+where `fid' is a fiducial value. `sys' indicates that the value should be computed using the estimated systematic error offset to each systematic. For example, in the case of the systematic error due to uncertainty in $\frac{dN}{dz}$, $N^{\rm sys}_{\rm corr}$ would be the correction factor computed using parameters of the fit to $\frac{dN}{dz}$ at $1\sigma$ from their fiducial values. In the case of systematic error due to photometric redshift uncertainty, the parameters of the photometric redshift distribution would be taken at $1\sigma$ from their fiducial values, while for the case of the boost, the boost factor itself is multipled by $1.03$ to account for 3\% error. 
 
-In order to get an estimate for $\sigma_{\rm dN}$, we would vary $\frac{dN}{dz}$. This could be done, for example, by varying the parameters of $\frac{dN}{dz}$ over the range of their uncertainty (given in Nakajima 2011 for SDSS). Then, for each of these choices of $\frac{dN}{dz}$, we would compute $\frac{1}{N_{\rm corr}}$. The range of resultant $\frac{1}{N_{\rm corr}}$ would allow for an estimate of $\sigma_{\rm dN}$. A similar scheme could be used to account for $\sigma_{\rm p}$.
+The total systematic error contribution to the covariance matrix is then:
+\begin{equation}
+S_{\rm tot}^2(r_p, r_p^\prime) = S_{\rm B}^2(r_p, r_p^\prime) + S_{\rm dN}^2(r_p, r_p^\prime) + S_{\rm pz}^2(r_p, r_p^\prime)
+\label{sysall}
+\end{equation}
 
 \subsection{Fiducial $\gamma^{\rm IA}(r_p)$}
 To calculate both the systematic and statistical error, we need a fiducial model for $\gamma^{\rm IA}(r_p)$.
