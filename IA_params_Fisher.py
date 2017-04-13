@@ -3,8 +3,8 @@
 import numpy as np
 
 # Parameters associated with the sample / shape noise calcuation 
-e_rms_a = 	0.3 # rms ellipticity of sample a
-e_rms_b	=	0.3 # rms ellipticity of sample b
+e_rms_Bl_a = 	0.3 # rms ellipticity of sample a
+e_rms_Bl_b	=	0.3 # rms ellipticity of sample b
 n_l 	= 	8.7 # The number of lenses in the lens sample per square DEGREE
 Area_l 	=	7131 # Area associated with the lens sample in square DEGREES
 n_s 	=	1.2 # The number density of sources in the sample per square ARCMINUTE
@@ -60,26 +60,27 @@ OmM=  OmB+OmC
 H0	=	10**(5)/c
 
 # Parameters for getting the fiducial gamma_IA
-# 2 halo term parmaeters 
+# 2 halo term parmaeters
+sigz_gwin = 0.0001 
 kpts_wgg = 5000 #10000
 kpts_wgp = 2000
-bs = 1.77
-bd = 1.77
-Ai = 5.0
+bs = 2.07 #1.77
+bd = 2.07 #1.77
+Ai = 5.0  # CURRENTLY USING BOSS LOWZ VALUE.
 C1rho = 0.0134
 # 1 halo gal-gal term parameters
-Mvir = 10**(13.18) 
-ng = 3. * 10**(-4) # volume density of galaxies for BOSS, in h^3 / Mpc^3
+Mvir = 4.5 * 10**13 #heavily estimated SDSS LRG value from Reid & Spergel 2009. #10**(13.18) BOSS LOWZ value
+ng =  10**(-4) # SDSS LRG value #3. * 10**(-4) # volume density of galaxies for BOSS, in h^3 / Mpc^3
 #nh = 2*10**(-4) # volume density of halos. Must be chosen appropriately for Mvir above. This is a super rough approximation.
-fsat = 0.14 #0.0636 # Satelite fraction from Reid & Spergel 2008.
+fsat = 0.0636 # Satelite fraction from Reid & Spergel 2008 # 0.14 approximate boss lowz val .
 # 1 halo IA term parameters, from Singh et al. 2014 Table 1
-q11 = 0.005   #0.02056  
+q11 = 0.02056  #0.005 LOWZ   
 q12 = 5.909
 q13 = 0.3798
-q21 = 0.6    # 1.978  
+q21 = 1.978  #0.6    
 q22 = 1.087
 q23 = 0.6655
-q31 = 3.1    #4.154  
+q31 = 4.154  #3.1    
 q32 = 0.1912
 q33 = 0.4368
 ah =  1.
