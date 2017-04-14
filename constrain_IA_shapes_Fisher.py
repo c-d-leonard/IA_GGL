@@ -13,50 +13,41 @@ import shared_functions_wlp_wls as ws
 ########## FUNCTIONS ##########
 
 
-def get_z_frac(rp_cents_,alpha, zs, sigz):
-        """Gets the fraction of sources of the full survey which are within our photo-z cut (excess and smooth background)"""
-        
-        # The normalization factor should be the norm over the whole range of z for which the number density of the survey is given, i.e. z min to zmax.       
-        (z, dNdz) = N_of_zph_weighted(pa.zmin, pa.zmax, pa.zmin, pa.zmax, z_close_low, z_close_high, pa.zmin_ph, pa.zmax_ph, pa.e_rms_mean, alpha, zs, sigz)
-        
-        frac_rand = scipy.integrate.simps(dNdz, z)
-        
-        boost_samp = get_boost(rp_cents_, pa.boost_assoc)
-        boost_tot = get_boost(rp_cents_, pa.boost_tot)
-        
-        frac_total = boost_samp / boost_tot * frac_rand
+def sum_weights(z_a_def_s, z_b_def_s, z_a_norm_s, z_b_norm_s, z_a_def_ph, z_b_def_ph, z_a_norm_ph, z_b_norm_ph, erms, rp_bin_c_, alpha_dN, zs_dN, sigz):
+	""" Returns the sum over rand-source pairs of the estimated weights, in each projected radial bin. Pass different z_min_s and z_max_s to get rand-close, rand-far, and all-rand cases."""
+	
+	(z_ph, dNdz_ph) = N_of_zph_unweighted(z_a_def_s, z_b_def_s, z_a_norm_s, z_b_norm_s, z_a_def_ph, z_b_def_ph, z_a_norm_ph, z_b_norm_ph, alpha_dN, zs_dN, sigz)
+	
+	frac = scipy.integrate.simps(dNdz_ph, z_ph)
+	
+	sum_ans = [0]*(len(rp_bin_c_))
+	for i in range(0,len(rp_bin_c_)):
+		Integrand = dNdz_ph* weights(erms, z_ph)
+		sum_ans[i] = scipy.integrate.simps(Integrand, z_ph)
 
-        return frac_total
+	return sum_ans
 
-def get_perbin_N_ls(rp_bins_, zeff_, ns_, nl_, A, rp_cents_, alpha, zs, sigz):
-	""" Gets the number of lens/source pairs relevant to each bin of projected radius """
-	""" zeff_ is the effective redshift of the lenses. frac_ is the fraction of sources in the sample. ns_ is the number density of sources per square arcminute. nl_ is the number density of lenses per square degree. A is the survey area in square degrees."""
-        
-	frac_		=	get_z_frac(rp_cents_, alpha, zs, sigz)
 
-	# Get the area of each projected bin in square arcminutes
-	bin_areas       =       setup.get_areas(rp_bins_, zeff_)
-
-	N_ls_pbin = nl_ * A * ns_ * bin_areas * frac_
-
-	return N_ls_pbin
+def shapenoise_cov(e_rms, z_p_l, z_p_h, B_samp, rp_c, rp, alpha_dN, zs_dN, sigz):
+	""" Returns a diagonal covariance matrix in bins of projected radius for a measurement dominated by shape noise. Elements are 1 / (sum_{ls} w), carefully normalized, in each bin. """
+	
+	# Get the area of each projected radial bin in square arcminutes
+	bin_areas       =       setup.get_areas(rp, pa.zeff)
+	
+	sum_denom =  pa.n_l * pa.Area_l * bin_areas * pa.n_s * np.asarray(sum_weights(pa.zmin, pa.zmax, pa.zmin, pa.zmax, z_p_l, z_p_h, pa.zmin_ph, pa.zmax_ph, e_rms, rp_c, alpha_dN, zs_dN, sigz))
+	
+	cov = 1. / (B_samp * sum_denom)
+	
+	return cov
 
 	
 def gamma_fid(rp):
 	""" Returns the fiducial gamma_IA from a combination of terms from different models which are valid at different scales """
 	
-	wgg_rp = ws.wgg_full(rp, pa.fsat_LRG, pa.fsky, pa.bd_shapes, pa.bs_shapes, './txtfiles/wgg_1h_LRG-shapes.txt', './txtfiles/wgg_2h_LRG-shapes.txt', './plots/wgg_full_shapes.pdf')
-	wgp_rp = ws.wgp_full(rp, pa.bd_shapes, pa.Ai_shapes, pa.ah_shapes, pa.q11_shapes, pa.q12_shapes, pa.q13_shapes, pa.q21_shapes, pa.q22_shapes, pa.q23_shapes, pa.q31_shapes, pa.q32_shapes, pa.q33_shapes, './txtfiles/wgp_1h_LRG-shapes.txt','./txtfiles/wgp_2h_LRG-shapes.txt', './plots/wgp_full_LRG-shapes.pdf')
+	wgg_rp = ws.wgg_full(rp, pa.fsat_LRG, pa.fsky, pa.bd_shapes, pa.bs_shapes, './txtfiles/wgg_1h_LRG-shapes_7bins.txt', './txtfiles/wgg_2h_LRG-shapes_7bins.txt', './plots/wgg_full_shapes_7bins.pdf')
+	wgp_rp = ws.wgp_full(rp, pa.bd_shapes, pa.Ai_shapes, pa.ah_shapes, pa.q11_shapes, pa.q12_shapes, pa.q13_shapes, pa.q21_shapes, pa.q22_shapes, pa.q23_shapes, pa.q31_shapes, pa.q32_shapes, pa.q33_shapes, './txtfiles/wgp_1h_LRG-shapes_7bins.txt','./txtfiles/wgp_2h_LRG-shapes_7bins.txt', './plots/wgp_full_LRG-shapes_7bins.pdf')
 	
 	gammaIA = wgp_rp / (wgg_rp + 2. * pa.close_cut) 
-	
-	"""plt.figure()
-	plt.loglog(rp, gammaIA, 'go')
-	plt.ylim(10**(-4), 0.1)
-	plt.ylabel('$\gamma_{IA}^{fid}$')
-	plt.xlabel('$r_p$, Mpc/h')
-	plt.savefig('./plots/gIA_fid_shapes.png')
-	plt.close()"""
 	
 	return gammaIA
 	
@@ -70,76 +61,47 @@ def get_boost(rp_cents_, propfact):
 
 	return Boost
 
-def N_of_zph_unweighted(z_a_def, z_b_def, z_a_norm, z_b_norm, z_a_norm_ph, z_b_norm_ph):
+def N_of_zph_unweighted(z_a_def, z_b_def, z_a_norm, z_b_norm, z_a_def_ph, z_b_def_ph, z_a_norm_ph, z_b_norm_ph, alpha, zs, sigz):
 	""" Returns dNdz_ph, the number density in terms of photometric redshift, defined and normalized over the photo-z range (z_a_norm_ph, z_b_norm_ph), normalized over the spec-z range (z_a_norm, z_b_norm), but defined on the spec-z range (z_a_def, z_b_def)"""
 	
-	(z, dNdZ) = setup.get_NofZ_unnormed(pa.alpha, pa.zs, z_a_def, z_b_def, pa.zpts)
-	(z_norm, dNdZ_norm) = setup.get_NofZ_unnormed(pa.alpha, pa.zs, z_a_norm, z_b_norm, pa.zpts)
+	(z, dNdZ) = setup.get_NofZ_unnormed(alpha, zs, z_a_def, z_b_def, pa.zpts)
+	(z_norm, dNdZ_norm) = setup.get_NofZ_unnormed(alpha, zs, z_a_norm, z_b_norm, pa.zpts)
 	
-	z_ph_vec = scipy.linspace(z_a_norm_ph, z_b_norm_ph, 5000)
-	
-	int_dzs = np.zeros(len(z_ph_vec))
-	int_dzs_norm = np.zeros(len(z_ph_vec))
-	for i in range(0,len(z_ph_vec)):
-		int_dzs[i] = scipy.integrate.simps(dNdZ*setup.p_z(z_ph_vec[i], z, pa.sigz), z)
-		int_dzs_norm[i] = scipy.integrate.simps(dNdZ_norm*setup.p_z(z_ph_vec[i], z_norm, pa.sigz), z_norm)
-		
-	norm = scipy.integrate.simps(int_dzs_norm, z_ph_vec)
-	
-	return (z_ph_vec, int_dzs / norm)
-	
-def N_of_zph_weighted(z_a_def_s, z_b_def_s, z_a_norm_s, z_b_norm_s, z_a_def_ph, z_b_def_ph, z_a_norm_ph, z_b_norm_ph, erms, alpha, zs, sigz):
-	""" Returns dNdz_ph, the number density in terms of photometric redshift, defined over photo-z range (z_a_def_ph, z_b_def_ph), normalized over the photo-z range (z_a_norm_ph, z_b_norm_ph), normalized over the spec-z range (z_a_norm, z_b_norm), and defined on the spec-z range (z_a_def, z_b_def)"""
-	
-	(z, dNdZ) = setup.get_NofZ_unnormed(alpha, zs, z_a_def_s, z_b_def_s, pa.zpts)
-	(z_norm, dNdZ_norm) = setup.get_NofZ_unnormed(alpha, zs, z_a_norm_s, z_b_norm_s, pa.zpts)
-	
-	z_ph_vec = scipy.linspace(z_a_def_ph, z_b_def_ph, 5000)
+	z_ph_vec_def = scipy.linspace(z_a_def_ph, z_b_def_ph, 5000)
 	z_ph_vec_norm = scipy.linspace(z_a_norm_ph, z_b_norm_ph, 5000)
 	
-	weights_ = weights(erms, z_ph_vec)
-	weights_norm = weights(erms, z_ph_vec_norm)
-	
-	int_dzs = np.zeros(len(z_ph_vec))
-	for i in range(0,len(z_ph_vec)):
-		int_dzs[i] = scipy.integrate.simps(dNdZ*setup.p_z(z_ph_vec[i], z, sigz), z)
-	
+	int_dzs = np.zeros(len(z_ph_vec_def))
+	for i in range(0,len(z_ph_vec_def)):
+		int_dzs[i] = scipy.integrate.simps(dNdZ*setup.p_z(z_ph_vec_def[i], z, sigz), z)
+		
 	int_dzs_norm = np.zeros(len(z_ph_vec_norm))
 	for i in range(0,len(z_ph_vec_norm)):
 		int_dzs_norm[i] = scipy.integrate.simps(dNdZ_norm*setup.p_z(z_ph_vec_norm[i], z_norm, sigz), z_norm)
 		
-	norm = scipy.integrate.simps(weights_norm*int_dzs_norm, z_ph_vec_norm)
+	norm = scipy.integrate.simps(int_dzs_norm, z_ph_vec_norm)
 	
-	return (z_ph_vec, weights_*int_dzs / norm)
-
-def N_in_samp(z_a, z_b, e_rms_weights, alpha, zs, sigz):
-	""" Number of galaxies in the photometric redshift range of the sample (assumed z_eff of lenses to z_close) from the SPECTROSCOPIC redshift range z_a to z_b """
-	
-	(z_ph, N_of_zp) = N_of_zph_weighted(z_a, z_b, pa.zmin, pa.zmax, z_close_low, z_close_high, z_close_low, z_close_high, pa.e_rms_mean, alpha, zs, sigz)
-
-	answer = scipy.integrate.simps(N_of_zp, z_ph)
-	
-	return (answer)
+	return (z_ph_vec_def, int_dzs / norm)
 
 def N_corr(rp_cent, alpha, zs, sigz, boost):
 	""" Computes the correction factor which accounts for the fact that some of the galaxies in the photo-z defined source sample are actually higher-z and therefore not expected to be affected by IA"""
 	
-	N_tot = N_in_samp(pa.zmin, pa.zmax, pa.e_rms_mean, alpha, zs, sigz)
-	N_close = N_in_samp(z_close_low, z_close_high, pa.e_rms_mean, alpha, zs, sigz)
+	sumW_insamp = sum_weights(z_close_low, z_close_high, pa.zmin, pa.zmax, z_close_low, z_close_high, pa.zmin_ph, pa.zmax_ph, pa.e_rms_mean, rp_cent, alpha, zs, sigz)
+	sumW_intotal = sum_weights(pa.zmin, pa.zmax, pa.zmin, pa.zmax, z_close_low, z_close_high, pa.zmin_ph, pa.zmax_ph, pa.e_rms_mean, rp_cent, alpha, zs, sigz)
 	
-	Corr_fac = 1. - (1. / boost) * ( 1. - (N_close / N_tot)) # fraction of the galaxies in the source sample which have spec-z in the photo-z range of interest.
+	Corr_fac = 1. - (1. / boost) * ( 1. - (np.asarray(sumW_insamp) / np.asarray(sumW_intotal))) # fraction of the galaxies in the source sample which have spec-z in the photo-z range of interest.
 	
 	return Corr_fac
 
 def N_corr_stat_err(rp_cents_, boost_error_file, alpha, zs, sigz):
 	""" Gets the error on N_corr from statistical error on the boost. """
 	
-	N_tot = N_in_samp(pa.zmin, pa.zmax, pa.e_rms_mean, alpha, zs, sigz)
-	N_close = N_in_samp(z_close_low, z_close_high, pa.e_rms_mean, alpha, zs, sigz)
+	sumW_insamp = sum_weights(z_close_low, z_close_high, pa.zmin, pa.zmax, z_close_low, z_close_high, pa.zmin_ph, pa.zmax_ph, pa.e_rms_mean, rp_cents_, alpha, zs, sigz)
+	sumW_intotal = sum_weights(pa.zmin, pa.zmax, pa.zmin, pa.zmax, z_close_low, z_close_high, pa.zmin_ph, pa.zmax_ph, pa.e_rms_mean, rp_cents_, alpha, zs, sigz)
+	
 	boost = get_boost(rp_cents_, pa.boost_assoc)
 	boost_err = boost_errors(rp_cents_, boost_error_file)
 	
-	sig_Ncorr = (boost_err / boost**2) * np.sqrt(1. - N_close / N_tot)
+	sig_Ncorr = (boost_err / boost**2) * np.sqrt(1. - np.asarray(sumW_insamp)/ np.asarray(sumW_intotal))
 
 	return sig_Ncorr
 
@@ -171,17 +133,10 @@ def weights(e_rms, z_):
 	
 	return weights
 
-def setup_shapenoise_cov(e_rms, N_ls_pbin):
-	""" Returns a diagonal covariance matrix in bins of projected radius for a measurement dominated by shape noise. Elements are e_{rms}^2 / (N_ls) where N_ls is the number of l/s pairs relevant to each projected radius bin.""" 
-
-	cov = np.diag(e_rms**2 / N_ls_pbin)
-	
-	return cov
-
 def get_cov_btw_methods(cov_a_, cov_b_, covperc):
 	""" Get the covariance between the methods given their correlation """
 	
-	cov_btw_methods = covperc * np.sqrt(np.diag(cov_a_)) * np.sqrt(np.diag(cov_b_))
+	cov_btw_methods = covperc * np.sqrt(cov_a_) * np.sqrt(cov_b_)
 	
 	return cov_btw_methods
 
@@ -192,34 +147,29 @@ def subtract_var(var_1, var_2, covar):
 
 	return var_diff
 
-def get_gammaIA_stat_cov(Cov_1, Cov_2, rp_cents_, gIA_fid, covperc, a_con):
+def get_gammaIA_stat_cov(rp_cents_, rp_bins_, gIA_fid, covperc, a_con):
 	""" Takes the covariance matrices of the constituent elements of gamma_{IA} and combines them to get the covariance matrix of gamma_{IA} in projected radial bins."""
+	
+	boost_fid = get_boost(rp_cents_, pa.boost_assoc)
+	
+	# These are actually the same so there's no actual need to compute it twice.
+	Cov_1 = shapenoise_cov(pa.e_rms_mean, z_close_low, z_close_high, boost_fid, rp_cents_, rp_bins_, pa.alpha_fid, pa.zs_fid, pa.sigz_fid) 
+	Cov_2 = shapenoise_cov(pa.e_rms_mean, z_close_low, z_close_high, boost_fid, rp_cents_, rp_bins_, pa.alpha_fid, pa.zs_fid, pa.sigz_fid) 
 	
 	# Get the covariance between the shear of the two shape measurement methods in each bin:
 	covar = get_cov_btw_methods(Cov_1, Cov_2, covperc)
-	
-	boost_fid = get_boost(rp_cents_, pa.boost_assoc)
 	
 	corr_fac_fid = N_corr(rp_cents_, pa.alpha_fid, pa.zs_fid, pa.sigz_fid, boost_fid)  # factor correcting for galaxies which have higher spec-z than the sample but which end up in the sample.
 
 	corr_fac_err = N_corr_stat_err(rp_cents_, pa.sigBF_a, pa.alpha_fid, pa.zs_fid, pa.sigz_fid) # statistical error on that from the boost
 
-	stat_mat = np.diag(np.zeros(len(np.diag(Cov_1))))
-	boost_term = np.zeros(len(np.diag(Cov_1)))
-	shape_term = np.zeros(len(np.diag(Cov_1)))
-	total = np.zeros(len(np.diag(Cov_1)))
-	for i in range(0,len(np.diag(Cov_1))):	
-		stat_mat[i, i] = (1.-a_con)**2 * gIA_fid[i]**2 * (( corr_fac_err[i]**2 / corr_fac_fid[i]**2)  + subtract_var(Cov_1[i,i], Cov_2[i,i], covar[i]) / (corr_fac_fid[i]**2 * (1.-a_con)**2 * gIA_fid[i]**2))
+	stat_mat = np.diag(np.zeros(len(Cov_1)))
+	for i in range(0,len(Cov_1)):	
+		stat_mat[i, i] = (1.-a_con)**2 * gIA_fid[i]**2 * (( corr_fac_err[i]**2 / corr_fac_fid[i]**2)  + subtract_var(Cov_1[i], Cov_2[i], covar[i]) / (corr_fac_fid[i]**2 * (1.-a_con)**2 * gIA_fid[i]**2))
 
 	
 	save_variance = np.column_stack((rp_cents_, np.sqrt(np.diag(stat_mat)) / ((1.-a_con) * gIA_fid)))
-	np.savetxt('./txtfiles/fractional_staterror_shapemethod_LRG-shapes_covperc='+str(covperc)+'_a='+str(a_con)+'.txt', save_variance)
-	
-	"""plt.figure()
-	plt.loglog(rp_cents, np.sqrt(np.diag(stat_mat)), 'mo')
-	plt.xlim(0.04, 20)
-	plt.savefig('./plots/statvariance_alone_shapes_modwgg.pdf')
-	plt.close()"""
+	np.savetxt('./txtfiles/fractional_staterror_shapemethod_LRG-shapes_covperc='+str(covperc)+'_a='+str(a_con)+'_7bins.txt', save_variance)
 
 	return stat_mat
 
@@ -245,15 +195,7 @@ def get_gammaIA_sys_cov(rp_cents_, gIa_fid, cov_perc, a_con):
 	sys_mat = dN_sys_mat + pz_sys_mat + B_sys_mat
 	
 	save_sys = np.column_stack((rp_cents_,np.sqrt(np.diag(sys_mat)) / ((1.-a_con) * gIa_fid)))
-	np.savetxt('./txtfiles/fractional_syserror_shapemethod_LRG-shapes_covperc='+str(cov_perc)+'_a='+str(a_con)+'.txt', save_sys)
-			
-	#print "sys=", np.sqrt(np.diag(sys_mat))
-	
-	"""plt.figure()
-	plt.loglog(rp_cents, np.sqrt(np.diag(sys_mat)), 'mo')
-	plt.xlim(0.05, 30)
-	plt.savefig('./plots/sysvariance_alone_shape.pdf')
-	plt.close()"""
+	np.savetxt('./txtfiles/fractional_syserror_shapemethod_LRG-shapes_covperc='+str(cov_perc)+'_a='+str(a_con)+'_7bins.txt', save_sys)
 
 	return sys_mat
 	
@@ -261,22 +203,6 @@ def get_gamma_tot_cov(sys_mat, stat_mat):
 	""" Takes the covariance matrix from statistical error and systematic error, and adds them to get the total covariance matrix. Assumes stat and sys errors should be added in quadrature."""
 	
 	tot_cov = sys_mat+stat_mat
-	
-	"""plt.figure()
-	plt.loglog(rp_cents, np.sqrt(np.diag(sys_mat)), 'mo', label='sys')
-	plt.hold(True)
-	plt.loglog(rp_cents, np.sqrt(np.diag(stat_mat)), 'go', label='sys')
-	plt.hold(True)
-	plt.loglog(rp_cents, np.sqrt(np.diag(tot_cov)), 'bo', label='total')
-	plt.xlim(0.05, 30)
-	plt.xlabel('$r_p$')
-	plt.ylabel('$\sigma((1-a)\gamma_{IA})$')
-	plt.title('Absolute error, shapes case, a= 1/1.4, cov=0.7')
-	plt.legend()
-	plt.savefig('./plots/sys+stat_alone_shape.pdf')
-	plt.close()"""
-	
-	#print "tot=", np.sqrt(np.diag(tot_cov))
 	
 	return tot_cov
 
@@ -301,7 +227,7 @@ def plot_variance(cov_1, fidvalues_1, bin_centers, covperc, a_con):
 	fig_sub.tick_params(axis='both', which='minor', labelsize=12)
 	fig_sub.set_title('a='+str(a_con)+', cov='+str(covperc))
 	plt.tight_layout()
-	plt.savefig('./plots/errorplot_stat+sys_shapemethod_LRG+shapes_a='+str(a_con)+'covperc='+str(covperc)+'.pdf')
+	plt.savefig('./plots/errorplot_stat+sys_shapemethod_LRG+shapes_a='+str(a_con)+'covperc='+str(covperc)+'_7bins.pdf')
 	plt.close()
 
 	return  
@@ -410,28 +336,26 @@ z_of_com 	= 	setup.z_interpof_com()
 (z_close_high, z_close_low)	= 	setup.get_z_close(pa.zeff, pa.close_cut)
 
 # Get the number of lens source pairs for the source sample in projected radial bins
-N_ls_pbin	=	get_perbin_N_ls(rp_bins, pa.zeff, pa.n_s, pa.n_l, pa.Area_l, rp_cents, pa.alpha_fid, pa.zs_fid, pa.sigz_fid)
+#N_ls_pbin	=	get_perbin_N_ls(rp_bins, pa.zeff, pa.n_s, pa.n_l, pa.Area_l, rp_cents, pa.alpha_fid, pa.zs_fid, pa.sigz_fid)
 
 # Get the fiducial value of gamma_IA in each projected radial bin (this takes a while so only do it once
 fid_gIA		=	gamma_fid(rp_cents)
 
 # Get the covariance matrix in projected radial bins of gamma_t for both shape measurement methods
-Cov_a		=	setup_shapenoise_cov(pa.e_rms_a, N_ls_pbin)
-Cov_b		=	setup_shapenoise_cov(pa.e_rms_b, N_ls_pbin)
+#Cov_a		=	shapenoise_cov(pa.e_rms_a, z_close_low, z_close_high, , rp_c, rp, alpha_dN, zs_dN, sigz) #setup_shapenoise_cov(pa.e_rms_a, N_ls_pbin) 
+#Cov_b		=	setup_shapenoise_cov(pa.e_rms_b, N_ls_pbin)
 
 for i in range(0, len(pa.a_con)):
 	for j in range(0, len(pa.cov_perc)):
 
 		# Combine the constituent covariance matrices to get the covariance matrix for gamma_IA in projected radial bins
-		Cov_stat	=	get_gammaIA_stat_cov(Cov_a, Cov_b, rp_cents, fid_gIA, pa.cov_perc[j], pa.a_con[i]) 
+		Cov_stat	=	get_gammaIA_stat_cov(rp_cents, rp_bins, fid_gIA, pa.cov_perc[j], pa.a_con[i]) 
 		Cov_sys 	=	get_gammaIA_sys_cov(rp_cents, fid_gIA, pa.cov_perc[j], pa.a_con[i])
-
 		Cov_tot		=	get_gamma_tot_cov(Cov_sys, Cov_stat)
-
+		
 		save_tot = np.column_stack((rp_cents,np.sqrt(np.diag(Cov_tot)) / ((1.-pa.a_con[i]) * fid_gIA)))
-		np.savetxt('./txtfiles/fractional_toterror_shapemethod_LRG-shapes_covperc='+str(pa.cov_perc[j])+'_a='+str(pa.a_con[i])+'.txt', save_tot)
+		np.savetxt('./txtfiles/fractional_toterror_shapemethod_LRG-shapes_covperc='+str(pa.cov_perc[j])+'_a='+str(pa.a_con[i])+'_7bins.txt', save_tot)
 
-		#print "PLOTTING ONLY STATISTICAL ERROR - NEED TO RECALIBRATE SYSTEMATIC ERROR."
 		# Output a plot showing the 1-sigma error bars on gamma_IA in projected radial bins
 		plot_variance(Cov_tot, fid_gIA, rp_cents, pa.cov_perc[j], pa.a_con[i])
 

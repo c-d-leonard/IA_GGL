@@ -29,9 +29,9 @@ sigBF_a = './txtfiles/boost_error_from_rachel_assoc.txt' # File containing two c
 sigBF_b ='./txtfiles/boost_error_from_rachel_background.txt' # Same for b
 
 # Parameters associated with the projected radial bins
-rp_max 	=	50.0 # The maximum projected radius (Mpc/h)
+rp_max 	=	20.0 # The maximum projected radius (Mpc/h)
 rp_min	=	0.05 # The minimum projected radius (Mpc/h)
-N_bins	=	15 # The number of bins of projected radius 
+N_bins	=	7 # The number of bins of projected radius 
 
 #Parameters of the dNdz of sources, if using an analytic distribution. 'fid' = the fiducial value, 'sys' = 1sigma off from fid value to evaluate systematic error.
 alpha_fid 	= 	2.338

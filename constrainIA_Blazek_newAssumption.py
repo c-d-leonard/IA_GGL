@@ -464,7 +464,7 @@ def get_gammaIA_cov(rp_bins, rp_bins_c):
 		
 	# Save the fractional stat error
 	save_variance = np.column_stack((rp_bins_c, np.sqrt(np.diag(gammaIA_stat_cov)) / g_IA_fid))
-	np.savetxt('./txtfiles/frac_StatError_Blazek_LRG-shapes.txt', save_variance)
+	np.savetxt('./txtfiles/frac_StatError_Blazek_LRG-shapes_7bins.txt', save_variance)
 	
 	############# Get systematic errors ############
 	
@@ -519,7 +519,7 @@ def get_gammaIA_cov(rp_bins, rp_bins_c):
 	plt.xlabel('$r_p$')
 	plt.ylabel('$\sigma(\gamma_{IA})$')
 	plt.xlim(0.04, 20)
-	plt.savefig('./plots/frac_sys_errors_Blazek_LRG-shapes.pdf')
+	plt.savefig('./plots/frac_sys_errors_Blazek_LRG-shapes_7bins.pdf')
 	plt.close()
 	
 	plt.figure()
@@ -539,13 +539,13 @@ def get_gammaIA_cov(rp_bins, rp_bins_c):
 
 	# Save the fractional sys error
 	save_variance = np.column_stack((rp_bins_c, np.sqrt(np.diag(gamma_IA_sys_cov)) / g_IA_fid))
-	np.savetxt('./txtfiles/frac_SysError_Blazek_LRG-shapes.txt', save_variance)
+	np.savetxt('./txtfiles/frac_SysError_Blazek_LRG-shapes_7bins.txt', save_variance)
 	
 	gammaIA_cov_total = gammaIA_stat_cov + gamma_IA_sys_cov
 	
 	# Save the fractional total error
 	save_variance = np.column_stack((rp_bins_c, np.sqrt(np.diag(gammaIA_cov_total)) / g_IA_fid))
-	np.savetxt('./txtfiles/frac_totalError_Blazek_LRG-shapes.txt', save_variance)
+	np.savetxt('./txtfiles/frac_totalError_Blazek_LRG-shapes_7bins.txt', save_variance)
 	
 	plt.figure()
 	plt.loglog(rp_bins_c,np.sqrt(np.diag(gammaIA_cov_total)), 'go', label='Both')
@@ -558,7 +558,7 @@ def get_gammaIA_cov(rp_bins, rp_bins_c):
 	plt.xlabel('$r_p$')
 	plt.ylabel('$\sigma(\gamma_{IA})$')
 	plt.xlim(0.04, 20)
-	plt.savefig('./plots/absolute_error_Blazek_LRG-shapes.pdf')
+	plt.savefig('./plots/absolute_error_Blazek_LRG-shapes_7bins.pdf')
 	plt.close()
 	
 	"""plt.figure()
@@ -589,8 +589,8 @@ def gamma_fid_from_quants(rp_bins_c, Boost_a, Boost_b, F_a, F_b, Sig_IA_a, Sig_I
 	
 def gamma_fid(rp):
 	""" Returns the fiducial gamma_IA from a combination of terms from different models which are valid at different scales """
-	wgg_rp = ws.wgg_full(rp, pa.fsat_LRG, pa.fsky, pa.bd_Bl, pa.bs_Bl, './txtfiles/wgg_1h_Blazek_LRG-shapes.txt', './txtfiles/wgg_2h_Blazek_LRG_shapes.txt', './plots/wgg_full_Blazek_LRG-shapes.pdf')
-	wgp_rp = ws.wgp_full(rp, pa.bd_Bl, pa.Ai_Bl, pa.ah_Bl, pa.q11_Bl, pa.q12_Bl, pa.q13_Bl, pa.q21_Bl, pa.q22_Bl, pa.q23_Bl, pa.q31_Bl, pa.q32_Bl, pa.q33_Bl, './txtfiles/wgp_1h_Blazek_LRG-shapes.txt','./txtfiles/wgp_2h_Blazek_LRG-shapes.txt', './plots/wgp_full_Blazek_LRG-shapes.pdf')
+	wgg_rp = ws.wgg_full(rp, pa.fsat_LRG, pa.fsky, pa.bd_Bl, pa.bs_Bl, './txtfiles/wgg_1h_Blazek_LRG-shapes_7bins.txt', './txtfiles/wgg_2h_Blazek_LRG_shapes_7bins.txt', './plots/wgg_full_Blazek_LRG-shapes_7bins.pdf')
+	wgp_rp = ws.wgp_full(rp, pa.bd_Bl, pa.Ai_Bl, pa.ah_Bl, pa.q11_Bl, pa.q12_Bl, pa.q13_Bl, pa.q21_Bl, pa.q22_Bl, pa.q23_Bl, pa.q31_Bl, pa.q32_Bl, pa.q33_Bl, './txtfiles/wgp_1h_Blazek_LRG-shapes_7bins.txt','./txtfiles/wgp_2h_Blazek_LRG-shapes_7bins.txt', './plots/wgp_full_Blazek_LRG-shapes_7bins.pdf')
 	
 	gammaIA = wgp_rp / (wgg_rp + 2. * pa.close_cut) 
 	
@@ -600,7 +600,7 @@ def gamma_fid(rp):
 	plt.ylabel('$\gamma_{IA}$')
 	plt.xlabel('$r_p$')
 	plt.title('Fiducial values of $\gamma_{IA}$')
-	plt.savefig('./plots/gammaIA_Blazek_LRG-shapes.pdf')
+	plt.savefig('./plots/gammaIA_Blazek_LRG-shapes_7bins.pdf')
 	plt.close()
 	
 	return gammaIA
@@ -713,7 +713,7 @@ def plot_variance(cov_1, fidvalues_1, bin_centers):
 	fig_sub.tick_params(axis='both', which='minor', labelsize=12)
 	fig_sub.set_title('Blazek et al. 2012 method')
 	plt.tight_layout()
-	plt.savefig('./plots/stat+sys_log_BlazekMethod_LRG-shapes.pdf')
+	plt.savefig('./plots/stat+sys_log_BlazekMethod_LRG-shapes_7bins.pdf')
 	plt.close()
 	
 	fig_sub=plt.subplot(111)
@@ -730,7 +730,7 @@ def plot_variance(cov_1, fidvalues_1, bin_centers):
 	fig_sub.tick_params(axis='both', which='major', labelsize=12)
 	fig_sub.tick_params(axis='both', which='minor', labelsize=12)
 	plt.tight_layout()
-	plt.savefig('./plots/stat+sys_notloBlazekMethod_LRG-shapes.pdf')
+	plt.savefig('./plots/stat+sys_notloBlazekMethod_LRG-shapes_7bins.pdf')
 	plt.close()
 	
 	"""plt.figure()

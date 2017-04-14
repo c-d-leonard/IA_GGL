@@ -57,7 +57,7 @@ A couple of notes on equation \ref{full_both}:
 
 We subtract the above relationships for the two shape measurement methods to get:
 \begin{align}
-\tilde{\gamma}(r_p) - \tilde{\gamma}^\prime(r_p) &= \frac{\sum\limits_{k}^{\rm lens} \tilde{w}_k \gamma_{\rm IA}^k}{\sum\limits_{k}^{\rm lens} \tilde{w}_k} - \frac{\sum\limits_{k}^{\rm lens} \tilde{w}_k a \gamma_{\rm IA}^k}{\sum\limits_{k}^{\rm lens} \tilde{w}_k} 
+\tilde{\gamma}(r_p) - \tilde{\gamma}^\prime(r_p) &= \frac{\sum\limits_{k}^{\rm lens} \tilde{w}_k \gamma_{\rm IA}^k - \sum\limits_{k}^{\rm lens} \tilde{w}_k a \gamma_{\rm IA}^k}{\sum\limits_{k}^{\rm lens} \tilde{w}_k} 
 \label{subtract_gammat}
 \end{align}
 In principle, all the galaxies in our source sample contribute to intrinsic alignments, so we can consider an average per-galaxy contribution of $\gamma_{\rm IA}(r_p)$.
@@ -65,12 +65,26 @@ In principle, all the galaxies in our source sample contribute to intrinsic alig
 \tilde{\gamma}(r_p) - \tilde{\gamma}^\prime(r_p) = \gamma_{\rm IA}(r_p)(1-a).
 \label{subtract_gammat_simp}
 \end{equation}
-However, there is another factor here that we have not yet accounted for. Because we are assuming photometric redshifts for our sources, we will have source galaxies in our sample which are actually higher redshift than $z_{\rm cut_h}$ and at lower redshift than $z_{\rm cut_l}$. These galaxies will not be affected by intrinsic alignments. Therefore, if we apply equation \ref{subtract_gammat_simp} directly, we will estimate the intrinsic alignment signal to be too low. We need to apply a correction factor which accounts for this. 
+However, there is another factor here that we have not yet accounted for. Because we are assuming photometric redshifts for our sources, we will have source galaxies in our sample which are actually at higher redshift than $z_{\rm cut_h}$ and at lower redshift than $z_{\rm cut_l}$. These galaxies will not be affected by intrinsic alignments. Therefore, if we apply equation \ref{subtract_gammat_simp} directly and take the sum in the denominator to be over all lens-source pairs in the sample, we will estimate the intrinsic alignment signal to be too low. The correct signal would really be given by the following modified expression: 
+\begin{align}
+\gamma_{\rm IA}(r_p)(1-a)&= \frac{\sum\limits_{k}^{\rm lens} \tilde{w}_k \gamma_{\rm IA}^k - \sum\limits_{k}^{\rm lens} \tilde{w}_k a \gamma_{\rm IA}^k}{\sum\limits_{k}^{\rm near + excess} \tilde{w}_k} = \left(\tilde{\gamma}(r_p) - \tilde{\gamma}^\prime(r_p)\right) \left(\frac{\sum\limits_{k}^{\rm lens} \tilde{w}_k}{\sum\limits_{k}^{\rm near + excess} \tilde{w}_k}\right).
+\label{subtract_gammat_correct}
+\end{align}
+We will hence define a correction factor:
+\begin{equation}
+N_{\rm corr} = \frac{\sum\limits_{k}^{\rm near + excess} \tilde{w}_k}{\sum\limits_{k}^{\rm lens} \tilde{w}_k}
+\label{Ncorr1}
+\end{equation}
+such that
+\begin{equation}
+\gamma_{\rm IA}(r_p)(1-a) = \left(\tilde{\gamma}(r_p) - \tilde{\gamma}^\prime(r_p)\right)\left(\frac{1}{N_{\rm corr}(r_p)}\right).
+\label{IAsol1}
+\end{equation}
+In the following subsection we will derive how to calculate $N_{\rm corr}$.
+
 
 \section*{Correction factor: inclusion of higher-z and lower-z galaxies}
-We assume that we know the smooth distribution of galaxies, $dN / dz$, from which our source sample is drawn to some reasonably high redshift, from a spectroscopic subsample. This may be difficult for future surveys, in which an inadequate spectroscopic subsample could result in systematic error (discussed below). 
-
-Let $z_{\rm min}$ and $z_{\rm max}$ be, respectively, the minimum and maximum spec-z, and let the probability of labelling a galaxy with spectroscopic redshift $z_s$ as having photometric redshift $z_p$ be $p(z_s, z_p)$. The required correction factor is the fraction of galaxies in the photo-z-defined sample which have spec-z between $z_{\rm cut_l}$ and $z_{\rm cut_h}$. This can be separated into two terms:
+We assume that we know the smooth distribution of galaxies, $dN / dz$, from a spectroscopic subsample. Let $z_{\rm min}$ and $z_{\rm max}$ be, respectively, the minimum and maximum spec-z, and let the probability of labelling a galaxy with spectroscopic redshift $z_s$ as having photometric redshift $z_p$ be $p(z_s, z_p)$. The required correction factor is the sum of the weights of those source galaxies in the photo-z-defined sample which have spec-z between $z_{\rm cut_l}$ and $z_{\rm cut_h}$, divided by the sum of the weights of all in the source galaxies in the sample. This can be separated into two terms:
 \begin{enumerate}
 \item{The galaxies from the smooth redshift distribution which have spec-z between $z_{\rm cut_l}$ and $z_{\rm cut_h}$.}
 \item{The excess galaxies. All of these have spec-z between $z_{\rm cut_l}$ and $z_{\rm cut_h}$ by definition.}
@@ -80,7 +94,7 @@ Schematically, we have:
 N_{\rm corr} = \frac{{\rm smooth, z_s \, in \, (z_{\rm cut_l}, z_{\rm cut_h})} + {\rm excess}}{{\rm total}} =  \frac{{\rm smooth, z_s \, in \, (z_{\rm cut_l}, z_{\rm cut_h})}}{{\rm total}} + \frac{{\rm excess}}{{\rm total}}
 \label{schematic}
 \end{equation}
-where these quantities should all be considered as weighted. {\it Should they?}
+where these quantities should all be considered as weighted, as in equation \ref{Ncorr1}.
 
 The weighted fraction of galaxies which are excess, i.e., the second term above, is given by:
 \begin{equation}
@@ -88,18 +102,19 @@ The weighted fraction of galaxies which are excess, i.e., the second term above,
 \label{frac_excess}
 \end{equation}
 
-The numerator of the first term on the right hand side of equation \ref{schematic}, that is, the weighted number of galaxies from the smooth distribution which have spec-z within the photo-z cuts, is given by:
+The numerator of the first term on the right hand side of equation \ref{schematic}, that is, the sum of weights of the galaxies from the smooth distribution which have spec-z within the photo-z cuts, is given by:
 \begin{equation}
-\int_{z_{\rm cut_l}}^{z_{\rm cut_h}} dz_p \tilde{w}(z_p) \int_{z_{\rm cut_l}}^{z_{\rm cut_h}} dz_s\frac{dN}{dz_s} p(z_s, z_p)
+\int_{z_{\rm cut_l}}^{z_{\rm cut_h}} dz_p \tilde{w}(z_p) \int_{z_{\rm cut_l}}^{z_{\rm cut_h}} dz_s\frac{dN}{dz_s} p(z_s, z_p).
 \label{num_smooth_speczin}
 \end{equation}
-
-The total weighted number of galaxies from the {\it smooth} distribution can be given similarly by:
+The sum of weights of galaxies from the full smooth distribution can be given similarly by:
 \begin{equation}
-\int_{z_{\rm cut_l}}^{z_{\rm cut_h}} dz_p  \tilde{w}(z_p) \int_{z_{\rm min}}^{z_{\rm max}} dz_s\frac{dN}{dz_s} p(z_s, z_p)
+\int_{z_{\rm cut_l}}^{z_{\rm cut_h}} dz_p  \tilde{w}(z_p) \int_{z_{\rm min}}^{z_{\rm max}} dz_s\frac{dN}{dz_s} p(z_s, z_p).
 \label{tot_smooth}
 \end{equation}
-However, this is not the denominator of the first term on the right hand side of equation \ref{schematic}, for this we need the total weighted number of galaxies, not the total only from the smooth distribution. Fortunate, the boost is defined as (schematically):
+Note that we assume here that the number densities in equations \ref{num_smooth_speczin} and \ref{tot_smooth} are normalized consistently. If we were to take either of these expressions alone, we would require the normalization to be such that the total number of galaxies was correct, but because we will take a ratio of the two expressions, we need only that the normalizations be consistent.
+
+Equation \ref{tot_smooth} alone is not the denominator of the first term on the right hand side of equation \ref{schematic}. For this, we need the total weighted number of galaxies, not the total only from the smooth distribution. Fortunately, the boost is defined (schematically) as:
 \begin{equation}
 B(r_p) = \frac{ {\rm total}}{{\rm total, smooth}}
 \label{boost_schm}
@@ -115,23 +130,12 @@ N_{\rm corr}(r_p) = 1 - \frac{1}{B(r_p)}\left(1 - \frac{\int_{z_{\rm cut_l}}^{z_
 \label{ncorr_2}
 \end{equation}
 
-We alter equation \ref{subtract_gammat_simp} to account for this correction factor
-\begin{equation}
-\tilde{\gamma}(r_p) - \tilde{\gamma}^\prime(r_p) = \gamma_{\rm IA}(r_p)(1-a) N_{\rm corr}(r_p)
-\label{subtract_gammat_fac}
-\end{equation}
-which is trivially rearranged to solve for the IA term:
-\begin{equation}
-\gamma_{\rm IA}(r_p)(1-a) = \left(\tilde{\gamma}(r_p) - \tilde{\gamma}^\prime(r_p)\right)\left(\frac{1}{N_{\rm corr}(r_p)}\right)
-\label{IAsol}
-\end{equation}
-
 \section*{Statistical error}
 
-There are two types of statistical error sources in equation \ref{IAsol}: 
+There are two types of statistical error sources in equation \ref{IAsol1}: 
 \begin{enumerate}
 \item{$\tilde{\gamma}(r_p)$ and $\tilde{\gamma}^\prime(r_p)$ have statistical error due to shape noise}
-\item{$N_{\rm corr}(r_p)$ has statistical error due to $B(r_p)$, which is sourced from large scale structure}
+\item{$N_{\rm corr}(r_p)$ has statistical error due to $B(r_p)$}
 \end{enumerate}
 It is expected that the second of these will be sub-dominant, but we include it anyway for completeness. 
 
@@ -149,35 +153,33 @@ $\sigma^2(N_{\rm corr}(r_p))$ is given by:
 \label{Ncorr_err}
 \end{equation}
 
-The error on the averaged tangential shear obtained using each shape-measurement method is dominated by shape noise, so the covariance can be represented by a diagonal matrix:
+The error on the averaged tangential shear obtained using each shape-measurement method is dominated by shape noise. The covariance can be represented by a matrix with diaonal elements:
 \begin{equation}
-\sigma^2(\gamma(r_p)) = \frac{e_{\rm rms}^2}{N_{ls}(r_p)}
+\sigma^2(\tilde{\gamma}(r_p)) = \frac{1}{\sum\limits_{i}^{\rm lens} \tilde{w}_i} = \frac{1}{B(r_p)\sum\limits_{i}^{\rm rand} \tilde{w}_i}
 \label{diag_corr}
 \end{equation} 
-where $e_{\rm rms}$ is different for each shape measurement (as opposed to the average $e_{\rm rms}$ which is used in computing the weights). The errors for the two shape measurements are correlated:
+where the weights, $\tilde{w}_i$ are given by equation \ref{weights}. Note that this means that the covariances of both shape-measurement methods are the same. It is important to take care here in normalizing the sum over weights correctly, as we are not computing a ratio with another sum of weights, so it is not sufficient to select any consistent normalization and rely on cancellation. Given this, the correct expression for $\sigma^2(\gamma(r_p))$ is:
+\begin{equation}
+\sigma^2(\tilde{\gamma}(r_p))= \frac{1}{B(r_p)} \left(\frac{N_l N_s\int_{z_{\rm cut_l}}^{z_{\rm cut_h}} dz_p \tilde{w}(z_p, z_l) \int_{z_{\rm min}}^{z_{\rm max}} dz_s \frac{dN}{dz_s}p(z_s, z_p)}{ \int_{z_{\rm min}}^{z_{\rm max}} dz_p \int_{z_{\rm min}}^{z_{\rm max}} dz_s \frac{dN}{dz_s}p(z_s, z_p)}\right)^{-1}.
+\label{sum_weights}
+\end{equation}
+where $N_l$ is the total number of lenses and $N_s$ is the total number of sources in bin $r_p$.
+
+The errors for the two shape measurements are correlated:
 \begin{equation}
 \sigma^2(\tilde{\gamma}(r_p) - \tilde{\gamma}^\prime(r_p)) = \sigma^2(\tilde{\gamma}(r_p)) + \sigma^2(\tilde{\gamma}^\prime(r_p)) - 2 {\rm Cov}( \tilde{\gamma}(r_p), \, \tilde{\gamma}^\prime(r_p))
 \label{comb_gammat}
 \end{equation}
 where ${\rm Cov}( \tilde{\gamma}(r_p), \, \tilde{\gamma}^\prime(r_p))$ is calculated as:
 \begin{equation}
-{\rm Cov}( \tilde{\gamma}(r_p), \, \tilde{\gamma}^\prime(r_p)) = f \left(\sqrt{\sigma^2(\tilde{\gamma}(r_p), \tilde{\gamma}(r_p))}\right)\left(\sqrt{\sigma^2(\tilde{\gamma}^\prime(r_p), \tilde{\gamma}^\prime(r_p))}\right)
+{\rm Cov}( \tilde{\gamma}(r_p), \, \tilde{\gamma}^\prime(r_p)) = \bar{C} \left(\sqrt{\sigma^2(\tilde{\gamma}(r_p), \tilde{\gamma}(r_p))}\right)\left(\sqrt{\sigma^2(\tilde{\gamma}^\prime(r_p), \tilde{\gamma}^\prime(r_p))}\right)
 \label{Cov}
 \end{equation}
-where $f$ is the fractional correlation between the two shape measurement methods (empirical input).
-
-\paragraph{Note on computing $N_{ls}$}: {\it THIS SHOULD BE FIXED UP IN PRINCIPLE.} We have the surface density of galaxies for the full survey at all redshifts. To compute $N_{ls}$ from theory, we require the fraction of these which lie within the photo-z cuts of our source sample. This includes both galaxies from the smooth source sample and excess galaxies. This is given by:
-\begin{equation}
-\frac{B^{\rm samp}(r_p) \int_{z_{\rm cut_l}}^{z_{\rm cut_h}} dz_p \tilde{w}(z_p) \int_{z_{\rm min}}^{z_{\rm max}} dz_s \frac{dN}{dz_s}p(z_s, z_p)}{B^{\rm tot}(r_p) \int_{z_{\rm min}}^{z_{\rm max}} dz_p \tilde{w}(z_p) \int_{z_{\rm min}}^{z_{\rm max}} dz_s \frac{dN}{dz_s}p(z_s, z_p)}
-\label{Nls}
-\end{equation}
-where there are two boost factors, one for our photo-z-defined sample and one for the full survey. We expect that the boost factor for the full survey will be smaller than that for our sample, because of the addition of comparatively more smooth background galaxies than excess galaxies. We assume that both boost factors follow the same power law in $r_p$: $(B(r_p)-1) \propto r^{-0.8}$, with a free parameter of the value of $B(r_p = 1 {\rm Mpc/h})$. To set this for each boost, we look to Blazek et al. 2012. There in Figure 1 the boost is measured for various samples. For now, we associate the `assoc' sample with our source sample, and the `src' sample with the total survey, {\it although the latter is not strictly correct as `src' includes no sources at $z$ below the lens}. Therefore, from Figure 1 of Blazek et al. 2012, we fiducially set $B^{\rm samp}(r_p = 1 {\rm Mpc/h}) = 1.2$ and $B^{\rm tot}(r_p = 1 {\rm Mpc/h}) = 1.04$.
-
-Also to note is the fact that equation \ref{Nls} gives the weighted fraction of galaxies in our source sample. In the current place, where weights are assumed to be independent of $z$, this is equivalent to the actual fraction. {\it However, in the case in which weights were redshift-dependent, this could affect the result.}
+and $\bar{C}$ is the fractional correlation between the two shape measurement methods (empirical input).
 
 \section*{Systematic error}
 
-There are three main sources of systematic error in equation \ref{IAsol}:
+There are three main sources of systematic error in equation \ref{IAsol1}:
 \begin{enumerate}
 \item{$\frac{dN}{dz_s}$: We may have an imperfect knowledge of $\frac{dN}{dz_s}$ due to an inadequate spectroscopic subsample, especially for dim source galaxies.}
 \item{$p(z_s, z_p)$: We will not necessarily have an accurate model of how likely we are to measure $z_p$ given $z_s$.}
