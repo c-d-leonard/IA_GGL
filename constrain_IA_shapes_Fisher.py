@@ -44,7 +44,7 @@ def shapenoise_cov(e_rms, z_p_l, z_p_h, B_samp, rp_c, rp, alpha_dN, zs_dN, sigz)
 def gamma_fid(rp):
 	""" Returns the fiducial gamma_IA from a combination of terms from different models which are valid at different scales """
 	
-	wgg_rp = ws.wgg_full(rp, pa.fsat_LRG, pa.fsky, pa.bd_shapes, pa.bs_shapes, './txtfiles/wgg_1h_LRG-shapes_7bins.txt', './txtfiles/wgg_2h_LRG-shapes_7bins.txt', './plots/wgg_full_shapes_7bins.pdf')
+	wgg_rp = ws.wgg_full(rp, pa.fsat_LRG, pa.fsky, pa.bd_shapes, pa.bs_shapes, './txtfiles/wgg_1h_LRG-shapes_7bins_NsatHOD.txt', './txtfiles/wgg_2h_LRG-shapes_7bins.txt', './plots/wgg_full_shapes_7bins_NsatHOD.pdf')
 	wgp_rp = ws.wgp_full(rp, pa.bd_shapes, pa.Ai_shapes, pa.ah_shapes, pa.q11_shapes, pa.q12_shapes, pa.q13_shapes, pa.q21_shapes, pa.q22_shapes, pa.q23_shapes, pa.q31_shapes, pa.q32_shapes, pa.q33_shapes, './txtfiles/wgp_1h_LRG-shapes_7bins.txt','./txtfiles/wgp_2h_LRG-shapes_7bins.txt', './plots/wgp_full_LRG-shapes_7bins.pdf')
 	
 	gammaIA = wgp_rp / (wgg_rp + 2. * pa.close_cut) 
@@ -169,7 +169,7 @@ def get_gammaIA_stat_cov(rp_cents_, rp_bins_, gIA_fid, covperc, a_con):
 
 	
 	save_variance = np.column_stack((rp_cents_, np.sqrt(np.diag(stat_mat)) / ((1.-a_con) * gIA_fid)))
-	np.savetxt('./txtfiles/fractional_staterror_shapemethod_LRG-shapes_covperc='+str(covperc)+'_a='+str(a_con)+'_7bins.txt', save_variance)
+	np.savetxt('./txtfiles/fractional_staterror_shapemethod_LRG-shapes_covperc='+str(covperc)+'_a='+str(a_con)+'_7bins_NsatHOD.txt', save_variance)
 
 	return stat_mat
 
@@ -195,7 +195,7 @@ def get_gammaIA_sys_cov(rp_cents_, gIa_fid, cov_perc, a_con):
 	sys_mat = dN_sys_mat + pz_sys_mat + B_sys_mat
 	
 	save_sys = np.column_stack((rp_cents_,np.sqrt(np.diag(sys_mat)) / ((1.-a_con) * gIa_fid)))
-	np.savetxt('./txtfiles/fractional_syserror_shapemethod_LRG-shapes_covperc='+str(cov_perc)+'_a='+str(a_con)+'_7bins.txt', save_sys)
+	np.savetxt('./txtfiles/fractional_syserror_shapemethod_LRG-shapes_covperc='+str(cov_perc)+'_a='+str(a_con)+'_7bins_NsatHOD.txt', save_sys)
 
 	return sys_mat
 	
@@ -227,7 +227,7 @@ def plot_variance(cov_1, fidvalues_1, bin_centers, covperc, a_con):
 	fig_sub.tick_params(axis='both', which='minor', labelsize=12)
 	fig_sub.set_title('a='+str(a_con)+', cov='+str(covperc))
 	plt.tight_layout()
-	plt.savefig('./plots/errorplot_stat+sys_shapemethod_LRG+shapes_a='+str(a_con)+'covperc='+str(covperc)+'_7bins.pdf')
+	plt.savefig('./plots/errorplot_stat+sys_shapemethod_LRG+shapes_a='+str(a_con)+'covperc='+str(covperc)+'_7bins_NsatHOD.pdf')
 	plt.close()
 
 	return  
@@ -354,7 +354,7 @@ for i in range(0, len(pa.a_con)):
 		Cov_tot		=	get_gamma_tot_cov(Cov_sys, Cov_stat)
 		
 		save_tot = np.column_stack((rp_cents,np.sqrt(np.diag(Cov_tot)) / ((1.-pa.a_con[i]) * fid_gIA)))
-		np.savetxt('./txtfiles/fractional_toterror_shapemethod_LRG-shapes_covperc='+str(pa.cov_perc[j])+'_a='+str(pa.a_con[i])+'_7bins.txt', save_tot)
+		np.savetxt('./txtfiles/fractional_toterror_shapemethod_LRG-shapes_covperc='+str(pa.cov_perc[j])+'_a='+str(pa.a_con[i])+'_7bins_NsatHOD.txt', save_tot)
 
 		# Output a plot showing the 1-sigma error bars on gamma_IA in projected radial bins
 		plot_variance(Cov_tot, fid_gIA, rp_cents, pa.cov_perc[j], pa.a_con[i])

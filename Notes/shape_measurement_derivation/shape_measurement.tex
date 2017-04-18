@@ -278,34 +278,76 @@ We must account for both the `central-satellite' term and the `satellite-satelli
 P_{gg}^{1h}(k) = \frac{n_H}{n_g^2}\left[\langle N_c N_s \rangle u + \langle N_s^2 \rangle u^2\right]
 \label{1hpgg}
 \end{equation}
-where $n_H$ is the volume density of halos at mass $M$, and $n_g$ is the volume density of galaxies in the survey. $\langle N_c N_s \rangle$ is the variance in the number of central-satellite pairs in a halo of mass $M$, while $\langle N_s^2 \rangle$ is the variance in the number of satellite-satellite pairs. (I have specified to a single average mass $M$ here.) 
+where $n_g^l$ and $n_g^{\rm src}$ are the volume densities of lenses and sources respectively. $\langle N_c N_s \rangle$ is the variance in the number of central-satellite pairs in a halo of mass $M$, while $\langle N_s^2 \rangle$ is the variance in the number of satellite-satellite pairs. $n_H$ is the volume density of halos at mass $M$. Note that for the case in which lens galaxies are significantly more lumnious than source galaxies, $n_H$ should be taken as the halo density associated with the lens sample. This is because while it is expected that halos with central galaxies from the more luminous lens sample may contain satellites from the less luminous source sample, the opposite case is not expected. This effect also means that the $\langle N_c^{\rm src} N_s^{\rm l} \rangle$ will be generally negligible.
 
 For Poisson statistics, we have that $\langle N^2 \rangle = \langle N \rangle^2$. However, there may be some deviation from Poisson statistics for small mass halos, which may be encapsulated by introducing a parameter $\alpha$ such that $\langle N^2 \rangle = \alpha^2\langle N \rangle^2$. $\alpha$ is given by:
 \begin{equation}
 \alpha = \log\left(\frac{M}{10^{11}M_\odot h^{-1}}\right)^{0.5}
 \label{alpha}
 \end{equation}
-if $M$ is less than $10^{11}$ in units of $M_\odot / h$, and $\alpha=1$ otherwise. 
-
-We then use this property of Poisson (or quasi-Poisson) statistics to get $\langle N_c N_s \rangle$ and $\langle N_s^2 \rangle$ in terms of $\langle N_c \rangle$ and $\langle N_s \rangle$. We obtain these latter quantities via the observationally-determined satellite galaxy fraction, which we will call $f_s$. From Reid \& Spergel 2008, we take $f_s = 0.0636$ for SDSS LRGs. We also define the central galaxy fraction, $f_c$, where $f_c + f_s=1$. 
-
-We will make the assumption that there is always one central galaxy per halo. The mean number of central galaxies per halo is hence $\langle N_c \rangle=1$. We can work out the expression for $\langle N_s \rangle$:
+if $M$ is less than $10^{11}$ in units of $M_\odot / h$, and $\alpha=1$ otherwise. We then use this property of Poisson (or quasi-Poisson) statistics to write:
 \begin{equation}
-\langle N_s \rangle = \frac{f_s N_g}{N_H} = \frac{f_s N_g}{f_c N_g} = \frac{f_s}{f_c} = \frac{f_s}{1-f_s}
-\label{Nsmean}
+P_{ls}^{1h}(k) = \frac{n_H}{n_g^l n_g^{\rm src}}\left[\alpha^2 \left(\langle N_c^l \rangle \langle N_s^{\rm src} \rangle + \langle N_c^{\rm src}\rangle \langle N_s^{\rm l} \rangle\right) u + \alpha^2\langle N_s^l \rangle \langle N_s^{\rm src} \rangle u^2\right]
+\label{1hpgg_Pois}
 \end{equation}
-where $N_H$ is the number of halos, $N_g$ is the total number of galaxies, and the third equality follows from the above assumption that the number of halos is equal to the number of central galaxies.
 
-Having now defined $f_c$ and $f_s$, we can also simplify the prefactor of $\frac{n_H}{n_g^2}$ on equation \ref{1hpgg} by taking advantage of our assumption of a single central galaxy per halo. We have:
+Let's consider the case in which the lens sample is the SDSS LRGs, and the source sample is the SDSS shape sample. In this case, we can set $\langle N_c^{\rm src}\rangle \langle N_s^{\rm l} \rangle=0$ as discussed above, and $n_H$ is the halo density associated with the LRG lens sample. We will make the assumption that there is always one central (lens) galaxy per halo. The mean number of central galaxies per halo is hence $\langle N_c \rangle=1$. We then need to work out the expressions for $\langle N_s^{\rm l} \rangle$ and $\langle N_s^{\rm src} \rangle$.
+
+$\langle N_s^l \rangle$ can be obtained in terms of the satellite fraction of the LRG sample:
 \begin{equation}
-\frac{n_H}{n_g^2} = \frac{f_c n_g}{n_g^2} = \frac{f_c}{n_g} = \frac{1- f_s}{n_g}
-\label{prefac1hpgg}
+\langle N_s^l \rangle = \frac{f_s^l N_g^l}{N_H} = \frac{f_s^l N_g^l}{f_c^l N_g^l} = \frac{f_s^l}{f_c^l} = \frac{f_s^l}{1-f_s^l}.
+\label{Nsmean_lens}
 \end{equation}
-such that the fully simplified expression for the 1-halo galaxy-galayx power spectrum becomes:
+where $N_g^l$ is the total number of galaxies in the lens sample, $N_H$ is the total number of halos, $f_s^l$ is the satellite fraction of the lenses, and $f_c^l$ is the corresponding central fraction, where $f_c=1-f_s$.
+
+$\langle N_s^{\rm src} \rangle$ is slightly more complicated. The required quantity is the number of satelite source galaxies per halo associated with the lens sample. To obtain this quantity, we employ a halo occupation distribution model as described in Zu \& Mandelbam 2015. For a `threshold sample', composed of galaxies with stellar mass greater than or equal to $M_*$, it is given by the following:
 \begin{equation}
-P_{gg}^{1h}(k) = \frac{1-f_s}{n_g}\left[\alpha^2 \frac{f_s}{1-f_s} u + \alpha^2 \left(\frac{f_s}{1-f_s}\right)^2 u^2\right].
+\langle  N_s^{\rm src} (>M_* | M_h) \rangle = \langle  N_c^{\rm src} (>M_* | M_h) \rangle  \left(\frac{M_h}{M_{\rm sat}}\right)^{\alpha_{\rm sat}} \exp\left(-\frac{M_{\rm cut}}{M_h}\right).
+\label{Nsmean_sources}
+\end{equation}
+$\langle  N_c^{\rm src} (>M_* | M_h)  \rangle$ is a different quantity than the $\langle N_c \rangle=1$ above - that number is for LRG's, whereas this number is expected to be lower, as it includes source galaxies, which will on average have a lower stellar mass. We have:
+\begin{equation}
+ \langle N_c^{\rm src} (>M_* | M_h) \rangle = \frac{1}{\sigma_{ln M_*}(M_h)\sqrt{2\pi}} \exp\left[-\frac{(\ln{M_*}-\ln (f_{\rm SHMR}(M_h)) )^2}{2\sigma_{\ln M_*}^2(M_h)}\right]
+ \label{Ncsrc}
+ \end{equation}
+where  
+\begin{equation}
+\sigma_{ln M_*}(M_h) = \sigma_{ln M_*} + \eta \log_{10}\left(\frac{M_h}{M_1}\right)
+\label{sigmaMstar}
+\end{equation}
+if $M_h>M_1$, and $\sigma_{ln M_*}$ otherwise. The relationship between $M_h$ and $M_*$ as required by $f_{\rm SHMR}(M_h)$ is defined as 
+\begin{equation}
+M_h = M_1 \left(\frac{M_*}{M_{*,0}}\right)^\beta \exp\left(\frac{\left(\frac{M_*}{M_{*,0}}\right)^\delta}{1 + \left(\frac{M_*}{M_{*,0}}\right)^{-\gamma}} - \frac{1}{2}\right)
+\label{Mh_M*}
+\end{equation}
+where we will occasionally define $f_{\rm SHMR}^{-1}(M_*)$ as the inverse of this relationship. (Technically the definition of $f_{\rm SHMR}(M_h)$ involves the mean over the distribution, but here I am going to take this as free of scatter for now. Finally, $M_{\rm sat}$ and $M_{\rm cut}$ are given by:
+\begin{equation}
+\frac{M_{\rm sat}h^2}{10^{12} M_\odot} = B_{\rm sat} \left(\frac{f_{\rm SHMR}^{-1}(M_*)h^2}{10^{12} M_\odot}\right)^{\beta_{\rm sat}}
+\label{Msat}
+\end{equation}
+and
+\begin{equation}
+\frac{M_{\rm cut}h^2}{10^{12} M_\odot} = B_{\rm cut} \left(\frac{f_{\rm SHMR}^{-1}(M_*)h^2}{10^{12} M_\odot}\right)^{\beta_{\rm cut}}.
+\label{Mcut}
+\end{equation}
+
+The `free' parameters in this model are then: $\delta$, $\gamma$, $M_{*,0}$, $M_1$, $\beta$, $B_{\rm sat}$, $\beta_{\rm sat}$, $B_{\rm cut}$, $\beta_{\rm cut}$, $\alpha_{\rm sat}$, $\sigma_{\ln M_*}$, $\eta$. We take them to have the iHOD values from Table 2 of Zu \& Mandelbaum 2015. 
+
+
+We are not actually interested in a `threshold' sample, but rather in a sample defined by an upper and lower stellar mass limit. For an upper limit $M_{*,2}$ and lower limit $M_{*,1}$, the appropriate quantity is:
+\begin{equation}
+\langle  N_s^{\rm src} (M_{*} | M_h) \rangle = \langle  N_s^{\rm src} (>M_{*,1} | M_h) \rangle - \langle  N_s^{\rm src} (>M_{*,2} | M_h) \rangle.
+\label{Nsmean_sources_binned}
+\end{equation}
+We selection $M_{*,1} = 8\times10^{9} M_\odot / h$ and $M_{*,1} = 1.2\times10^{10} M_\odot / h$, in an effort to have a sample around $M_* = 10^{10} M_\odot / h$, as suggested by Rachel. {\it The width of the bin chosen does affect the outcome, as expected - a sample with a wider range of values of $M_*$ will have more satelites / halo than one with a narrower range. How do we account for this / get this right?}
+
+Noting then that $n_H = (1-f_s^l) n_g^l$, we can then write:
+\begin{equation}
+P_{ls}^{1h}(k) = \frac{1-f_s^l}{n_g^{\rm src}}\left[\alpha^2  \langle  N_s^{\rm src} (M_* | M_h) \rangle u + \frac{f_s^l}{1-f_s^l} \langle  N_s^{\rm src} (M_* | M_h) \rangle u^2\right]
 \label{1hpgg_fs}
 \end{equation}
+where $M_h$ is the average mass of halos associated with the lens sample.
+
 We can then Fourier-transform to get $\xi^{1h}_{ls}(r)$:
 \begin{equation}
 \xi_{ls}^{1h}(r) = \frac{1}{2\pi^2} \int dk k^2 \frac{\sin(kr)}{kr} P_{gg}^{1h}(k).

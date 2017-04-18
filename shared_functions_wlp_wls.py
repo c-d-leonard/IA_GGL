@@ -342,23 +342,6 @@ def rho_NFW(r_, M_insol, z):
 	
 	return rho_nfw
 
-def f_near_1halo(zeff, Rvir):
-	""" Computes the fraction of source galaxies within a reasonable 1-halo separation of a redshift."""
-	
-	z_of_com = setup.z_interpof_com()
-	z_min = z_of_com(setup.com(pa.zeff) - Rvir) 
-	z_max = z_of_com(setup.com(pa.zeff) + Rvir)
-	
-	(z, dNdz_unnorm) = setup.get_NofZ_unnormed(pa.alpha_fid, pa.zs_fid, z_min, z_max, 10000)
-	
-	(z_norm, dNdz_getnorm) = setup.get_NofZ_unnormed(pa.alpha_fid, pa.zs_fid, pa.zsmin, pa.zsmax, 10000)
-	
-	norm = scipy.integrate.simps(dNdz_getnorm, z_norm)
-	
-	f_near = scipy.integrate.simps(dNdz_unnorm, z) / norm
-	
-	return f_near
-
 def wgg_1halo_Four(rp_cents_, fsat, fsky, savefile):
 	""" Gets the 1halo term of wgg via Fourier space, to account for central-satelite pairs and satelite-satelite pairs. """
 	
@@ -377,28 +360,11 @@ def wgg_1halo_Four(rp_cents_, fsat, fsky, savefile):
 	
 	xi_gg_1h = get_xi_1h(rvec_xi, kvec_FT, Pk)
 	
-	#plt.figure()
-	#plt.loglog(rvec_xi, xi_gg_1h, 'go')
-	#plt.ylabel('$\\xi(r)$')
-	#plt.xlabel('$r$, Mpc/h com')
-	#plt.xlim(10**(-7), 50)
-	#plt.savefig('./plots/xigg_1h_FFT_LRG.png')
-	#plt.close()
-	
 	# Set xi_gg_1h to zero above Rvir - we have made this assumption; anything else is Fourier transform noise.
 	for ri in range(0, len(rvec_xi)):
 		if (rvec_xi[ri]>Rvir):
 			xi_gg_1h[ri] = 0.0
-			
-	#plt.figure()
-	#plt.loglog(rvec_xi, xi_gg_1h, 'go')
-	#plt.ylabel('$\\xi(r)$')
-	#plt.xlabel('$r$, Mpc/h com')
-	#plt.xlim(0.5, 0.6)
-	#plt.savefig('./plots/xigg_1h_FFT_LRG.png')
-	#plt.close()
 	
-	#xi_gg_1h = get_xi_1h(rvec_xi, kvec_FT, Pk) # Function that gets the 1halo galaxy-galaxy correlation function term.
 	xi_interp = scipy.interpolate.interp1d(rvec_xi, xi_gg_1h)
 	
 	xi_2D = np.zeros((len(rp_cents_), len(Pivec)))
@@ -406,22 +372,9 @@ def wgg_1halo_Four(rp_cents_, fsat, fsky, savefile):
 		for pi in range(0, len(Pivec)):
 			xi_2D[ri, pi] = xi_interp(np.sqrt(rp_cents_[ri]**2 + Pivec[pi]**2)) 
 	
-	# Only integrate out to the virial radius
-	#Rvir = Rhalo(pa.Mvir)
-	#indvir = next(j[0] for j in enumerate(Pivec) if j[1]>=(Rvir))
-	
 	wgg_1h = np.zeros(len(rp_cents_))
 	for ri in range(0,len(rp_cents_)):
 		wgg_1h[ri] = scipy.integrate.simps(xi_2D[ri, :], Pivec)
-		
-	#plt.figure()
-	#plt.loglog(rp_cents_, wgg_1h, 'go')
-	#plt.xlim(0.05, 20.)
-	#plt.ylim(10**(-3), 10**(4))
-	#plt.xlabel('$r_p$, Mpc/h com')
-	#plt.ylabel('$w_{gg}$, Mpc/h com')
-	#plt.savefig('./plots/wgg_1h_LRG.png')
-	#plt.close()
 	
 	wgg_save = np.column_stack((rp_cents_, wgg_1h))
 	np.savetxt(savefile, wgg_save)
@@ -442,26 +395,20 @@ def get_Pkgg_1halo(rvec_nfw, kvec_ft, fsat, fsky):
 	
 	# Get ingredients we need here:
 	y = gety(rvec_nfw, pa.Mvir, pa.zeff, kvec_ft) # Mass-averaged Fourier transform of the density profile
-	
-	#(kvec_nothing, y) = np.loadtxt('./txtfiles/y.txt', unpack=True)
 
 	alpha = get_alpha(pa.Mvir) # The number which accounts for deviation from Poisson statistics
-	Ncenavg = 1. # We assume that every halo has a central galaxy, so the mean number of central galaxies / halo is 1.
+	Ncen_lens = 1. # We assume that every halo has a central lens galaxy, so the mean number of central galaxies / halo is 1.
 	
-	fcen = 1. - fsat # fraction of central galaxies = 1 - fraction of satelite galaxies
-	Nsatavg = fsat / fcen # Mean number of satelite galaxies per halo
+	Nsat_lens = fsat / (1. - fsat) # For the lenses, assuming we have the satelite fraction.
+	Nsat_src = get_Nsat_src(pa.Mvir, pa.Mstar_src_high, pa.Mstar_src_low) # For source galaxies, using a halo model, as in Zu & Mandelbaum 2015.
 
-	NcNs = NcenNsat(alpha, Ncenavg, Nsatavg) # The average number of central-satelite pairs in a halo of mass M
-	NsNs = NsatNsat(alpha, Nsatavg) # The average number of satelite-satelite pairs in a halo of mass M
+	NcNs = NcenNsat(alpha, Ncen_lens, Nsat_src) # The average number of central-satelite pairs in a halo of mass M
+	NsNs = NsatNsat(alpha, Nsat_lens, Nsat_src) # The average number of satelite-satelite pairs in a halo of mass M
 
-	# Get the volume density of the shape galaxy sample:
+	# Get the volume density of the source galaxy sample:
 	ns = vol_dens(fsky, pa.zmin_dndz, pa.zmax_dndz, pa.N_shapes)
-	# Get the fraction of source galaxies that are near enough the lens redshift that they come into the 1halo term.
-	Rv = Rhalo(pa.Mvir)
-	fns = f_near_1halo(pa.zeff, Rv)
 
-	#Pkgg = (1. - fsat) / ng * (NcNs * y + NsNs * y **2)
-	Pkgg = (1. - fsat) / ns * ( ( fns * pa.N_shapes ) / ( ( 1. - fsat ) * pa.N_LRG ) * y + ( fsat / ( 1. - fsat ) ) * fns * pa.N_shapes / ( ( 1. - fsat ) * pa.N_LRG ) * y**2)
+	Pkgg = (1. - fsat) / ns * ( NcNs * y + NsNs * y**2)
 	
 	#Pkgg_save = np.column_stack((kvec_ft, Pkgg))
 	#np.savetxt('./txtfiles/Pkgg_1h.txt', Pkgg_save)
@@ -472,8 +419,9 @@ def get_Pkgg_1halo(rvec_nfw, kvec_ft, fsat, fsky):
 	#plt.xlim(0.01, 100)
 	#plt.ylabel('$4\pi k^3 P_{gg}^{1h}(k)$, $(Mpc/h)^3$, com')
 	#plt.xlabel('$k$, h/Mpc, com')
-	#plt.savefig('./plots/Pkgg_1halo_LRG.png')
+	#plt.savefig('./plots/Pkgg_1halo_LRG_Nsrcsat.png')
 	#plt.close()
+	
 	return Pkgg
 	
 def gety(rvec, M, z, kvec):
@@ -517,6 +465,83 @@ def get_alpha(M):
 		
 	return alpha
 	
+def get_Nsat_src(M_h, Mstar_high, Mstar_low):
+	""" Gets the fraction of source galaxies that are satelites in halos associated with the lens sample using the equivalent CDF. Zu & Mandelbaum 2015"""
+	
+	Nsat_upper = get_Nsatsrc_CDF(M_h, Mstar_high)
+	Nsat_lower = get_Nsatsrc_CDF(M_h, Mstar_low)
+	
+	Nsat = Nsat_lower - Nsat_upper
+	
+	return Nsat
+	
+def get_Nsatsrc_CDF(M_h, Mstar):
+	""" Gets the fraction of source galaxies that are satelites in halos associated with the lens sample, for stellars masses AT OR ABOVE the average one for our source sampleusing the HOD model from Zu & Mandelbaum 2015."""
+	
+	f_Mh = fSHMR_inverse(Mstar)
+	Ncen_src = get_Ncen_src(M_h, Mstar)
+	Msat = get_Msat(f_Mh)
+	Mcut = get_Mcut(f_Mh)
+
+	Nsat = Ncen_src * (M_h / Msat)**(pa.alpha_sat) * np.exp(-Mcut / M_h)
+	
+	return Nsat
+	
+def get_Ncen_src(Mh, Mstar):
+	""" Get the CUMULATIVE distribution of central galaxies for the sources from the HOD model from Zu & Mandelbaum 2015"""
+	
+	sigmaMstar = get_sigMs(Mh)
+	fshmr = get_fSHMR(Mh)
+		
+	Ncen_CDF = 0.5 * (1. - scipy.special.erf((np.log(Mstar) - np.log(fshmr)) / (np.sqrt(2.) * sigmaMstar)))
+	
+	return Ncen_CDF
+	
+def get_sigMs(Mh):
+	""" Get sigma_ln(M*) as a function of the halo mass."""
+	
+	if (Mh<pa.M1):
+		sigM = pa.sigMs
+	else:
+		sigM = pa.sigMs + pa.eta * np.log10( Mh / pa.M1)
+	
+	return sigM
+	
+def get_fSHMR(Mh):
+	""" Get Mstar in terms of Mh using f_SHMR inverse relationship."""
+	
+	Mstar = np.logspace(7, 13,2000)
+	
+	Mh_vec = fSHMR_inverse(Mstar)
+	
+	Mh_interp = scipy.interpolate.interp1d(Mh_vec, Mstar)
+	
+	Mstar_ans = Mh_interp(Mh)
+	
+	return Mstar_ans
+	
+def fSHMR_inverse(Ms):
+	""" Get Mh in terms of Mstar """
+	
+	m = Ms / pa.Mso
+	Mh = pa.M1 * m**(pa.beta) * np.exp( m**pa.delta / (1. + m**(-pa.gamma)) - 0.5)
+	
+	return Mh
+	
+def get_Msat(f_Mh):
+	""" Returns parameter representing the characteristic mass of a single-satelite hosting galaxy, Zu & Mandelbaum 2015."""
+	
+	Msat = pa.Bsat * 10**12 * (f_Mh / 10**12)**pa.beta_sat
+	
+	return Msat
+	
+def get_Mcut(f_Mh):
+	""" Returns the parameter representing the cutoff mass scales """
+	
+	Mcut = pa.Bcut * 10**12 * ( f_Mh / 10**12) ** pa.beta_cut
+	
+	return Mcut
+	
 def NcenNsat(alpha, Ncen, Nsat):
 	""" Returns the average number of pairs of central and satelite galaxies per halo of mass M. """
 	
@@ -524,10 +549,10 @@ def NcenNsat(alpha, Ncen, Nsat):
 	
 	return NcNs
 	
-def NsatNsat(alpha, Nsat):
+def NsatNsat(alpha, Nsat_1, Nsat_2):
 	""" Returns the average number of pairs of satelite galaxies per halo. """
 	
-	NsNs = alpha**2 * Nsat**2
+	NsNs = alpha**2 * Nsat_1 * Nsat_2
 	
 	return NsNs
 		

@@ -93,7 +93,23 @@ C1rho = 0.0134
 # 1 halo gal-gal term parameters
 Mvir = 4.5 * 10**13 #heavily estimated SDSS LRG value from Reid & Spergel 2009. #10**(13.18) BOSS LOWZ value
 ng_Bl =  10**(-4) # SDSS LRG value #3. * 10**(-4) # volume density of galaxies for BOSS, in h^3 / Mpc^3.
+Mstar_src_low = 8.*10**9 * (HH0/100.) # Lower edge of stellar mass range in units of Msol / h^2
+Mstar_src_high = 1.2*10**10 * (HH0/100.) # Upper edge of stellar mass range in units of Msol / h^2
 fsat_LRG = 0.0636 # Satelite fraction from Reid & Spergel 2008 # 0.14 approximate boss lowz val .
+# From Zu & Mandelbaum 2015, 1505.02781:
+delta = 0.42
+gamma= 1.21
+Mso = 10**(10.31)
+M1 = 10**(12.10)
+beta = 0.33
+Bsat = 8.98
+beta_sat =0.90
+alpha_sat = 1.00
+Bcut = 0.86
+beta_cut = 0.41
+eta = -0.04
+sigMs = 0.50
+
 
 
 # 1 halo IA term parameters, from Singh et al. 2014 Table 1
