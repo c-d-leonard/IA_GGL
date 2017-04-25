@@ -163,14 +163,14 @@ def get_boost(rp_cents_, propfact):
 
 	return Boost
 
-def get_F(erms, zph_min_samp, zph_max_samp, rp_bins_, rp_bin_c, alpha_dN, zs_dN, sigz):
+def get_F(erms, zph_min_samp, zph_max_samp, rp_bins_, rp_bin_c, alpha_dN_num, zs_dN_num, sigz_num, alpha_dN_denom, zs_dN_denom, sigz_denom):
 	""" Returns F (the weighted fraction of lens-source pairs from the smooth dNdz which are contributing to IA) """
 
 	# Sum over `rand-close'
-	numerator = sum_weights(pa.zeff, z_close_low, z_close_high, pa.zsmin, pa.zsmax, zph_min_samp, zph_max_samp, zph_min_samp, zph_max_samp, erms, rp_bins_, rp_bin_c, alpha_dN, zs_dN, sigz)
+	numerator = sum_weights(pa.zeff, z_close_low, z_close_high, pa.zsmin, pa.zsmax, zph_min_samp, zph_max_samp, zph_min_samp, zph_max_samp, erms, rp_bins_, rp_bin_c, alpha_dN_num, zs_dN_num, sigz_num)
 
 	#Sum over all `rand'
-	denominator = sum_weights(pa.zeff, pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, zph_min_samp, zph_max_samp, zph_min_samp, zph_max_samp, erms, rp_bins_, rp_bin_c, alpha_dN, zs_dN, sigz)
+	denominator = sum_weights(pa.zeff, pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, zph_min_samp, zph_max_samp, zph_min_samp, zph_max_samp, erms, rp_bins_, rp_bin_c, alpha_dN_denom, zs_dN_denom, sigz_denom)
 
 	F = np.asarray(numerator) / np.asarray(denominator)
 
@@ -197,28 +197,28 @@ def get_cz(z_l, z_ph_min, z_ph_max, erms, rp_bins_, rp_bins_c, alpha_dN, zs_dN, 
 
 	return cz
 
-def get_Sig_IA(z_l, z_ph_min_samp, z_ph_max_samp, erms, rp_bins_, rp_bin_c_, boost, alpha_dN, zs_dN, sigz):
-	""" Returns the value of <\Sigma_c>_{IA} in radial bins """
+def get_Sig_IA(z_l, z_ph_min_samp, z_ph_max_samp, erms, rp_bins_, rp_bin_c_, boost, alpha_dN_1, zs_dN_1, sigz_1, alpha_dN_2, zs_dN_2, sigz_2):
+	""" Returns the value of <\Sigma_c>_{IA} in radial bins. Parameters labeled '2' are for the `rand-close' sums and '1' are for the `excess' sums. """
 	
 	# There are four terms here. The two in the denominators are sums over randoms (or sums over lenses that can be written as randoms * boost), and these are already set up to calculate.
-	denom_rand_close = sum_weights(z_l, z_close_low, z_close_high, pa.zsmin, pa.zsmax, z_ph_min_samp, z_ph_max_samp, z_ph_min_samp, z_ph_max_samp, erms, rp_bins_, rp_bin_c_, alpha_dN, zs_dN, sigz)
-	denom_rand = sum_weights(z_l, pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, z_ph_min_samp, z_ph_max_samp, z_ph_min_samp, z_ph_max_samp, erms, rp_bins_, rp_bin_c_, alpha_dN, zs_dN, sigz)
+	denom_rand_close = sum_weights(z_l, z_close_low, z_close_high, pa.zsmin, pa.zsmax, z_ph_min_samp, z_ph_max_samp, z_ph_min_samp, z_ph_max_samp, erms, rp_bins_, rp_bin_c_, alpha_dN_2, zs_dN_2, sigz_2)
+	denom_rand = sum_weights(z_l, pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, z_ph_min_samp, z_ph_max_samp, z_ph_min_samp, z_ph_max_samp, erms, rp_bins_, rp_bin_c_, alpha_dN_1, zs_dN_1, sigz_1)
 	denom_excess = (boost - 1.) * denom_rand
 	
 	# The two in the numerator require summing over weights and Sigma_C. 
 	
 	#For the sum over rand-close in the numerator, this follows directly from the same type of expression as when summing weights:
-	num_rand_close = sum_weights_SigC(z_l, z_close_low, z_close_high, pa.zsmin, pa.zsmax, z_ph_min_samp, z_ph_max_samp, z_ph_min_samp, z_ph_max_samp, erms, rp_bins_, rp_bin_c_, alpha_dN, zs_dN, sigz)
+	num_rand_close = sum_weights_SigC(z_l, z_close_low, z_close_high, pa.zsmin, pa.zsmax, z_ph_min_samp, z_ph_max_samp, z_ph_min_samp, z_ph_max_samp, erms, rp_bins_, rp_bin_c_, alpha_dN_2, zs_dN_2, sigz_2)
 			
 	# The other numerator sum is a term which represents the a sum over excess. We have to get the normalization indirectly so there are a bunch of terms here. See notes.
 	# We assume all excess galaxies are at the lens redshift.
 	
 	# We first compute a sum over excess of weights and Sigma_C with arbitrary normalization:
 	z_ph = scipy.linspace(z_ph_min_samp, z_ph_max_samp, 5000)
-	exc_wSigC_arbnorm = scipy.integrate.simps(weights_times_SigC(erms, z_ph, z_l) * setup.p_z(z_ph, z_l, sigz), z_ph)
+	exc_wSigC_arbnorm = scipy.integrate.simps(weights_times_SigC(erms, z_ph, z_l) * setup.p_z(z_ph, z_l, sigz_1), z_ph)
 	
 	# We do the same for a sum over excess of just weights with the same arbitrary normalization:
-	exc_w_arbnorm = scipy.integrate.simps(weights(erms, z_ph, z_l) * setup.p_z(z_ph, z_l, sigz), z_ph)
+	exc_w_arbnorm = scipy.integrate.simps(weights(erms, z_ph, z_l) * setup.p_z(z_ph, z_l, sigz_1), z_ph)
 	
 	# We already have an appropriately normalized sum over excess weights, from above (denom_excess), via the relationship with the boost.
 	# Put these components together to get the appropriately normalized sum over excess of weights and SigmaC:
@@ -359,7 +359,7 @@ def boost_errors(rp_bins_c, filename):
 	
 	return boost_error
 
-def get_gammaIA_cov(rp_bins, rp_bins_c):
+def get_gammaIA_cov(rp_bins, rp_bins_c, alpha_sys, zs_sys, sigz_sys):
 	""" Takes information about the uncertainty on constituent elements of gamma_{IA} and combines them to get the covariance matrix of gamma_{IA} in projected radial bins."""
 	""" We are only interested right now in the diagonal elements of the covariance matrix, so we assume it is diagonal. """ 
 
@@ -371,63 +371,44 @@ def get_gammaIA_cov(rp_bins, rp_bins_c):
 	################ F's #################
 	
 	# F factors - first, fiducial
-	F_a_fid = get_F(pa.e_rms_Bl_a, pa.zeff, pa.zeff+pa.delta_z, rp_bins, rp_bins_c, pa.alpha_fid, pa.zs_fid, pa.sigz_fid)
-	F_b_fid = get_F(pa.e_rms_Bl_b, pa.zeff+pa.delta_z, pa.zphmax, rp_bins, rp_bins_c, pa.alpha_fid, pa.zs_fid, pa.sigz_fid)
+	F_a_fid = get_F(pa.e_rms_Bl_a, pa.zeff, pa.zeff+pa.delta_z, rp_bins, rp_bins_c,   pa.alpha_fid, pa.zs_fid, pa.sigz_fid,     pa.alpha_fid, pa.zs_fid, pa.sigz_fid)
+	F_b_fid = get_F(pa.e_rms_Bl_b, pa.zeff+pa.delta_z, pa.zphmax, rp_bins, rp_bins_c,    pa.alpha_fid, pa.zs_fid, pa.sigz_fid,     pa.alpha_fid, pa.zs_fid, pa.sigz_fid)
 	#F_a_fid = np.zeros(len(rp_bins_c))
 	#F_b_fid = np.zeros(len(rp_bins_c))
 	print "F_a_fid=", F_a_fid[0], "F_b_fid=", F_b_fid[0]
 	
-	
-	# Now, the F for the systematic error associated with the dNdz
-	F_a_dN = get_F(pa.e_rms_Bl_a, pa.zeff, pa.zeff+pa.delta_z, rp_bins, rp_bins_c, pa.alpha_sys, pa.zs_sys, pa.sigz_fid)
-	F_b_dN = get_F(pa.e_rms_Bl_b, pa.zeff+pa.delta_z, pa.zphmax, rp_bins, rp_bins_c, pa.alpha_sys, pa.zs_sys, pa.sigz_fid)
-	#F_a_dN = np.zeros(len(rp_bins_c))
-	#F_b_dN = np.zeros(len(rp_bins_c))
-	print "F_a_dN=", F_a_dN[0], "F_b_dN=", F_b_dN[0]
-	
-	# Now the F for systematic error associate with p_z
-	F_a_pz = get_F(pa.e_rms_Bl_a, pa.zeff, pa.zeff+pa.delta_z, rp_bins, rp_bins_c, pa.alpha_fid, pa.zs_fid, pa.sigz_sys)
-	F_b_pz = get_F(pa.e_rms_Bl_b, pa.zeff+pa.delta_z, pa.zphmax, rp_bins, rp_bins_c, pa.alpha_fid, pa.zs_fid, pa.sigz_sys)
-	#F_a_pz = np.zeros(len(rp_bins_c))
-	#F_b_pz = np.zeros(len(rp_bins_c))
-	print "F_a_pz=", F_a_pz[0], "F_b_pz=", F_b_pz[0]
+	# Now, the F for the systematic error associated with the unrepresentative spectroscopic subsample of sources
+	F_a_sp = get_F(pa.e_rms_Bl_a, pa.zeff, pa.zeff+pa.delta_z, rp_bins, rp_bins_c, alpha_sys, zs_sys, sigz_sys,    pa.alpha_fid, pa.zs_fid, pa.sigz_fid)
+	F_b_sp = get_F(pa.e_rms_Bl_b, pa.zeff+pa.delta_z, pa.zphmax, rp_bins, rp_bins_c,  alpha_sys, zs_sys, sigz_sys,    pa.alpha_fid, pa.zs_fid, pa.sigz_fid)
+	#F_a_sp = np.zeros(len(rp_bins_c))
+	#F_b_sp = np.zeros(len(rp_bins_c))
+	print "F_a_sp=", F_a_sp[0], "F_b_sp=", F_b_sp[0]
 	
 	############# Sig_IA's ##############
 	
 	# Sig IA - first, fiducial
-	Sig_IA_a_fid = get_Sig_IA(pa.zeff, pa.zeff, pa.zeff+pa.delta_z, pa.e_rms_Bl_a, rp_bins, rp_bins_c, Boost_a, pa.alpha_fid, pa.zs_fid, pa.sigz_fid)
-	Sig_IA_b_fid = get_Sig_IA(pa.zeff, pa.zeff+pa.delta_z, pa.zphmax, pa.e_rms_Bl_b, rp_bins, rp_bins_c, Boost_b, pa.alpha_fid, pa.zs_fid, pa.sigz_fid)
+	Sig_IA_a_fid = get_Sig_IA(pa.zeff, pa.zeff, pa.zeff+pa.delta_z, pa.e_rms_Bl_a, rp_bins, rp_bins_c, Boost_a,   pa.alpha_fid, pa.zs_fid, pa.sigz_fid,   pa.alpha_fid, pa.zs_fid, pa.sigz_fid)
+	Sig_IA_b_fid = get_Sig_IA(pa.zeff, pa.zeff+pa.delta_z, pa.zphmax, pa.e_rms_Bl_b, rp_bins, rp_bins_c, Boost_b,   pa.alpha_fid, pa.zs_fid, pa.sigz_fid,   pa.alpha_fid, pa.zs_fid, pa.sigz_fid)
 	print "Sig_IA_a_fid=", Sig_IA_a_fid
 	print "Sig_IA_b_fid=", Sig_IA_b_fid
 	
-	# Sig IA - for systematic error associated with the dNdz
-	Sig_IA_a_dN = get_Sig_IA(pa.zeff, pa.zeff, pa.zeff+pa.delta_z, pa.e_rms_Bl_a, rp_bins, rp_bins_c, Boost_a, pa.alpha_sys, pa.zs_sys, pa.sigz_fid)
-	Sig_IA_b_dN = get_Sig_IA(pa.zeff, pa.zeff+pa.delta_z, pa.zphmax, pa.e_rms_Bl_b, rp_bins, rp_bins_c, Boost_b, pa.alpha_sys, pa.zs_sys, pa.sigz_fid)
-	print "Sig_IA_a_dN=", Sig_IA_a_dN
-	print "Sig_IA_b_dN=", Sig_IA_b_dN
-	
-	# Sig IA - for systematic error associated with the p_z
-	Sig_IA_a_pz = get_Sig_IA(pa.zeff, pa.zeff, pa.zeff+pa.delta_z, pa.e_rms_Bl_a, rp_bins, rp_bins_c, Boost_a, pa.alpha_fid, pa.zs_fid, pa.sigz_sys)
-	Sig_IA_b_pz = get_Sig_IA(pa.zeff, pa.zeff+pa.delta_z, pa.zphmax, pa.e_rms_Bl_b, rp_bins, rp_bins_c, Boost_b, pa.alpha_fid, pa.zs_fid, pa.sigz_sys)
-	print "Sig_IA_a_pz=", Sig_IA_a_pz
-	print "Sig_IA_b_pz=", Sig_IA_b_pz
+	# Sig IA - for systematic error associated with the unrepresentative spectroscopic subsample of sources
+	Sig_IA_a_sp = get_Sig_IA(pa.zeff, pa.zeff, pa.zeff+pa.delta_z, pa.e_rms_Bl_a, rp_bins, rp_bins_c, Boost_a,   pa.alpha_fid, pa.zs_fid, pa.sigz_fid,    alpha_sys, zs_sys, sigz_sys)
+	Sig_IA_b_sp = get_Sig_IA(pa.zeff, pa.zeff+pa.delta_z, pa.zphmax, pa.e_rms_Bl_b, rp_bins, rp_bins_c, Boost_b,   pa.alpha_fid, pa.zs_fid, pa.sigz_fid,   alpha_sys, zs_sys, sigz_sys)
+	print "Sig_IA_a_sp=", Sig_IA_a_sp
+	print "Sig_IA_b_sp=", Sig_IA_b_sp
 	
 	############ c_z's ##############
 	
 	# Photometric biases to estimated Delta Sigmas, fiducial
-	cz_a_fid = get_cz(pa.zeff, pa.zeff, pa.zeff + pa.delta_z, pa.e_rms_Bl_a, rp_bins, rp_bins_c, pa.alpha_fid, pa.zs_fid, pa.sigz_fid)
-	cz_b_fid = get_cz(pa.zeff, pa.zeff+pa.delta_z, pa.zphmax, pa.e_rms_Bl_b, rp_bins, rp_bins_c, pa.alpha_fid, pa.zs_fid, pa.sigz_fid)
+	cz_a_fid = get_cz(pa.zeff, pa.zeff, pa.zeff + pa.delta_z, pa.e_rms_Bl_a, rp_bins, rp_bins_c,   pa.alpha_fid, pa.zs_fid, pa.sigz_fid)
+	cz_b_fid = get_cz(pa.zeff, pa.zeff+pa.delta_z, pa.zphmax, pa.e_rms_Bl_b, rp_bins, rp_bins_c,   pa.alpha_fid, pa.zs_fid, pa.sigz_fid)
 	print "cz_a_fid =", cz_a_fid, "cz_b_fid=", cz_b_fid
 	
-	# Photometric biases for systematic errors associated with the dNdz
-	cz_a_dN = get_cz(pa.zeff, pa.zeff, pa.zeff + pa.delta_z, pa.e_rms_Bl_a, rp_bins, rp_bins_c, pa.alpha_sys, pa.zs_sys, pa.sigz_fid)
-	cz_b_dN = get_cz(pa.zeff, pa.zeff+pa.delta_z, pa.zphmax, pa.e_rms_Bl_b, rp_bins, rp_bins_c, pa.alpha_sys, pa.zs_sys, pa.sigz_fid)
-	print "cz_a_dN =", cz_a_dN, "cz_b_dN=", cz_b_dN
-	
-	# Photometric biases for systematic errors associated with p_z
-	cz_a_pz = get_cz(pa.zeff, pa.zeff, pa.zeff + pa.delta_z, pa.e_rms_Bl_a, rp_bins, rp_bins_c, pa.alpha_fid, pa.zs_fid, pa.sigz_sys)
-	cz_b_pz = get_cz(pa.zeff, pa.zeff+pa.delta_z, pa.zphmax, pa.e_rms_Bl_b, rp_bins, rp_bins_c, pa.alpha_fid, pa.zs_fid, pa.sigz_sys)
-	print "cz_a_pz =", cz_a_pz, "cz_b_pz=", cz_b_pz
+	# Photometric biases for systematic errors associated with the unrepresentative spectroscopic subsample of sources
+	cz_a_sp = get_cz(pa.zeff, pa.zeff, pa.zeff + pa.delta_z, pa.e_rms_Bl_a, rp_bins, rp_bins_c,   alpha_sys, zs_sys, sigz_sys)
+	cz_b_sp = get_cz(pa.zeff, pa.zeff+pa.delta_z, pa.zphmax, pa.e_rms_Bl_b, rp_bins, rp_bins_c,   alpha_sys, zs_sys, sigz_sys)
+	print "cz_a_sp =", cz_a_sp, "cz_b_sp=", cz_b_sp
 	
 	############ gamma_IA ###########
 	
@@ -452,30 +433,21 @@ def get_gammaIA_cov(rp_bins, rp_bins_c):
 	sigBb = boost_errors(rp_bins_c, pa.sigBF_b)
 	
 	gammaIA_stat_cov = np.zeros((len(rp_bins_c), len(rp_bins_c))) 
-	boost_contribution = np.zeros((len(rp_bins_c), len(rp_bins_c)))
-	shape_contribution = np.zeros((len(rp_bins_c), len(rp_bins_c)))
 	# Calculate the statistical error covariance
 	for i in range(0,len(np.diag(rp_bins_c))):	 
-		gammaIA_stat_cov[i,i] = g_IA_fid[i]**2 * ((cz_a_fid**2 *DeltaCov_a[i] + cz_b_fid**2 *DeltaCov_b[i]) / (cz_a_fid * DeltaSig_est_a[i] - cz_b_fid * DeltaSig_est_b[i])**2 + (cz_a_fid**2 * Sig_IA_a_fid[i]**2 * sigBa[i]**2 + cz_b_fid**2 * Sig_IA_b_fid[i]**2 * sigBb[i]**2) / (cz_a_fid * Sig_IA_a_fid[i] * (Boost_a[i] - 1. + F_a_fid[i]) - cz_b_fid * Sig_IA_b_fid[i] * (Boost_b[i]-1.+F_b_fid[i]))**2)
-		
-		#boost_contribution[i,i] = g_IA_fid[i]**2 * ((cz_a**2 * Sig_IA_a[i]**2 * sigBa[i]**2 + cz_b**2 * Sig_IA_b[i]**2 * sigBb[i]**2) / (cz_a * Sig_IA_a[i] * (Boost_a[i] - 1. + F_a[i]) - cz_b * Sig_IA_b[i] * (Boost_b[i]-1.+F_b[i]))**2)
-		
-		#shape_contribution[i,i] = g_IA_fid[i]**2 * ((cz_a**2 *DeltaCov_a[i] + cz_b**2 *DeltaCov_b[i]) / (cz_a * DeltaSig_est_a[i] - cz_b * DeltaSig_est_b[i])**2 )	
+		gammaIA_stat_cov[i,i] = g_IA_fid[i]**2 * ((cz_a_fid**2 *DeltaCov_a[i] + cz_b_fid**2 *DeltaCov_b[i]) / (cz_a_fid * DeltaSig_est_a[i] - cz_b_fid * DeltaSig_est_b[i])**2 + (cz_a_fid**2 * Sig_IA_a_fid[i]**2 * sigBa[i]**2 + cz_b_fid**2 * Sig_IA_b_fid[i]**2 * sigBb[i]**2) / (cz_a_fid * Sig_IA_a_fid[i] * (Boost_a[i] - 1. + F_a_fid[i]) - cz_b_fid * Sig_IA_b_fid[i] * (Boost_b[i]-1.+F_b_fid[i]))**2)	
 		
 	# Save the fractional stat error
 	save_variance = np.column_stack((rp_bins_c, np.sqrt(np.diag(gammaIA_stat_cov)) / g_IA_fid))
-	np.savetxt('./txtfiles/frac_StatError_Blazek_LRG-shapes_7bins_NsatHOD.txt', save_variance)
+	np.savetxt('./txtfiles/frac_StatError_Blazek_LRG-shapes_updateSYS.txt', save_variance)
 	
 	############# Get systematic errors ############
 	
 	# gamma_IA in the case of systematic error from dNdz
-	gamma_from_dNdz = gamma_fid_from_quants(rp_bins_c, Boost_a, Boost_b, F_a_dN, F_b_dN, Sig_IA_a_dN, Sig_IA_b_dN, cz_a_dN, cz_b_dN, DeltaSig_est_a, DeltaSig_est_b)
-	
-	# gamma_IA in the case of systematic error from pz
-	gamma_from_pz = gamma_fid_from_quants(rp_bins_c, Boost_a, Boost_b, F_a_pz, F_b_pz, Sig_IA_a_pz, Sig_IA_b_pz, cz_a_pz, cz_b_pz, DeltaSig_est_a, DeltaSig_est_b)
+	gamma_from_sp = gamma_fid_from_quants(rp_bins_c, Boost_a, Boost_b, F_a_sp, F_b_sp, Sig_IA_a_sp, Sig_IA_b_sp, cz_a_sp, cz_b_sp, DeltaSig_est_a, DeltaSig_est_b)
 	
 	# gamma_IA in the case of systematic error from the Boost
-	gamma_from_boost = gamma_fid_from_quants(rp_bins_c, Boost_a * (1.03), Boost_b * (1.03), F_a_fid, F_b_fid, Sig_IA_a_fid, Sig_IA_b_fid, cz_a_fid, cz_b_fid, DeltaSig_est_a, DeltaSig_est_b)
+	gamma_from_boost = gamma_fid_from_quants(rp_bins_c, Boost_a * pa.boost_sys, Boost_b * pa.boost_sys, F_a_fid, F_b_fid, Sig_IA_a_fid, Sig_IA_b_fid, cz_a_fid, cz_b_fid, DeltaSig_est_a * pa.boost_sys, DeltaSig_est_b * pa.boost_sys )
 	
 	"""plt.figure()
 	plt.loglog(rp_bins_c,g_IA_fid, 'g+', label='fid')
@@ -494,58 +466,50 @@ def get_gammaIA_cov(rp_bins, rp_bins_c):
 	
 	# Systematic error from dNdz (only diagonal - this is wrong)
 	print "SYSTEMATIC ERROR COVARIANCE IS ONLY DIAGONAL RIGHT NOW"
-	sigma_dNdz = np.abs(gamma_from_dNdz - g_IA_fid)
-	cov_dNdz_sys = sigma_dNdz**2 * np.diag(np.ones(len(rp_bins_c)))
-	
-	# Systematic error from pz (only diagonal - this is wrong
-	sigma_pz = np.abs(gamma_from_pz - g_IA_fid)
-	cov_pz_sys = sigma_pz**2 * np.diag(np.ones(len(rp_bins_c)))
+	sigma_sp = np.abs(gamma_from_sp - g_IA_fid)
+	cov_sp_sys = sigma_sp**2 * np.diag(np.ones(len(rp_bins_c)))
 	
 	# Systematic error from the boost
 	sigma_b = np.abs(gamma_from_boost - g_IA_fid)
 	cov_B_sys = sigma_b**2 * np.diag(np.ones(len(rp_bins_c)))
 	
-	gamma_IA_sys_cov = cov_dNdz_sys + cov_pz_sys + cov_B_sys
+	gamma_IA_sys_cov = cov_sp_sys + cov_B_sys
 	
 	plt.figure()
 	plt.loglog(rp_bins_c, np.sqrt(np.diag(gamma_IA_sys_cov)) / g_IA_fid, 'g+', label='sys total')
 	plt.hold(True)
-	plt.loglog(rp_bins_c, np.sqrt(np.diag(cov_dNdz_sys)) / g_IA_fid, 'm+', label='sys dNdz')
-	plt.hold(True)
-	plt.loglog(rp_bins_c, np.sqrt(np.diag(cov_pz_sys)) / g_IA_fid, 'b+', label='sys pz')
+	plt.loglog(rp_bins_c, np.sqrt(np.diag(cov_sp_sys)) / g_IA_fid, 'm+', label='sys sp')
 	plt.hold(True)
 	plt.loglog(rp_bins_c, np.sqrt(np.diag(cov_B_sys)) / g_IA_fid, 'k+', label='sys Boost')
 	plt.legend()
 	plt.xlabel('$r_p$')
 	plt.ylabel('$\sigma(\gamma_{IA})$')
 	plt.xlim(0.04, 20)
-	plt.savefig('./plots/frac_sys_errors_Blazek_LRG-shapes_7bins_NsatHOD.pdf')
+	plt.savefig('./plots/frac_sys_errors_Blazek_LRG-shapes_%sys='+str((pa.alpha_fid- alpha_sys) / pa.alpha_fid)+'.pdf')
 	plt.close()
 	
 	plt.figure()
 	plt.loglog(rp_bins_c, np.sqrt(np.diag(gamma_IA_sys_cov)), 'g+', label='sys total')
 	plt.hold(True)
-	plt.loglog(rp_bins_c, np.sqrt(np.diag(cov_dNdz_sys)), 'm+', label='sys dNdz')
-	plt.hold(True)
-	plt.loglog(rp_bins_c, np.sqrt(np.diag(cov_pz_sys)), 'b+', label='sys pz')
+	plt.loglog(rp_bins_c, np.sqrt(np.diag(cov_sp_sys)), 'm+', label='sys sp')
 	plt.hold(True)
 	plt.loglog(rp_bins_c, np.sqrt(np.diag(cov_B_sys)), 'k+', label='sys Boost')
 	plt.legend()
 	plt.xlabel('$r_p$')
 	plt.ylabel('$\sigma(\gamma_{IA})$')
 	plt.xlim(0.04, 20)
-	plt.savefig('./plots/sys_errors_Blazek_LRG-shapes_NsatHOD.pdf')
+	plt.savefig('./plots/sys_errors_Blazek_LRG-shapes_'+str((pa.alpha_fid- alpha_sys) / pa.alpha_fid)+'.pdf')
 	plt.close()
 
 	# Save the fractional sys error
 	save_variance = np.column_stack((rp_bins_c, np.sqrt(np.diag(gamma_IA_sys_cov)) / g_IA_fid))
-	np.savetxt('./txtfiles/frac_SysError_Blazek_LRG-shapes_7bins_NsatHOD.txt', save_variance)
+	np.savetxt('./txtfiles/frac_SysError_Blazek_LRG-shapes_'+str((pa.alpha_fid- alpha_sys) / pa.alpha_fid)+'.txt', save_variance)
 	
 	gammaIA_cov_total = gammaIA_stat_cov + gamma_IA_sys_cov
 	
 	# Save the fractional total error
 	save_variance = np.column_stack((rp_bins_c, np.sqrt(np.diag(gammaIA_cov_total)) / g_IA_fid))
-	np.savetxt('./txtfiles/frac_totalError_Blazek_LRG-shapes_7bins_NsatHOD.txt', save_variance)
+	np.savetxt('./txtfiles/frac_totalError_Blazek_LRG-shapes_'+str((pa.alpha_fid- alpha_sys) / pa.alpha_fid)+'.txt', save_variance)
 	
 	plt.figure()
 	plt.loglog(rp_bins_c,np.sqrt(np.diag(gammaIA_cov_total)), 'go', label='Both')
@@ -558,7 +522,7 @@ def get_gammaIA_cov(rp_bins, rp_bins_c):
 	plt.xlabel('$r_p$')
 	plt.ylabel('$\sigma(\gamma_{IA})$')
 	plt.xlim(0.04, 20)
-	plt.savefig('./plots/absolute_error_Blazek_LRG-shapes_7bins_NsatHOD.pdf')
+	plt.savefig('./plots/absolute_error_Blazek_LRG-shapes_'+str((pa.alpha_fid- alpha_sys) / pa.alpha_fid)+'.pdf')
 	plt.close()
 	
 	"""plt.figure()
@@ -713,7 +677,7 @@ def plot_variance(cov_1, fidvalues_1, bin_centers):
 	fig_sub.tick_params(axis='both', which='minor', labelsize=12)
 	fig_sub.set_title('Blazek et al. 2012 method')
 	plt.tight_layout()
-	plt.savefig('./plots/stat+sys_log_BlazekMethod_LRG-shapes_7bins_NsatHOD.pdf')
+	plt.savefig('./plots/stat+sys_log_BlazekMethod_LRG-shapes_'+str((pa.alpha_fid- pa.alpha_sys[i]) / pa.alpha_fid)+'.pdf')
 	plt.close()
 	
 	fig_sub=plt.subplot(111)
@@ -730,7 +694,7 @@ def plot_variance(cov_1, fidvalues_1, bin_centers):
 	fig_sub.tick_params(axis='both', which='major', labelsize=12)
 	fig_sub.tick_params(axis='both', which='minor', labelsize=12)
 	plt.tight_layout()
-	plt.savefig('./plots/stat+sys_notloBlazekMethod_LRG-shapes_7bins_NsatHOD.pdf')
+	plt.savefig('./plots/stat+sys_notloBlazekMethod_LRG-shapes_7bins_'+str((pa.alpha_fid- pa.alpha_sys[i]) / pa.alpha_fid)+'.pdf')
 	plt.close()
 	
 	"""plt.figure()
@@ -759,14 +723,13 @@ z_of_com = setup.z_interpof_com()
 
 #gammaIA = gamma_fid(rp_cent)
 
-# Get the statistical error on gammaIA
-(Cov_gIA, fid_gIA) = get_gammaIA_cov(rp_bins, rp_cent)
+for i in range(0,len(pa.alpha_sys)):
 
-# Get the fiducial value of gamma_IA in each projected radial bin
-#fid_gIA		=	gamma_fid(rp_cent)
+	# Get the statistical error on gammaIA
+	(Cov_gIA, fid_gIA) = get_gammaIA_cov(rp_bins, rp_cent, pa.alpha_sys[i], pa.zs_sys[i], pa.sigz_sys[i])
 
-# Output a plot showing the 1-sigma error bars on gamma_IA in projected radial bins 
-plot_variance(Cov_gIA, fid_gIA, rp_cent)
+	# Output a plot showing the 1-sigma error bars on gamma_IA in projected radial bins 
+	plot_variance(Cov_gIA, fid_gIA, rp_cent)
 
 exit()
 # Below this is Fisher matrix stuff - don't worry about it for now.

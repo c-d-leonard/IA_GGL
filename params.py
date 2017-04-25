@@ -12,8 +12,8 @@ Area_l 			=	7131 # Area associated with the lens sample in square DEGREES
 fsky			=   Area_l / 41253. # Assumes the lens area is the limiting factor
 n_s 			=	1.2 # The number density of sources in the sample per square ARCMINUTE
 S_to_N 			= 	15. # The signal to noise of the lensing measurement (?) - necessary for estimating sigma_e
-a_con			=	[1./1.25, 1./1.5, 1./1.75]	# Fiducial constant offset, approximated from Singh 2016 assuming unprimed method isophotal and primed ReGaussianisation
-cov_perc 		= 	[0.4, 0.6, 0.8] #percentage covariance between methods, shape measurement method
+a_con			=	1./1.4 #[1./1.25, 1./1.5, 1./1.75]	# Fiducial constant offset, approximated from Singh 2016 assuming unprimed method isophotal and primed ReGaussianisation
+cov_perc 		= 	[0.6, 0.8] #percentage covariance between methods, shape measurement method
 e_rms_mean 		=	np.abs((e_rms_b+e_rms_a)/2.) # This is the e_rms used in computing the shared weight for shapes methods
 N_shapes		= 	3.0*10**7 # Number of galaxies in the shape sample.
 N_LRG			=	62081 # Numbr of galaxies in the LRG sample.
@@ -36,11 +36,16 @@ N_bins	=	7 # The number of bins of projected radius
 #Parameters of the dNdz of sources, if using an analytic distribution. 'fid' = the fiducial value, 'sys' = 1sigma off from fid value to evaluate systematic error.
 alpha_fid 	= 	2.338
 zs_fid 		=	0.303
-alpha_sys 	=	2.738 # Derived from Nakajima et al 2011 on April 4 2017
-zs_sys		= 	0.323 # Derived from Nakajima et al 2011 on April 4 2017
+dNdzpar_fid	=	[alpha_fid, zs_fid] #Put these in a list to facilitate passing around
+alpha_sys 	=	alpha_fid * (1. - np.asarray([0.1, 0.2, 0.3])) # Derived from Nakajima et al 2011 on April 4 2017
+zs_sys		= 	zs_fid * ( 1. - np.asarray([0.1, 0.2, 0.3])) # Derived from Nakajima et al 2011 on April 4 2017
+dNdzpar_sys	= 	[alpha_sys, zs_sys] # A 2d list, for passing this around.
 zpts		=	1000  # Number of points in the z vector at which we are evaluating dNdz
 sigz_fid	=	0.11  # The photometric redshift error given a Gaussian photo_z model
-sigz_sys 	= 	0.13  #Derived from Nakajima et al 2011 on April 4 2017
+pzpar_fid 	=	[sigz_fid] # Make this a list to make it more generic to pass around
+sigz_sys 	= 	sigz_fid * (1. - np.asarray([0.1, 0.2, 0.3]))  #Derived from Nakajima et al 2011 on April 4 2017
+pzpar_sys	= 	[pzpar_sys] #Make this a 2d list to make it more generic to pass around
+boost_sys	=	1.03 # Multiplier for the boost systematic error.
 
 # Parameters related to the spec and photo z's of the source sample and other redshift cuts.
 zeff 	= 	0.28  # The effective redshift of the lens sample

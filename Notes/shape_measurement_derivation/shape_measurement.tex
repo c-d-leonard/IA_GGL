@@ -179,26 +179,29 @@ and $\bar{C}$ is the fractional correlation between the two shape measurement me
 
 \section*{Systematic error}
 
-There are three main sources of systematic error in equation \ref{IAsol1}:
-\begin{enumerate}
-\item{$\frac{dN}{dz_s}$: We may have an imperfect knowledge of $\frac{dN}{dz_s}$ due to an inadequate spectroscopic subsample, especially for dim source galaxies.}
-\item{$p(z_s, z_p)$: We will not necessarily have an accurate model of how likely we are to measure $z_p$ given $z_s$.}
-\item{$B(r_p)$: As stated in Blazek et al. 2012, we expect systematic error on the boost at roughly a 3\% level due to large-scale structure effects.}
-\end{enumerate}
+There are two basic sources of systematic error here which we consider:
+\begin{itemize}
+\item{not having a representative subsample of source galaxies with spectroscopic redshifts. Below we call this source `sp'. This results in uncertainty on $\frac{dN}{dz}$ and $p(z_p, z_s)$.}
+\item{large-scale structure fluctuations and variations in lens density due to observing conditions. We call this source `LSS'. This affects the boost $B(r_p)$.}
+\end{itemize}
+Uncertainty in either $\frac{dN}{dz_s}$, $p(z_s, z_l)$, or $B(r_p)$ leads to uncertainty in $N_{\rm corr}$. If $\frac{1}{N_{\rm corr}}$ is, for example, high, then $(1-a)\gamma_{\rm IA}(r_p)$ would be high in each bin. This introduces a correlation between $r_p$ bins as well as a contribution to the diagonal elements to the covariance. {\it For the moment, I am only including the diagonal elements of this contribution to the covariance.}
 
-Uncertainty in either $\frac{dN}{dz_s}$, $p(z_s, z_l)$, or $B(r_p)$ leads to uncertainty in $N_{\rm corr}$. This manifests as a systematic error here because it affects the measurements of the IA term in each projected $r_p$ bin in the same way. For example, if $\frac{1}{N_{\rm corr}}$ is high, then $(1-a)\gamma_{\rm IA}(r_p)$ would be high in each bin. This introduces a correlation between $r_p$ bins as well as a contribution to the diagonal elements to the covariance. {\it For the moment, we are only considering the diagonal elements of the covariance.}
-
-The covariance matrix contribution for each source of systematic error given by:
+The covariance matrix contribution for each of the two sources of systematic error above is given by:
 \begin{align}
 S_{\rm sys}^2(r_p, r_p^\prime) &= \left(\frac{1}{N_{\rm corr}^{\rm sys}(r_p)} - \frac{1}{N_{\rm corr}^{\rm fid}(r_p)}\right)(\tilde{\gamma}(r_p) - \tilde{\gamma}^\prime(r_p))  \left(\frac{1}{N_{\rm corr}^{\rm sys}(r_p^\prime)} - \frac{1}{N_{\rm corr}^{\rm fid}(r_p^\prime)}\right)(\tilde{\gamma}(r_p^\prime) - \tilde{\gamma}^\prime(r_p^\prime)) \nonumber \\
-& = (1-a)^2 \left(\frac{N_{\rm corr}^{\rm fid}(r_p)}{N_{\rm corr}^{\rm sys}(r_p)}-1.\right) \gamma_{\rm IA}^{\rm fid}(r_p) \left(\frac{N_{\rm corr}^{\rm fid}(r_p)}{N_{\rm corr}^{\rm sys}(r_p)}-1.\right)\gamma_{\rm IA}^{\rm fid}(r_p'),
+& = (1-a)^2 \left(\frac{N_{\rm corr}^{\rm fid}(r_p)}{N_{\rm corr}^{\rm sys}(r_p)}-1.\right) \gamma_{\rm IA}^{\rm fid}(r_p) \left(\frac{N_{\rm corr}^{\rm fid}(r_p^\prime)}{N_{\rm corr}^{\rm sys}(r_p^\prime)}-1.\right)\gamma_{\rm IA}^{\rm fid}(r_p'),
 \label{sys_general}
 \end{align}
-where `fid' is a fiducial value. `sys' indicates that the value should be computed using the estimated systematic error offset to each systematic. For example, in the case of the systematic error due to uncertainty in $\frac{dN}{dz}$, $N^{\rm sys}_{\rm corr}$ would be the correction factor computed using parameters of the fit to $\frac{dN}{dz}$ at $1\sigma$ from their fiducial values. In the case of systematic error due to photometric redshift uncertainty, the parameters of the photometric redshift distribution would be taken at $1\sigma$ from their fiducial values, while for the case of the boost, the boost factor itself is multipled by $1.03$ to account for 3\% error. 
+where `fid' is a fiducial value. `sys' indicates that the value should be computed using the estimated systematic error offset to the relevant parameters. For example, consider the case of the systematic error due to and unrepresentative source sample. Recall that $N_{\rm corr}$ is individually given by an expression of the form:
+\begin{equation}
+N_{\rm corr}(r_p) =  1 - \frac{1}{B(r_p)}\left(1 - \frac{\sum\limits_{j}^{\rm rand-close}\tilde{w}_j}{\sum\limits_{j}^{\rm rand} \tilde{w}_j} \right) = 1 - \frac{1}{B(r_p)}\left(1 - \frac{\int_{z_{\rm cut_l}}^{z_{\rm cut_h}} dz_p \tilde{w}(z_p) \int_{z_{\rm cut_l}}^{z_{\rm cut_h}} dz_s\frac{dN}{dz_s} p(z_s, z_p)}{\int_{z_{\rm cut_l}}^{z_{\rm cut_h}} dz_p  \tilde{w}(z_p) \int_{z_{\rm min}}^{z_{\rm max}} dz_s\frac{dN}{dz_s} p(z_s, z_p)} \right).
+\label{ncorr_repeat}
+\end{equation}
+The numerator of the fraction inside the brackets represents a sum over `rand-close', which requires a cut on spectroscopic redshifts. This means we actually need to integrate over the estimated $\frac{dN}{dz}$ and $p(z_p, z_s)$ when computing this from data. However, the denominator of this same fraction is a sum over random lens - source pairs without such cuts. We can therefore compute this directly from the dataset. So, when computing $N_{\rm corr}^{\rm sys}(r_p)$, we should use offset parameters for $\frac{dN}{dz}$ and $p(z_p, z_s)$ in the numerator, but fiducial values in the denominator. In the case of systematic error from large scale structure affecting the boost, we just take the boost as being offset from its fiducial value by the amount dictated by the error level.
 
 The total systematic error contribution to the covariance matrix is then:
 \begin{equation}
-S_{\rm tot}^2(r_p, r_p^\prime) = S_{\rm B}^2(r_p, r_p^\prime) + S_{\rm dN}^2(r_p, r_p^\prime) + S_{\rm pz}^2(r_p, r_p^\prime)
+S_{\rm tot}^2(r_p, r_p^\prime) = S_{\rm LSS}^2(r_p, r_p^\prime) + S_{\rm sp}^2(r_p, r_p^\prime) 
 \label{sysall}
 \end{equation}
 

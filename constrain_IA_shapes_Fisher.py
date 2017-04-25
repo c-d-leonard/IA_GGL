@@ -82,11 +82,11 @@ def N_of_zph_unweighted(z_a_def, z_b_def, z_a_norm, z_b_norm, z_a_def_ph, z_b_de
 	
 	return (z_ph_vec_def, int_dzs / norm)
 
-def N_corr(rp_cent, alpha, zs, sigz, boost):
-	""" Computes the correction factor which accounts for the fact that some of the galaxies in the photo-z defined source sample are actually higher-z and therefore not expected to be affected by IA"""
+def N_corr(rp_cent, alpha_num, zs_num, sigz_num, alpha_denom, zs_denom, sigz_denom, boost):
+	""" Computes the correction factor which accounts for the fact that some of the galaxies in the photo-z defined source sample are actually higher-z and therefore not expected to be affected by IA. We have two sets of alpha, zs, and sigz because one set is affected by sys errors and the other isn't."""
 	
-	sumW_insamp = sum_weights(z_close_low, z_close_high, pa.zmin, pa.zmax, z_close_low, z_close_high, pa.zmin_ph, pa.zmax_ph, pa.e_rms_mean, rp_cent, alpha, zs, sigz)
-	sumW_intotal = sum_weights(pa.zmin, pa.zmax, pa.zmin, pa.zmax, z_close_low, z_close_high, pa.zmin_ph, pa.zmax_ph, pa.e_rms_mean, rp_cent, alpha, zs, sigz)
+	sumW_insamp = sum_weights(z_close_low, z_close_high, pa.zmin, pa.zmax, z_close_low, z_close_high, pa.zmin_ph, pa.zmax_ph, pa.e_rms_mean, rp_cent, alpha_num, zs_num, sigz_num)
+	sumW_intotal = sum_weights(pa.zmin, pa.zmax, pa.zmin, pa.zmax, z_close_low, z_close_high, pa.zmin_ph, pa.zmax_ph, pa.e_rms_mean, rp_cent, alpha_denom, zs_denom, sigz_denom)
 	
 	Corr_fac = 1. - (1. / boost) * ( 1. - (np.asarray(sumW_insamp) / np.asarray(sumW_intotal))) # fraction of the galaxies in the source sample which have spec-z in the photo-z range of interest.
 	
@@ -152,14 +152,14 @@ def get_gammaIA_stat_cov(rp_cents_, rp_bins_, gIA_fid, covperc, a_con):
 	
 	boost_fid = get_boost(rp_cents_, pa.boost_assoc)
 	
-	# These are actually the same so there's no actual need to compute it twice.
+	# These are actually the same so there's no really need to compute it twice.
 	Cov_1 = shapenoise_cov(pa.e_rms_mean, z_close_low, z_close_high, boost_fid, rp_cents_, rp_bins_, pa.alpha_fid, pa.zs_fid, pa.sigz_fid) 
 	Cov_2 = shapenoise_cov(pa.e_rms_mean, z_close_low, z_close_high, boost_fid, rp_cents_, rp_bins_, pa.alpha_fid, pa.zs_fid, pa.sigz_fid) 
 	
 	# Get the covariance between the shear of the two shape measurement methods in each bin:
 	covar = get_cov_btw_methods(Cov_1, Cov_2, covperc)
 	
-	corr_fac_fid = N_corr(rp_cents_, pa.alpha_fid, pa.zs_fid, pa.sigz_fid, boost_fid)  # factor correcting for galaxies which have higher spec-z than the sample but which end up in the sample.
+	corr_fac_fid = N_corr(rp_cents_, pa.alpha_fid, pa.zs_fid, pa.sigz_fid, pa.alpha_fid, pa.zs_fid, pa.sigz_fid, boost_fid)  # factor correcting for galaxies which have higher spec-z than the sample but which end up in the sample.
 
 	corr_fac_err = N_corr_stat_err(rp_cents_, pa.sigBF_a, pa.alpha_fid, pa.zs_fid, pa.sigz_fid) # statistical error on that from the boost
 
@@ -169,33 +169,30 @@ def get_gammaIA_stat_cov(rp_cents_, rp_bins_, gIA_fid, covperc, a_con):
 
 	
 	save_variance = np.column_stack((rp_cents_, np.sqrt(np.diag(stat_mat)) / ((1.-a_con) * gIA_fid)))
-	np.savetxt('./txtfiles/fractional_staterror_shapemethod_LRG-shapes_covperc='+str(covperc)+'_a='+str(a_con)+'_7bins_NsatHOD.txt', save_variance)
+	np.savetxt('./txtfiles/fractional_staterror_shapemethod_LRG-shapes_covperc='+str(covperc)+'_a='+str(a_con)+'_7bins_updateSYS.txt', save_variance)
 
 	return stat_mat
 
-def get_gammaIA_sys_cov(rp_cents_, gIa_fid, cov_perc, a_con):
+def get_gammaIA_sys_cov(rp_cents_, gIa_fid, cov_perc, a_con, alpha_sys, zs_sys, sigz_sys):
 	""" Takes the centers of rp_bins and a systematic error sources from dNdz_s uncertainty (assumed to affect each r_p bin in the same way) and adds them to each other in quadrature."""
 	
 	boost_fid = get_boost(rp_cents_, pa.boost_assoc)
 	
-	corr_fac_fid = N_corr(rp_cents_, pa.alpha_fid, pa.zs_fid, pa.sigz_fid, boost_fid) 
-	corr_fac_dN = N_corr(rp_cents_, pa.alpha_sys, pa.zs_sys, pa.sigz_fid, boost_fid) 
-	corr_fac_pz =  N_corr(rp_cents_, pa.alpha_fid, pa.zs_fid, pa.sigz_sys, boost_fid) 
-	corr_fac_B =  N_corr(rp_cents_, pa.alpha_fid, pa.zs_fid, pa.sigz_fid, boost_fid * 1.03) 
+	corr_fac_fid = N_corr(rp_cents_, pa.alpha_fid, pa.zs_fid, pa.sigz_fid, pa.alpha_fid, pa.zs_fid, pa.sigz_fid, boost_fid) 
+	corr_fac_sp = N_corr(rp_cents_, alpha_sys, zs_sys, sigz_sys, pa.alpha_fid, pa.zs_fid, pa.sigz_fid, boost_fid) 
+	corr_fac_B =  N_corr(rp_cents_, pa.alpha_fid, pa.zs_fid, pa.sigz_fid, pa.alpha_fid, pa.zs_fid, pa.sigz_fid, boost_fid * 1.03) 
 	
-	dN_sys_mat = np.zeros((len(rp_cents_), len(rp_cents_)))
-	pz_sys_mat = np.zeros((len(rp_cents_), len(rp_cents_)))
+	sp_sys_mat = np.zeros((len(rp_cents_), len(rp_cents_)))
 	B_sys_mat = np.zeros((len(rp_cents_), len(rp_cents_)))
 	for i in range(0,len(rp_cents_)):
 		for j in range(0,len(rp_cents_)):
-			dN_sys_mat[i,j] = (corr_fac_fid[i] / corr_fac_dN[i] - 1.)*(corr_fac_fid[j] / corr_fac_dN[j] - 1.) * gIa_fid[i]*gIa_fid[j] * (1.-a_con)**2
-			pz_sys_mat[i,j] = (corr_fac_fid[i] / corr_fac_pz[i] - 1.)*(corr_fac_fid[j] / corr_fac_pz[j] - 1.) * gIa_fid[i]*gIa_fid[j] * (1.-a_con)**2
+			sp_sys_mat[i,j] = (corr_fac_fid[i] / corr_fac_sp[i] - 1.)*(corr_fac_fid[j] / corr_fac_sp[j] - 1.) * gIa_fid[i]*gIa_fid[j] * (1.-a_con)**2
 			B_sys_mat = (corr_fac_fid[i] / corr_fac_B[i] - 1.)*(corr_fac_fid[j] / corr_fac_B[j] - 1.) * gIa_fid[i]*gIa_fid[j] * (1.-a_con)**2
 
-	sys_mat = dN_sys_mat + pz_sys_mat + B_sys_mat
+	sys_mat = sp_sys_mat + B_sys_mat
 	
 	save_sys = np.column_stack((rp_cents_,np.sqrt(np.diag(sys_mat)) / ((1.-a_con) * gIa_fid)))
-	np.savetxt('./txtfiles/fractional_syserror_shapemethod_LRG-shapes_covperc='+str(cov_perc)+'_a='+str(a_con)+'_7bins_NsatHOD.txt', save_sys)
+	np.savetxt('./txtfiles/fractional_syserror_shapemethod_LRG-shapes_covperc='+str(cov_perc)+'_a='+str(a_con)+'_%sys='+str((pa.alpha_fid - alpha_sys) / pa.alpha_fid)+'_7bins_updateSYS.txt', save_sys)
 
 	return sys_mat
 	
@@ -227,7 +224,7 @@ def plot_variance(cov_1, fidvalues_1, bin_centers, covperc, a_con):
 	fig_sub.tick_params(axis='both', which='minor', labelsize=12)
 	fig_sub.set_title('a='+str(a_con)+', cov='+str(covperc))
 	plt.tight_layout()
-	plt.savefig('./plots/errorplot_stat+sys_shapemethod_LRG+shapes_a='+str(a_con)+'covperc='+str(covperc)+'_7bins_NsatHOD.pdf')
+	plt.savefig('./plots/errorplot_stat+sys_shapemethod_LRG+shapes_a='+str(a_con)+'covperc='+str(covperc)+'_%sys='+str((pa.alpha_fid - pa.alpha_sys[i]) / pa.alpha_fid)+'_7bins_updateSYS.pdf')
 	plt.close()
 
 	return  
@@ -345,19 +342,18 @@ fid_gIA		=	gamma_fid(rp_cents)
 #Cov_a		=	shapenoise_cov(pa.e_rms_a, z_close_low, z_close_high, , rp_c, rp, alpha_dN, zs_dN, sigz) #setup_shapenoise_cov(pa.e_rms_a, N_ls_pbin) 
 #Cov_b		=	setup_shapenoise_cov(pa.e_rms_b, N_ls_pbin)
 
-for i in range(0, len(pa.a_con)):
-	for j in range(0, len(pa.cov_perc)):
-
+for j in range(0, len(pa.cov_perc)):
+	for i in range(0,len(pa.alpha_sys)):
 		# Combine the constituent covariance matrices to get the covariance matrix for gamma_IA in projected radial bins
-		Cov_stat	=	get_gammaIA_stat_cov(rp_cents, rp_bins, fid_gIA, pa.cov_perc[j], pa.a_con[i]) 
-		Cov_sys 	=	get_gammaIA_sys_cov(rp_cents, fid_gIA, pa.cov_perc[j], pa.a_con[i])
+		Cov_stat	=	get_gammaIA_stat_cov(rp_cents, rp_bins, fid_gIA, pa.cov_perc[j], pa.a_con) 
+		Cov_sys 	=	get_gammaIA_sys_cov(rp_cents, fid_gIA, pa.cov_perc[j], pa.a_con, pa.alpha_sys[i], pa.zs_sys[i], pa.sigz_sys[i])
 		Cov_tot		=	get_gamma_tot_cov(Cov_sys, Cov_stat)
 		
-		save_tot = np.column_stack((rp_cents,np.sqrt(np.diag(Cov_tot)) / ((1.-pa.a_con[i]) * fid_gIA)))
-		np.savetxt('./txtfiles/fractional_toterror_shapemethod_LRG-shapes_covperc='+str(pa.cov_perc[j])+'_a='+str(pa.a_con[i])+'_7bins_NsatHOD.txt', save_tot)
+		save_tot = np.column_stack((rp_cents,np.sqrt(np.diag(Cov_tot)) / ((1.-pa.a_con) * fid_gIA)))
+		np.savetxt('./txtfiles/fractional_toterror_shapemethod_LRG-shapes_covperc='+str(pa.cov_perc[j])+'_a='+str(pa.a_con)+'_%sys='+str((pa.alpha_fid- pa.alpha_sys[i]) / pa.alpha_fid)+'_7bins_updateSYS.txt', save_tot)
 
 		# Output a plot showing the 1-sigma error bars on gamma_IA in projected radial bins
-		plot_variance(Cov_tot, fid_gIA, rp_cents, pa.cov_perc[j], pa.a_con[i])
+		plot_variance(Cov_tot, fid_gIA, rp_cents, pa.cov_perc[j], pa.a_con)
 
 exit() # Below is Fisher stuff, don't worry about this yet
 

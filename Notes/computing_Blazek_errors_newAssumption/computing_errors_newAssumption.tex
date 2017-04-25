@@ -457,41 +457,69 @@ The result is that equation \ref{gamma_blazek} is modified to be:
 \end{equation} 
 
 \section{Systematic errors}
-Recall that systematic errors in this case are those which introduce a correlated change in the results between projected $r_p$ bins. The systematic errors which may affect $\gamma_{\rm IA}(r_p)$ measured using this method are:
+Recall that systematic errors in this case are those which introduce a correlated change in the results between projected $r_p$ bins. There are two basic sources of systematic error which we consider in this method: 
 \begin{itemize}
-\item{error as a result of not knowing the source galaxy $\frac{dN}{dz_s}$ perfectly (not having a sufficient representative sample of sources). This propagates into $\langle \tilde{\Sigma}_c\rangle_{\rm IA}$, $F$, and $c_z$.}
-\item{error as a result of an imperfect knowledge of the photometric redshift probability distribution $p(z_p, z_s)$. This also propagates into $\langle \tilde{\Sigma}_c\rangle_{\rm IA}$, $F$, and $c_z$.}
-\item{error on the boost factor as a result of large-scale structure fluctuations and variations in lens density due to observing conditions. This affects only the boost $B(r_p)$.}
+\item{not having a representative subsample of source galaxies with spectroscopic redshifts. This results inuncertainty on $\frac{dN}{dz}$ and $p(z_p, z_s)$.}
+\item{large-scale structure fluctuations and variations in lens density due to observing conditions. This affects the boost $B(r_p)$.}
 \end{itemize}
 
-Recall that the expression for $\gamma_{\rm IA}(r_p)$ under this method is:
-\begin{equation}
-\bar{\gamma}^{\rm IA} = \frac{c_z^a \widetilde{\Delta\Sigma}^a - c_z^b \widetilde{\Delta\Sigma}^b}{(B^a-1+F^a)c_z^a \langle \tilde{\Sigma_c}\rangle_{\rm IA}^a -(B^b-1+F^b)c_z^b \langle \tilde{\Sigma_c}\rangle_{\rm IA}^b}.
-\label{gamma_sol}
-\end{equation}
-
-This expression is complex enough that I think the easiest way to compute the systematic error from each of the three above sources is the following:
+The easiest way to compute the systematic error from each of these sources is the following:
 \begin{enumerate}
-\item{Vary the quantity which sources the systematic error (either $\frac{dN}{dz_s}$, $p(z_p, z_s)$, or $B(r_p)$) and propagate this effect to the corresponding changes on other quantities (if any).}
-\item{Compute the change to $\gamma_{\rm IA}(r_p)$ from this systematic error by computing the value of $\gamma_{\rm IA}(r_p)$ with these modified quantities and subtracting the fiducial value of $\gamma_{\rm IA}(r_p)$.}
+\item{Vary the quantities which are affected by the source of systematic error (either $\frac{dN}{dz_s}$ and $p(z_p, z_s)$, or $B(r_p)$) and propagate this effect to the corresponding changes on other quantities.}
+\item{Compute the uncertainty in $\gamma_{\rm IA}(r_p)$ from this systematic error by computing the value of $\gamma_{\rm IA}(r_p)$ with these varied quantities and subtracting the fiducial value of $\gamma_{\rm IA}(r_p)$.}
 \end{enumerate}
 
-To be more specific, the systematic error due to uncertainty in $\frac{dN}{dz_s}$ would be:
+Uncertainty in $\frac{dN}{dz}$ and $p(z_p, z_s)$ leads to uncertainty in $c_z$, $F$, and $\langle \tilde{\Sigma}_c\rangle_{\rm IA}$. The systematic error due to an insufficiently representative spectroscopic subsample would be given by:
 \begin{align}
-\sigma_{dN} &= \frac{(c^a_{z} + \delta c_{N}^{a}) \widetilde{\Delta\Sigma}^a - (c^b_{z} + \delta c_{N}^{b}) \widetilde{\Delta\Sigma}^b}{(B^a-1+F^a + \delta F^a_{N})(c^a_{z} + \delta c_{N}^{a}) (\langle \tilde{\Sigma_c}\rangle_{\rm IA}^a + \delta \langle \tilde{\Sigma_c}\rangle_{N}^{a}) -(B^b-1+F^b + \delta F^b_{N})(c^b_{z} + \delta c_{N}^{b}) (\langle \tilde{\Sigma_c}\rangle_{\rm IA}^b + \delta \langle \tilde{\Sigma_c}\rangle_{N}^{b})} - \gamma_{\rm IA}(r_p).
-\label{sigmadNsys}
+\sigma_{sp} &= \frac{\bar{c}^a_{z} \widetilde{\Delta\Sigma}^a - \bar{c}^b_{z} \widetilde{\Delta\Sigma}^b}{(B^a-1+\bar{F}^a)\bar{c}^a_{z} \langle \bar{\tilde{\Sigma}}_c\rangle_{\rm IA}^a  -(B^b-1+\bar{F}^b)\bar{c}^b_{z} \langle \bar{\tilde{\Sigma}}_c\rangle_{\rm IA}^b} - \gamma_{\rm IA}^{\rm fid}(r_p).
+\label{sigmadNpzsys}
 \end{align}
-The systematic error due to uncertainty in the photometric redshift distribution would be:
-\begin{align}
-\sigma_{pz} &= \frac{(c^a_{z} + \delta c_{p}^{a}) \widetilde{\Delta\Sigma}^a - (c^b_{z} + \delta c_{p}^{b}) \widetilde{\Delta\Sigma}^b}{(B^a-1+F^a + \delta F^a_{p})(c^a_{z} + \delta c_{p}^{a}) (\langle \tilde{\Sigma_c}\rangle_{\rm IA}^a + \delta \langle \tilde{\Sigma_c}\rangle_{p}^{a}) -(B^b-1+F^b + \delta F^b_{p})(c^b_{z} + \delta c_{p}^{b}) (\langle \tilde{\Sigma_c}\rangle_{\rm IA}^b + \delta \langle \tilde{\Sigma_c}\rangle_{p}^{b})} - \gamma_{\rm IA}(r_p).
-\label{sigmapzsys}
-\end{align}
-And the systematic error due to systematic uncertainty in the boost is given by: 
+where barred quantities are evaluated using $\frac{dN}{dz}$ and $p(z_p, z_s)$ parameters which are offset from their fiducial values at the level of the uncertainty introduced by our insufficiently-representative spectroscopic subsample. 
+
+We need to know specifically how to compute each of $\bar{c}_z$,  $\bar{F}$, and $\langle \bar{\tilde{\Sigma}}_c\rangle_{\rm IA}$. The key question to consider here is not whether the expression for calculating these quantities theoretically depends on $\frac{dN}{dz}$ and $p(z_p, z_s)$, but rather whether these quantities depend on $\frac{dN}{dz}$ and $p(z_p, z_s)$ when computed from an actual data set.
+
+First, consider $F$, given as we know by:
 \begin{equation}
-\bar{\gamma}^{\rm IA} = \frac{c_z^a \widetilde{\Delta\Sigma}^a - c_z^b \widetilde{\Delta\Sigma}^b}{(B^a +\delta B^a-1+F^a)c_z^a \langle \tilde{\Sigma_c}\rangle_{\rm IA}^a -(B^b + \delta B^b-1+F^b)c_z^b \langle \tilde{\Sigma_c}\rangle_{\rm IA}^b}- \gamma_{\rm IA}(r_p) .
+F= \frac{\sum\limits_{j}^{\rm rand-close}\tilde{w}_j}{\sum\limits_{j}^{\rm rand} \tilde{w}_j}.
+\label{F}
+\end{equation}
+The denominator would be obtained, given a data set, by populating random lenses and then summing the weights of random lens - source pairs. This is unaffected by our knowledge of $\frac{dN}{dz}$ and $p(z_p, z_s)$, therefore we should use the fiducial parameters values when computing the denominator.
+
+However, the numerator requires a cut on spectroscopic redshift: we want the sum of weights of random lens - true source pairs for those sources within a certain spectroscopic-redshift separation of the lens. We must therefore calculate this using an integral over the estimated $\frac{dN}{dz}$ and $p(z_p, z_s)$. We therefore should use the offset values of the parameters.
+
+Now, consider $\langle \tilde{\Sigma_c}\rangle_{\rm IA}$, given by:
+\begin{equation}
+\langle \tilde{\Sigma}_c\rangle_{\rm IA} (r_p) = \frac{\sum\limits_{j}^{\rm excess} \tilde{w}_j \tilde{\Sigma}_{c,j}+ \sum\limits_{j}^{\rm rand-close} \tilde{w}_j \tilde{\Sigma}_{c,j}}{(B(r_p)-1)\sum\limits_{j}^{\rm rand} \tilde{w}_j + \sum\limits_{j}^{\rm rand-close} \tilde{w}_j}.
+\label{SigmaIA}
+\end{equation} 
+When computing this quantity from a data set, the sums over excess in the numerator and denominator would be given by taking the equivalent sums over all pairs, and over all random lens - source pairs, and subtracting. This does not depend on our knowledge of $\frac{dN}{dz}$ and $p(z_p, z_s)$, so we should use fiducial parameters. However, the sums over `rand-close' again both require cuts on spectroscopic redshifts, which means we must do an integral over $\frac{dN}{dz}$ and $p(z_p, z_s)$. Again, we should use offset values of the parameters of $\frac{dN}{dz}$ and $p(z_p, z_s)$ when computing these sums.
+
+Finally, consider $c_z = (1+b_z)^{-1}$, given by 
+\begin{equation}
+b_z+1 = \frac{\sum\limits^{\rm rand}_{j} \tilde{w}_j \tilde{\Sigma}_{c,j} \Sigma_{c,j}^{-1}}{\sum\limits^{\rm rand}_{j} \tilde{w}_j}.
+\label{photozbias}
+\end{equation}
+In real data, this would be obtained by summing over those pairs of random lensese and source galaxies in the spectroscopis subsample. Even for the denominator, we would only sum over the (unrepresentative) subsample of sources, so we should use the offset parameters in the denominator and numerator. 
+
+Remember that the numerator is given by:
+\begin{equation}
+\sum\limits^{\rm rand}_{j} \tilde{w}_j \tilde{\Sigma}_{c,j} \Sigma_{c,j}^{-1}  = \frac{\int_{z_{\rm p}^{\rm min}}^{z_{\rm p}^{\rm max}}dz_{\rm p} b_{sw}(z_{\rm p}, z_l) \int_{z_{\rm s}^{\rm min}}^{z_{\rm s}^{\rm max}}dz_{\rm s} \frac{dN^s}{dz^s} p(z_{\rm p}, z_{\rm s})}{\int_{z_{\rm p}^{\rm min}}^{z_{\rm p}^{\rm max}}dz_{\rm p}\int_{z_{\rm s}^{\rm min}}^{z_{\rm s}^{\rm max}}dz_{\rm s} \frac{dN^s}{dz^s} p(z_{\rm p}, z_{\rm s})}.
+\label{photoz}
+\end{equation}
+We should use the shifted parameters when sampling to get $b_{sw}(z_p, z_l)$ as well as when computing the integral. This simulates only summing over the unrepresentative spectroscopic sub-sample.
+
+
+
+Systematic uncertinty in the boost due to large-scale structure effects changes the boost iself as well as $\widetilde{\Delta\Sigma}$. The systematic error due to systematic uncertainty in the boost is similarly given by: 
+\begin{equation}
+\sigma_{LSS} = \frac{c_z^a \bar{\widetilde{\Delta\Sigma}}^a - c_z^b \bar{\widetilde{\Delta\Sigma}}^b}{(\bar{B}^a-1+F^a)c_z^a \langle \tilde{\Sigma_c}\rangle_{\rm IA}^a -(\bar{B}^b -1+F^b)c_z^b \langle \tilde{\Sigma_c}\rangle_{\rm IA}^b}- \gamma_{\rm IA}^{\rm fid}(r_p).
 \label{sigmaBsys}
 \end{equation}
-In all three above cases, quantities other than changes due to systematic uncertainty are calcuated at fiducial values.
+In this case, $\bar{B}$ is given by the fiducial values of the boost in each $r_p$ bin plus the systematic uncertainty due to large scale structure effects, and $\bar{\widetilde{\Delta\Sigma}}$ is given by:
+\begin{equation}
+\bar{\widetilde{\Delta\Sigma}}(r_p) = \frac{\bar{B}(r_p)}{B(r_p)} \widetilde{\Delta\Sigma}(r_p).
+\label{barDS}
+\end{equation}
 
 
 \section{Open questions / issues}
