@@ -1,0 +1,116 @@
+\documentclass[twocolumn,amsmath,aps,fleqn, superscriptaddress]{revtex4}
+ 
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{epsfig}
+\usepackage{subfigure}
+\usepackage{mathrsfs}
+\usepackage{longtable}
+\usepackage{enumerate} 
+\usepackage{multirow}
+\usepackage{color}
+
+\usepackage[usenames,dvipsnames]{xcolor}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks = true,
+    citecolor = {MidnightBlue},
+    linkcolor = {BrickRed},
+    urlcolor = {BrickRed}
+}
+
+\newcommand{\be}{\begin{eqnarray}}
+\newcommand{\ee}{\end{eqnarray}}
+
+\newcommand{\corr}{\color{blue}}
+
+\newcommand{\mnras}{MNRAS~}
+\newcommand{\jcap}{JCAP~}
+%\newcommand{\apj}{ApJ~}
+\newcommand{\apjl}{ApJL~}
+\newcommand{\apjs}{ApJS~}
+
+ \allowdisplaybreaks[1]
+ 
+\begin{document}
+
+\title{{Constraints on Intrinsic Alignments from Multiple Shape-Measurement Methods}}
+
+\author{C. Danielle Leonard}
+\email{danielll@andrew.cmu.edu}
+\affiliation{McWilliams Center for Cosmology, Department of Physics, Carnegie Mellon University, 5000 Forbes Avenue, Pittsburgh, PA 15213, USA}
+
+\author{Rachel Mandelbaum}
+\affiliation{McWilliams Center for Cosmology, Department of Physics, Carnegie Mellon University, 5000 Forbes Avenue, Pittsburgh, PA 15213, USA}
+
+\date{\today}
+
+\begin{abstract}
+This is a pre-draft of a project about constraining the scale-dependence of the intrinsic-alignment signal using multiple shape-measurement methods.
+\end{abstract}
+
+
+\maketitle
+
+
+%-------------------------------------------------------------------------------
+\section{Introduction}
+\label{sec:introduction}
+\noindent
+Weak lensing is an important way to constrain cosmology.
+
+Intrinsic alignments are an important contaminant to weak lensing measurements. We need to be able to constrain their contribution well to believe our weak lensing cosmological constraints.
+
+This project looks at a couple of improvements to existing methods of constraining intrinsic alignemnts. One is to use the existing method of \cite{Blazek2012}, but instead of assuming that IA only affect excess galaxies, include IA effects on physically close galaxies which are not excess. The second is to take advantage of the recent finding that intrinsic alignment signals as obtained from different shape-measurement signals result in IA signal which are offset by a constant value \cite{Singh2016}. 
+
+%-------------------------------------------------------------------------------
+\section{Background}
+\label{sec:theory}
+\subsection{Weak Lensing Theory}
+\label{subsec:wltheory}
+Here is some information about how we assume things are measured for galaxy-galaxy lensing and how intrinsic alignments come in to weak lensing.
+
+\subsection{Existing methods for constraining intrinsic alignments}
+\label{subsec:existingIA}
+Here are the equations for Jonathan's method as they are are given in his paper.
+
+\section{Including physically associated non-excess galaxies}
+\label{sec:closerand}
+Here are the equations for including F in Jonathan's method.
+
+\section{Constaining IA with multiple shape-measurement methods}
+\label{subsec:newmethod}
+Here is the theory / set up for our method of constraining IA.
+
+
+\section{Results}
+\label{sec:results}
+\noindent
+\begin{itemize}
+\item{Modifying the Blazek et al. 2012 method to include non-excess physically associated galaxies significantly reduces the resulting error on large scales (see figure \ref{fig:Fzerocomparison}).}
+\item{In terms of statistical error alone (from shape noise + boost), the multiple-shape-measurement-methods method does worse than the modified Blazek et al. 2012 method for what seems to be any reasonable values of the correlation between shape measurement methods and the ratio between signals measured for differnent methods, {\it a}.}
+\item{In terms of systematic errors arising from an inadequately representative subsample, the Blazek et al. method seems to be most sensitive to resulting uncertainty in $c_z$, the photo-z bias terms. To get the statistical error dominating, we have to control $c_z^a$ to better than about $6\%$. If we assume that a sample for which $c_z^a$ is controlled to this level will always result in $\langle \tilde{\Sigma}_c \rangle$ also being controlled to that level or better, then there will never be anything to gain from using the multiple-shape measurements method. This is because if all systematic errors are well controlled for the modified Blazek et al. method, then statistical error dominates, and Blazek at al. does better when considering statistical alone. See Figure \ref{fig:StoNsysvstat}.}
+\end{itemize}
+
+\begin{figure*}
+\centering
+\subfigure{\includegraphics[width=0.45\textwidth]{stat+sys_notloBlazekMethod_LRG-shapes_7bins.pdf}}
+\subfigure{\includegraphics[width=0.45\textwidth]{stat+sys_notloBlazekMethod_LRG-shapes_7bins_F=0.pdf}}
+\caption{Left: Statistical + systematic error for the modified Blazek et al. method, including non-excess physically associated galaxies. Right: Same, but for the original Blazek et al. method, assuming IA affect only excess galaxies.}
+\label{fig:Fzerocomparison}
+\end{figure*}
+
+\begin{figure*}
+\centering
+\includegraphics[width=0.75\textwidth]{ratio_StoN.pdf}
+\caption{S / N for the hypothetical case in which the only source of error comes from systematic uncertainty to the various quantities listed, divided by S / N for the hypothetical case with only statistical error. For statistical error to dominate, the plotted quantity should be unity or greater.}
+\label{fig:StoNsysvstat}
+\end{figure*}
+
+
+
+%-------------------------------------------------------------------------------
+\section{Discussion and Conclusions}
+\label{sec:conclusion}
+
+\end{document}

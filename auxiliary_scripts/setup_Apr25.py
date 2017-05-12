@@ -82,7 +82,6 @@ def com(z_):
 	if hasattr(z_, "__len__"):
 		chi=np.zeros((len(z_)))
 		for zi in range(0,len(z_)):
-			#print "zi in com=", zi
 			chi[zi] = scipy.integrate.quad(chi_int,0,z_[zi])[0]
 	else:
 		chi = scipy.integrate.quad(chi_int, 0, z_)[0]
@@ -101,37 +100,18 @@ def z_interpof_com():
 
 	return	(z_of_com, com_of_z)
 	
-def p_z(z_ph, z_sp, pzpar, pztype):
+def p_z(z_ph, z_sp, sigz):
 	""" Returns the probability of finding a photometric redshift z_ph given that the true redshift is z_sp. """
 	
-	if (pztype == 'Gaussian'):
-		sigz = pzpar[0]
-		p_z_ = np.exp(-(z_ph - z_sp)**2 / (2.*(sigz*(1.+z_sp))**2)) / (np.sqrt(2.*np.pi)*(sigz*(1.+z_sp)))
-	else:
-		print "Photo-z probability distribution "+str(pztype)+" not yet supported; exiting."
-		exit()
-		
+	# I'm going to use a Gaussian probability distribution here, but you could change that.
+	p_z_ = np.exp(-(z_ph - z_sp)**2 / (2.*(sigz*(1.+z_sp))**2)) / (np.sqrt(2.*np.pi)*(sigz*(1.+z_sp)))
+	
 	return p_z_
 	
-def get_NofZ_unnormed(dNdzpar, dNdztype, z_min, z_max, zpts):
+def get_NofZ_unnormed(a, zs, z_min, z_max, zpts):
 	""" Returns the dNdz of the sources as a function of photometric redshift, as well as the z points at which it is evaluated."""
 
 	z = scipy.linspace(z_min+0.0001, z_max, zpts)
-	
-	if (dNdztype == 'Nakajima'):
-		# dNdz takes form like in Nakajima et al. 2011 equation 3
-		a = dNdzpar[0]
-		zs = dNdzpar[1]
-		nofz_ = (z / zs)**(a-1) * np.exp( -0.5 * (z / zs)**2)	
-	elif (dNdztype == 'Smail'):
-		# dNdz take form like in Smail et al. 1994
-		alpha = dNdzpar[0]
-		z0 = dNdzpar[1]
-		beta = dNdzpar[2]
-		nofz_ = z**alpha * np.exp( - (z / z0)**beta)
-	else:
-		print "dNdz type "+str(dNdztype)+" not yet supported; exiting."
-		exit()
+	nofz_ = (z / zs)**(a-1) * np.exp( -0.5 * (z / zs)**2)	
 
 	return (z, nofz_)
-	

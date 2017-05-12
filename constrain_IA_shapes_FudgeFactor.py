@@ -44,7 +44,7 @@ def shapenoise_cov(e_rms, z_p_l, z_p_h, B_samp, rp_c, rp, dNdzpar, pzpar):
 def gamma_fid(rp):
 	""" Returns the fiducial gamma_IA from a combination of terms from different models which are valid at different scales """
 	
-	wgg_rp = ws.wgg_full(rp, pa.fsat_LRG, pa.fsky, pa.bd_shapes, pa.bs_shapes, './txtfiles/wgg_1h_LRG-shapes_7bins_NsatHOD.txt', './txtfiles/wgg_2h_LRG-shapes_7bins.txt', './plots/wgg_full_shapes_7bins_NsatHOD.pdf')
+	wgg_rp = ws.wgg_full(rp, pa.fsat_LRG, pa.fsky, pa.bd_shapes, pa.bs_shapes, './txtfiles/wgg_1h_LRG-shapes_7bins_MlowThresh.txt', './txtfiles/wgg_2h_LRG-shapes_7bins.txt', './plots/wgg_full_shapes_7bins_NsatHOD.pdf')
 	wgp_rp = ws.wgp_full(rp, pa.bd_shapes, pa.Ai_shapes, pa.ah_shapes, pa.q11_shapes, pa.q12_shapes, pa.q13_shapes, pa.q21_shapes, pa.q22_shapes, pa.q23_shapes, pa.q31_shapes, pa.q32_shapes, pa.q33_shapes, './txtfiles/wgp_1h_LRG-shapes_7bins.txt','./txtfiles/wgp_2h_LRG-shapes_7bins.txt', './plots/wgp_full_LRG-shapes_7bins.pdf')
 	
 	gammaIA = wgp_rp / (wgg_rp + 2. * pa.close_cut) 
@@ -92,14 +92,22 @@ def N_corr(rp_cent, dNdz_par_num, pzpar_num, dNdz_par_denom, pzpar_denom, boost)
 	
 	return Corr_fac
 
-def N_corr_stat_err(rp_cents_, boost_error_file, dNdzpar, pzpar):
-	""" Gets the error on N_corr from statistical error on the boost. """
+def N_corr_err(rp_cents_, boost_error_file, dNdzpar, pzpar):
+	""" Gets the error on N_corr from statistical error on the boost and systemtic error on the boost. 
+	Does NOT include systematic error on dNdz/pz. """
 	
 	sumW_insamp = sum_weights(z_close_low, z_close_high, pa.zmin, pa.zmax, z_close_low, z_close_high, pa.zmin_ph, pa.zmax_ph, pa.e_rms_mean, rp_cents_, dNdzpar, pzpar)
 	sumW_intotal = sum_weights(pa.zmin, pa.zmax, pa.zmin, pa.zmax, z_close_low, z_close_high, pa.zmin_ph, pa.zmax_ph, pa.e_rms_mean, rp_cents_, dNdzpar, pzpar)
-	
 	boost = get_boost(rp_cents_, pa.boost_assoc)
-	boost_err = boost_errors(rp_cents_, boost_error_file)
+	
+	# Get statistical errors on the boost
+	boost_err_stat = boost_errors(rp_cents_, boost_error_file)
+	print "boost err stat=", boost_err_stat
+	# Get systematic errors on the boost
+	boost_err_sys = (pa.boost_sys - 1.) * boost
+	print "boost err sys=", boost_err_sys
+	# Get total (add in quadrature)
+	boost_err = np.sqrt(boost_err_sys**2 + boost_err_stat**2)
 	
 	sig_Ncorr = (boost_err / boost**2) * np.sqrt(1. - np.asarray(sumW_insamp)/ np.asarray(sumW_intotal))
 
@@ -147,61 +155,63 @@ def subtract_var(var_1, var_2, covar):
 
 	return var_diff
 
-def get_gammaIA_stat_cov(rp_cents_, rp_bins_, gIA_fid, covperc, a_con):
+def get_gammaIA_cov(rp_cents_, rp_bins_, gIA_fid, covperc, a_con, fudge_Ncorr):
 	""" Takes the covariance matrices of the constituent elements of gamma_{IA} and combines them to get the covariance matrix of gamma_{IA} in projected radial bins."""
 	
 	boost_fid = get_boost(rp_cents_, pa.boost_assoc)
 	
-	# These are actually the same so there's no really need to compute it twice.
-	Cov_1 = shapenoise_cov(pa.e_rms_mean, z_close_low, z_close_high, boost_fid, rp_cents_, rp_bins_, pa.dNdzpar_fid, pa.pzpar_fid) 
-	Cov_2 = shapenoise_cov(pa.e_rms_mean, z_close_low, z_close_high, boost_fid, rp_cents_, rp_bins_, pa.dNdzpar_fid, pa.pzpar_fid) 
+	# These are actually the same so there's no real need to compute it twice.
+	shear_cov_1 = shapenoise_cov(pa.e_rms_mean, z_close_low, z_close_high, boost_fid, rp_cents_, rp_bins_, pa.dNdzpar_fid, pa.pzpar_fid) 
+	shear_cov_2 = shapenoise_cov(pa.e_rms_mean, z_close_low, z_close_high, boost_fid, rp_cents_, rp_bins_, pa.dNdzpar_fid, pa.pzpar_fid) 
 	
 	# Get the covariance between the shear of the two shape measurement methods in each bin:
-	covar = get_cov_btw_methods(Cov_1, Cov_2, covperc)
+	shear_covar = get_cov_btw_methods(shear_cov_1, shear_cov_2, covperc)
 	
-	corr_fac_fid = N_corr(rp_cents_, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdzpar_fid, pa.pzpar_fid, boost_fid)  # factor correcting for galaxies which have higher spec-z than the sample but which end up in the sample.
+	# factor correcting for galaxies which have higher spec-z than the sample but which end up in the sample.
+	corr_fac_fid = N_corr(rp_cents_, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdzpar_fid, pa.pzpar_fid, boost_fid)  
 
-	corr_fac_err = N_corr_stat_err(rp_cents_, pa.sigBF_a, pa.dNdzpar_fid, pa.pzpar_fid) # statistical error on that from the boost
+	# statistical error from Ncorr and systematic error due to effect on the boost (not including sys err due to dNdz / pz effects).
+	corr_fac_err = N_corr_err(rp_cents_, pa.sigBF_a, pa.dNdzpar_fid, pa.pzpar_fid)
 
-	stat_mat = np.diag(np.zeros(len(Cov_1)))
-	for i in range(0,len(Cov_1)):	
-		stat_mat[i, i] = (1.-a_con)**2 * gIA_fid[i]**2 * (( corr_fac_err[i]**2 / corr_fac_fid[i]**2)  + subtract_var(Cov_1[i], Cov_2[i], covar[i]) / (corr_fac_fid[i]**2 * (1.-a_con)**2 * gIA_fid[i]**2))
+	cov_mat_tot = np.diag(np.zeros(len(shear_cov_1)))
+	cov_mat_stat = np.diag(np.zeros(len(shear_cov_1)))
+	cov_mat_sys = np.diag(np.zeros(len(shear_cov_1)))
+	for i in range(0,len(shear_cov_1)):	
+		#cov_mat_tot[i, i] = (1.-a_con)**2 * gIA_fid[i]**2 * (( corr_fac_err[i]**2 / corr_fac_fid[i]**2)  + (subtract_var(shear_cov_1[i], shear_cov_2[i], shear_covar[i]) / (corr_fac_fid[i]**2 * (1.-a_con)**2 * gIA_fid[i]**2)) + (pa.fudge_Ncorr)**2 )
+		cov_mat_stat[i,i] = (1.-a_con)**2 * gIA_fid[i]**2 * (( corr_fac_err[i]**2 / corr_fac_fid[i]**2)  + (subtract_var(shear_cov_1[i], shear_cov_2[i], shear_covar[i]) / (corr_fac_fid[i]**2 * (1.-a_con)**2 * gIA_fid[i]**2)))
+		cov_mat_sys[i,i] = (1.-a_con)**2 * gIA_fid[i]**2 * ( (fudge_Ncorr)**2 )
+		
+	for i in range(0,len((rp_cents_))):	
+		for j in range(0,len((rp_cents_))):
+			if (i != j):
+				cov_mat_sys[i,j] = np.sqrt(cov_mat_sys[i,i]) * np.sqrt(cov_mat_sys[j,j])
+				
+	cov_mat_tot = cov_mat_stat + cov_mat_sys
+	
+	print "cov_mat_sys=", cov_mat_sys
+	print "cov_mat_stat=", cov_mat_stat
+	print "cov_mat_tot=", cov_mat_tot
+	
+	# Compute associated signal to noise	
+	Cov_inv_tot = np.linalg.inv(cov_mat_tot)
+	StoNsq_tot = np.dot(gIA_fid* (1.-a_con), np.dot(Cov_inv_tot, gIA_fid * (1-a_con)))
+	
+	Cov_inv_stat = np.linalg.inv(cov_mat_stat)
+	StoNsq_stat = np.dot(gIA_fid* (1.-a_con), np.dot(Cov_inv_stat, gIA_fid * (1-a_con)))
+	
+	NtoSsq_sys = 1./StoNsq_tot - 1./StoNsq_stat
+	StoNsq_sys = 1. / NtoSsq_sys
+	
+	"""plt.figure()
+	plt.loglog(rp_cents, np.sqrt(np.diag(cov_mat)) / ((1. - a_con) * gIA_fid) , 'mo')
+	plt.ylim(10**(-1), 10**2)
+	plt.savefig('./plots/statcov_acon='+str(a_con)+'covperc='+str(covperc)+'.pdf')
+	plt.close()
+	
+	save_variance = np.column_stack((rp_cents_, np.sqrt(np.diag(cov_mat)) / ((1.-a_con) * gIA_fid)))
+	np.savetxt('./txtfiles/fractional_toterror_shapemethod_LRG-shapes_covperc='+str(covperc)+'_a='+str(a_con)+'_fudgeNcorrErr='+str(pa.fudge_Ncorr)+'.txt', save_variance)"""
 
-	
-	save_variance = np.column_stack((rp_cents_, np.sqrt(np.diag(stat_mat)) / ((1.-a_con) * gIA_fid)))
-	np.savetxt('./txtfiles/fractional_staterror_shapemethod_LRG-shapes_covperc='+str(covperc)+'_a='+str(a_con)+'_mod_dNdz_pz_pars.txt', save_variance)
-
-	return stat_mat
-
-def get_gammaIA_sys_cov(rp_cents_, gIa_fid, cov_perc, a_con, dNdzpar_sys, pzpar_sys):
-	""" Takes the centers of rp_bins and a systematic error sources from dNdz_s uncertainty (assumed to affect each r_p bin in the same way) and adds them to each other in quadrature."""
-	
-	boost_fid = get_boost(rp_cents_, pa.boost_assoc)
-	
-	corr_fac_fid = N_corr(rp_cents_, pa.dNdzpar_fid, pa.pzpar_fid,  pa.dNdzpar_fid, pa.pzpar_fid, boost_fid) 
-	corr_fac_sp = N_corr(rp_cents_, dNdzpar_sys, pzpar_sys, pa.dNdzpar_fid, pa.pzpar_fid, boost_fid) 
-	corr_fac_B =  N_corr(rp_cents_, pa.dNdzpar_fid, pa.pzpar_fid,  pa.dNdzpar_fid, pa.pzpar_fid, boost_fid * 1.03) 
-	
-	sp_sys_mat = np.zeros((len(rp_cents_), len(rp_cents_)))
-	B_sys_mat = np.zeros((len(rp_cents_), len(rp_cents_)))
-	for i in range(0,len(rp_cents_)):
-		for j in range(0,len(rp_cents_)):
-			sp_sys_mat[i,j] = (corr_fac_fid[i] / corr_fac_sp[i] - 1.)*(corr_fac_fid[j] / corr_fac_sp[j] - 1.) * gIa_fid[i]*gIa_fid[j] * (1.-a_con)**2
-			B_sys_mat = (corr_fac_fid[i] / corr_fac_B[i] - 1.)*(corr_fac_fid[j] / corr_fac_B[j] - 1.) * gIa_fid[i]*gIa_fid[j] * (1.-a_con)**2
-
-	sys_mat = sp_sys_mat + B_sys_mat
-	
-	save_sys = np.column_stack((rp_cents_,np.sqrt(np.diag(sys_mat)) / ((1.-a_con) * gIa_fid)))
-	np.savetxt('./txtfiles/fractional_syserror_shapemethod_LRG-shapes_covperc='+str(cov_perc)+'_a='+str(a_con)+'_%sys='+str((pa.dNdzpar_fid[0]- dNdzpar_sys[0]) / pa.dNdzpar_fid[0])+'_mod_dNdz_pz_pars.txt', save_sys)
-
-	return sys_mat
-	
-def get_gamma_tot_cov(sys_mat, stat_mat):
-	""" Takes the covariance matrix from statistical error and systematic error, and adds them to get the total covariance matrix. Assumes stat and sys errors should be added in quadrature."""
-	
-	tot_cov = sys_mat+stat_mat
-	
-	return tot_cov
+	return StoNsq_sys, StoNsq_stat
 
 ####### PLOTTING / OUTPUT #######
 
@@ -224,7 +234,7 @@ def plot_variance(cov_1, fidvalues_1, bin_centers, covperc, a_con):
 	fig_sub.tick_params(axis='both', which='minor', labelsize=12)
 	fig_sub.set_title('a='+str(a_con)+', cov='+str(covperc))
 	plt.tight_layout()
-	plt.savefig('./plots/errorplot_stat+sys_shapemethod_LRG+shapes_a='+str(a_con)+'covperc='+str(covperc)+'_%sys='+str((pa.dNdzpar_fid[0]- pa.dNdzpar_sys[i][0]) / pa.dNdzpar_fid[0])+'_mod_dNdz_pz_pars.pdf')
+	plt.savefig('./plots/errorplot_stat+sys_shapemethod_LRG+shapes_a='+str(a_con)+'covperc='+str(covperc)+'_fudgeNcorr='+str(pa.fudge_Ncorr)+'.pdf')
 	plt.close()
 
 	return  
@@ -327,7 +337,7 @@ rp_bins 	= 	setup.setup_rp_bins(pa.rp_min, pa.rp_max, pa.N_bins) # Edges
 rp_cents	=	setup.rp_bins_mid(rp_bins) # Centers
 
 # Set up to get z as a function of comoving distance
-z_of_com 	= 	setup.z_interpof_com()
+z_of_com, com_of_z 	= 	setup.z_interpof_com()
 
 # Get the redshift corresponding to the maximum separation from the effective lens redshift at which we assume IA may be present (pa.close_cut is the separation in comoving Mpc/h)
 (z_close_high, z_close_low)	= 	setup.get_z_close(pa.zeff, pa.close_cut)
@@ -342,20 +352,32 @@ fid_gIA		=	gamma_fid(rp_cents)
 #Cov_a		=	shapenoise_cov(pa.e_rms_a, z_close_low, z_close_high, , rp_c, rp, alpha_dN, zs_dN, sigz) #setup_shapenoise_cov(pa.e_rms_a, N_ls_pbin) 
 #Cov_b		=	setup_shapenoise_cov(pa.e_rms_b, N_ls_pbin)
 
-for j in range(0, len(pa.cov_perc)):
-	for i in range(0,pa.num_sys):
-		print "Running, cov % #"+str(j+1)+", systematic level #"+str(i+1)
-		# Combine the constituent covariance matrices to get the covariance matrix for gamma_IA in projected radial bins
-		Cov_stat	=	get_gammaIA_stat_cov(rp_cents, rp_bins, fid_gIA, pa.cov_perc[j], pa.a_con) 
-		Cov_sys 	=	get_gammaIA_sys_cov(rp_cents, fid_gIA, pa.cov_perc[j], pa.a_con, pa.dNdzpar_sys[i], pa.pzpar_sys[i])
-		Cov_tot		=	get_gamma_tot_cov(Cov_sys, Cov_stat)
+#StoNsquared = np.zeros((len(pa.a_con), len(pa.cov_perc)))
+Ratio = np.zeros(len(pa.fudge_Ncorr))
+for i in range(0,len(pa.a_con)):
+	for j in range(0, len(pa.cov_perc)):
+		for k in range(0,len(pa.fudge_Ncorr)):
+			print "Running, a #"+str(i+1)+" cov % #"+str(j+1)+" Ncorr fudge #"+str(k+1)
+			# Combine the constituent covariance matrices to get the covariance matrix for gamma_IA in projected radial bins
+			StoNsq_sys, StoNsq_stat	=	get_gammaIA_cov(rp_cents, rp_bins, fid_gIA, pa.cov_perc[j], pa.a_con[i], pa.fudge_Ncorr[k]) 
+			Ratio[k] = np.sqrt(StoNsq_sys / StoNsq_stat)
+			#Cov_sys 	=	get_gammaIA_sys_cov(rp_cents, fid_gIA, pa.cov_perc[j], pa.a_con, pa.dNdzpar_sys[i], pa.pzpar_sys[i])
+			#Cov_tot		=	get_gamma_tot_cov(Cov_sys, Cov_stat)
 		
-		save_tot = np.column_stack((rp_cents,np.sqrt(np.diag(Cov_tot)) / ((1.-pa.a_con) * fid_gIA)))
-		np.savetxt('./txtfiles/fractional_toterror_shapemethod_LRG-shapes_covperc='+str(pa.cov_perc[j])+'_a='+str(pa.a_con)+'_%sys='+str((pa.dNdzpar_fid[0]- pa.dNdzpar_sys[i][0]) / pa.dNdzpar_fid[0])+'_mod_dNdz_pz_pars.txt', save_tot)
+	#save_tot = np.column_stack((rp_cents,np.sqrt(np.diag(Cov_tot)) / ((1.-pa.a_con) * fid_gIA)))
+	#np.savetxt('./txtfiles/fractional_toterror_shapemethod_LRG-shapes_covperc='+str(pa.cov_perc[j])+'_a='+str(pa.a_con)+'_%sys='+str((pa.dNdzpar_fid[0]- pa.dNdzpar_sys[i][0]) / a.dNdzpar_fid[0])+'_mod_dNdz_pz_pars.txt', save_tot)
 
-		# Output a plot showing the 1-sigma error bars on gamma_IA in projected radial bins
-		plot_variance(Cov_tot, fid_gIA, rp_cents, pa.cov_perc[j], pa.a_con)
+	# Output a plot showing the 1-sigma error bars on gamma_IA in projected radial bins
+	#plot_variance(Cov_tot, fid_gIA, rp_cents, pa.cov_perc[j], pa.a_con)
+	
+save_Ncorr = np.column_stack((pa.fudge_Ncorr, Ratio))
+np.savetxt('./txtfiles/fudgeNcorr.txt', save_Ncorr)
+	
+#np.savetxt('./txtfiles/StoNsq_test_a=0.7_0.8.txt', StoNsquared)
 
+#np.savetxt('./txtfiles/a_StoNstat_extendeda.txt', pa.a_con)	
+#np.savetxt('./txtfiles/cov_perc_StoNstat.txt', pa.cov_perc)	
+	
 exit() # Below is Fisher stuff, don't worry about this yet
 
 # Get the parameter derivatives required to construct the Fisher matrix

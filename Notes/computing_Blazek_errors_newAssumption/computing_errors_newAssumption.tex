@@ -387,15 +387,14 @@ and
 
 The `free' parameters in this model are then: $\delta$, $\gamma$, $M_{*,0}$, $M_1$, $\beta$, $B_{\rm sat}$, $\beta_{\rm sat}$, $B_{\rm cut}$, $\beta_{\rm cut}$, $\alpha_{\rm sat}$, $\sigma_{\ln M_*}$, $\eta$. We take them to have the iHOD values from Table 2 of Zu \& Mandelbaum 2015. 
 
-
-We are not actually interested in a `threshold' sample, but rather in a sample defined by an upper and lower stellar mass limit. For an upper limit $M_{*,2}$ and lower limit $M_{*,1}$, the appropriate quantity is:
+How do we know what to select for the threshold stellar mass, $M_*$? Because including galaxies of lower mass will continuously increase $\langle  N_s^{\rm src} (>M_* | M_h) \rangle$, we must pick $M_*$ carefully. To do so, we take advantage of the fact that we know $n_{\rm src}$, the volume density of source galaxies, from the given surface density and redshift extent of the sample. We also know that the following is true:
 \begin{equation}
-\langle  N_s^{\rm src} (M_{*} | M_h) \rangle = \langle  N_s^{\rm src} (>M_{*,1} | M_h) \rangle - \langle  N_s^{\rm src} (>M_{*,2} | M_h) \rangle.
-\label{Nsmean_sources_binned}
+n_{\rm src} = \int d \log M_h \frac{dn}{d\log M_h} \left[ \langle  N_s^{\rm src} (>M_* | M_h) \rangle + \langle  N_c^{\rm src} (>M_* | M_h) \rangle \right].
+\label{getM*}
 \end{equation}
-We selection $M_{*,1} = 8\times10^{9} M_\odot / h$ and $M_{*,1} = 1.2\times10^{10} M_\odot / h$, in an effort to have a sample around $M_* = 10^{10} M_\odot / h$, as suggested by Rachel. {\it The width of the bin chosen does affect the outcome, as expected - a sample with a wider range of values of $M_*$ will have more satelites / halo than one with a narrower range. How do we account for this / get this right?}
+This equation just says that if you take the volume density of all the central and satelite source galaxies in all masses of halo, this will be equal to the known volume density of the source galaxies. The right hand side of this tautological statement depends on $M_*$. We can therefore find the value of $M_*$ for which the equation is true, and this will be the correct value for the sample. (We take $\frac{dn}{d\log M_h}$ in the above to be the Tinker mass function, with dimensions number by volume by log mass.)
 
-Noting then that $n_H = (1-f_s^l) n_g^l$, we can then write:
+Having calculated then $\langle  N_s^{\rm src} (M_* | M_h) \rangle$, we note that $n_H = (1-f_s^l) n_g^l$, and then write:
 \begin{equation}
 P_{ls}^{1h}(k) = \frac{1-f_s^l}{n_g^{\rm src}}\left[\alpha^2  \langle  N_s^{\rm src} (M_* | M_h) \rangle u + \frac{f_s^l}{1-f_s^l} \langle  N_s^{\rm src} (M_* | M_h) \rangle u^2\right]
 \label{1hpgg_fs}
@@ -459,7 +458,7 @@ The result is that equation \ref{gamma_blazek} is modified to be:
 \section{Systematic errors}
 Recall that systematic errors in this case are those which introduce a correlated change in the results between projected $r_p$ bins. There are two basic sources of systematic error which we consider in this method: 
 \begin{itemize}
-\item{not having a representative subsample of source galaxies with spectroscopic redshifts. This results inuncertainty on $\frac{dN}{dz}$ and $p(z_p, z_s)$.}
+\item{not having a representative subsample of source galaxies with spectroscopic redshifts. This results in uncertainty on $\frac{dN}{dz}$ and $p(z_p, z_s)$.}
 \item{large-scale structure fluctuations and variations in lens density due to observing conditions. This affects the boost $B(r_p)$.}
 \end{itemize}
 
@@ -469,12 +468,14 @@ The easiest way to compute the systematic error from each of these sources is th
 \item{Compute the uncertainty in $\gamma_{\rm IA}(r_p)$ from this systematic error by computing the value of $\gamma_{\rm IA}(r_p)$ with these varied quantities and subtracting the fiducial value of $\gamma_{\rm IA}(r_p)$.}
 \end{enumerate}
 
-Uncertainty in $\frac{dN}{dz}$ and $p(z_p, z_s)$ leads to uncertainty in $c_z$, $F$, and $\langle \tilde{\Sigma}_c\rangle_{\rm IA}$. The systematic error due to an insufficiently representative spectroscopic subsample would be given by:
+Uncertainty in $\frac{dN}{dz}$ and $p(z_p, z_s)$ leads to uncertainty in $c_z$, $F$, and $\langle \tilde{\Sigma}_c\rangle_{\rm IA}$. The systematic error due to an insufficiently representative spectroscopic subsample would be given by {\bf I don't think this is right - need to deal with this}:
 \begin{align}
 \sigma_{sp} &= \frac{\bar{c}^a_{z} \widetilde{\Delta\Sigma}^a - \bar{c}^b_{z} \widetilde{\Delta\Sigma}^b}{(B^a-1+\bar{F}^a)\bar{c}^a_{z} \langle \bar{\tilde{\Sigma}}_c\rangle_{\rm IA}^a  -(B^b-1+\bar{F}^b)\bar{c}^b_{z} \langle \bar{\tilde{\Sigma}}_c\rangle_{\rm IA}^b} - \gamma_{\rm IA}^{\rm fid}(r_p).
 \label{sigmadNpzsys}
 \end{align}
 where barred quantities are evaluated using $\frac{dN}{dz}$ and $p(z_p, z_s)$ parameters which are offset from their fiducial values at the level of the uncertainty introduced by our insufficiently-representative spectroscopic subsample. 
+
+\subsection{Forward modelling of systematic errors}
 
 We need to know specifically how to compute each of $\bar{c}_z$,  $\bar{F}$, and $\langle \bar{\tilde{\Sigma}}_c\rangle_{\rm IA}$. The key question to consider here is not whether the expression for calculating these quantities theoretically depends on $\frac{dN}{dz}$ and $p(z_p, z_s)$, but rather whether these quantities depend on $\frac{dN}{dz}$ and $p(z_p, z_s)$ when computed from an actual data set.
 
@@ -520,6 +521,37 @@ In this case, $\bar{B}$ is given by the fiducial values of the boost in each $r_
 \bar{\widetilde{\Delta\Sigma}}(r_p) = \frac{\bar{B}(r_p)}{B(r_p)} \widetilde{\Delta\Sigma}(r_p).
 \label{barDS}
 \end{equation}
+
+\subsection{Testing the relative importance of the terms using `fudge factors'}
+
+Instead of worrying about meticulously forward modelling how errors on $\frac{dN}{dz}$ and $p(z_s, z_p)$ affect $c_z$, $\langle \tilde{\Sigma}_{\rm IA} \rangle$, and $F$, we could take a simpler approach to understand which of these most affect on the overall error budget. We do this by using a `fudge factor' test. 
+
+We consider each of the six quantities which may be subject to systematic error due to the lack of a representative spectroscopic subsample: $c_z^a$, $c_z^b$, $\langle \tilde{\Sigma}_{\rm IA} \rangle^a$, $\langle \tilde{\Sigma}_{\rm IA} \rangle^b$, $F_a$, and $F_b$. For each of these quantities, we assume that they are multiplied by a `fudge factor' with mean unity and with variance representing the level of systematic error to which the quantity is subject. Under the assumption of Gaussian errors, the square root of this variance is then the fractional error to which the quantity in question is subject (fractional, because the mean is unity). We can then propagate through the errors on these factors as normal Gaussian errors, as a way of investigating how fractional errors on the amplitudes of the quantities in question affect the total error budget.
+
+In practice, what we do is the following. We first compute the signal-to-noise ratio considering only the statistical error. This is given by:
+\begin{equation}
+\frac{S}{N}_{\rm stat} = \sqrt{\gamma_{\rm IA}(\vec{r}_p) \cdot {\rm Cov}_{\rm stat}^{-1} \cdot \gamma_{\rm IA}(\vec{r}_p)}
+\label{statStoN}
+\end{equation}
+where ${\rm Cov}_{\rm stat}$ is the covariance matrix from statistical error alone. 
+
+We then compute a similar quantity for the case of statistical and systematic error, where the systematic error is given by inserting a fractional error on a single one of the six quantities at a time:
+\begin{equation}
+\frac{S}{N}_{\rm tot} = \sqrt{\gamma_{\rm IA}(\vec{r}_p) \cdot {\rm Cov}_{\rm tot}^{-1} \cdot \gamma_{\rm IA}(\vec{r}_p)}.
+\label{totStoN}
+\end{equation}
+Then,
+\begin{equation}
+\frac{S}{N}_{\rm sys} = \left(\sqrt{\left(\frac{S}{N}_{\rm tot}\right)^{-2} + \left(\frac{S}{N}_{\rm stat}\right)^{-2}}\right)^{-1}.
+\label{StoNsys}
+\end{equation}
+The reason to get the signal-to-noise associated with systematic error in this roundabout way is because the inverse covariance matrix of the systematic error alone is singular.
+
+We compute equation \ref{StoNsys} for a range of fractional error values and for each of the six quantities. We then examine, for each of these, the ratio of equation \ref{StoNsys} to equation \ref{statStoN}. If this number is larger than 1, it means the statistical error is the dominant source of error. 
+
+The result of this exercise is that the most dominant source of systematic error (that is, the one for which we need the fractional error to be the lowest in order to get a result greater than $1$) is $c_z^a$, followed by $c_z^b$. $F_a$ and $\langle \tilde{\Sigma}_{\rm IA} \rangle^a$ are next, with $F_b$ and $\langle \tilde{\Sigma}_{\rm IA} \rangle^b$ having the least effect.
+
+This is a somewhat concerning result because $c_z^a$ and $c_z^b$ are the photo-z lensing calibrations. These must be controlled in order to do a lensing measurement at all. This suggests that, unless one has a situation in which one has significantly higher fractional error in $F$ or $\langle \tilde{\Sigma}_{\rm IA} \rangle$ than in $c_z$, there will never be a case in which systematics errors from these latter two terms dominate, because $c_z$, presumably the dominant source of error, must be controlled in order to do lensing. This means there wouldn't be a case in which the multiple-shape-measurement-methods method might help control systematic error.
 
 
 \section{Open questions / issues}

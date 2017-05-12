@@ -2,8 +2,6 @@
 
 import numpy as np
 
-run_quants 		=	False # For the Blazek case, whether you want to recompute F, cz, and SigIA
-
 # Parameters associated with the sample / shape noise calcuation 
 e_rms_Bl_a 		= 	0.3 # rms ellipticity of sample a, Blazek method
 e_rms_Bl_b		=	0.3 # rms ellipticity of sample b, Blazek method
@@ -14,25 +12,19 @@ Area_l 			=	7131 # Area associated with the lens sample in square DEGREES
 fsky			=   Area_l / 41253. # Assumes the lens area is the limiting factor
 n_s 			=	1.2 # The number density of sources in the sample per square ARCMINUTE
 S_to_N 			= 	15. # The signal to noise of the lensing measurement (?) - necessary for estimating sigma_e
-a_con			=	[0.7] #[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9] #[1./1.25, 1./1.5, 1./1.75]	# Fiducial constant offset, approximated from Singh 2016 assuming unprimed method isophotal and primed ReGaussianisation
-cov_perc 		= 	[0.6] #[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9] #percentage covariance between methods, shape measurement method
+a_con			=	1./1.4 #[1./1.25, 1./1.5, 1./1.75]	# Fiducial constant offset, approximated from Singh 2016 assuming unprimed method isophotal and primed ReGaussianisation
+cov_perc 		= 	[0.6, 0.8] #percentage covariance between methods, shape measurement method
 e_rms_mean 		=	np.abs((e_rms_b+e_rms_a)/2.) # This is the e_rms used in computing the shared weight for shapes methods
 N_shapes		= 	3.0*10**7 # Number of galaxies in the shape sample.
 N_LRG			=	62081 # Numbr of galaxies in the LRG sample.
  
-# The factor by which the (boost-1) is proportional to the projected correlation function at 1 Mpc/h, for different source samples.
-# THESE DEPEND ON THE SAMPLE VIA THE P(Z_S, Z_P) PROPERTIES.
-# Currently set for SDSS LRGS / shapes.
-boost_assoc = 0.2 
+# The factor by which the boost is proportional to the projected correlation function, for different source samples.
+boost_assoc = 0.2 # Boost at 1 Mpc/h for our associated sample
+boost_tot = 0.06 # Boost at 1 Mpc/h for all the source-lens pairs in the survey (all z)
 boost_far = 0.03
 boost_close = 0.1
 
-# Files to import statistical error on the boost. 
-# THESE DEPEND ON THE SAMPLE: 
-# ON LARGE SCALES, COSMIC VARIANCE DOMINATED AND DEPEND ON BOOST PROP FACTS AND THEREFORE P(Z_S, Z_P).
-# ON SMALL SCALES, SHOT NOICE DOMINATED AND DEPEND ON NUMBER OF LENS / SOURCE PAIRS
-# CURRENTLY SET FOR SDSS LRGS / SHAPES.
-
+# Files to import error on the boost
 sigBF_a = './txtfiles/boost_error_from_rachel_assoc.txt' # File containing two columns: rp (kpc/h), sigma(Boost-1) for sample a
 sigBF_b ='./txtfiles/boost_error_from_rachel_background.txt' # Same for b
 
@@ -42,34 +34,21 @@ rp_min	=	0.05 # The minimum projected radius (Mpc/h)
 N_bins	=	7 # The number of bins of projected radius 
 
 #Parameters of the dNdz of sources, if using an analytic distribution. 'fid' = the fiducial value, 'sys' = 1sigma off from fid value to evaluate systematic error.
-dNdztype	=	'Nakajima'
 alpha_fid 	= 	2.338
 zs_fid 		=	0.303
 dNdzpar_fid	=	[alpha_fid, zs_fid] #Put these in a list to facilitate passing around
-
-num_sys		=	1 # number of different systematic scenarios we want to do right now
-dNdzpar_sys = [0]*num_sys
-#perc_sys	=	[0.1, 0.2, 0.3]
-perc_sys = [0.2]
-for i in range(0, num_sys):
-	dNdzpar_sys[i] = [ dNdzpar_fid[0]* (1. - perc_sys[i]), dNdzpar_fid[1]* (1. - perc_sys[i])]	
 #alpha_sys 	=	alpha_fid * (1. - np.asarray([0.1, 0.2, 0.3])) # Derived from Nakajima et al 2011 on April 4 2017
+alpha_sys 	=	alpha_fid * (1. - np.asarray([0.2]))
 #zs_sys		= 	zs_fid * ( 1. - np.asarray([0.1, 0.2, 0.3])) # Derived from Nakajima et al 2011 on April 4 2017
-#dNdzpar_sys	= 	[alpha_sys, zs_sys] # A 2d list, for passing this around.
+zs_sys		= 	zs_fid * ( 1. - np.asarray([0.2]))
+dNdzpar_sys	= 	[alpha_sys, zs_sys] # A 2d list, for passing this around.
 zpts		=	1000  # Number of points in the z vector at which we are evaluating dNdz
-
-pztype		=	'Gaussian'
 sigz_fid	=	0.11  # The photometric redshift error given a Gaussian photo_z model
 pzpar_fid 	=	[sigz_fid] # Make this a list to make it more generic to pass around
 #sigz_sys 	= 	sigz_fid * (1. - np.asarray([0.1, 0.2, 0.3]))  #Derived from Nakajima et al 2011 on April 4 2017
-pzpar_sys = [0]*num_sys
-for i in range(0, num_sys):
-	pzpar_sys[i] = [ pzpar_fid[0]* (1. - perc_sys[i]) ]
-
-# THIS MAY DEPEND ON THE SAMPLE - NOT SURE YET.
-# CURRENTLY TO 1 = NO SYS FOR TESTING OTHER SYSTEMATICS.
-boost_sys = 1.0
-#boost_sys	=	1.03 # Multiplier for the boost systematic error.
+sigz_sys 	= 	sigz_fid * (1. - np.asarray([0.2]))
+pzpar_sys	= 	[sigz_sys] #Make this a 2d list to make it more generic to pass around
+boost_sys	=	1.03 # Multiplier for the boost systematic error.
 
 # Parameters related to the spec and photo z's of the source sample and other redshift cuts.
 zeff 	= 	0.28  # The effective redshift of the lens sample
@@ -89,16 +68,6 @@ zmin 	=	0.0 # Minimum spec-z
 zmax 	= 	3.0 # Maximum spec-z
 zmin_ph	=	0.0 # Minimu photo-z
 zmax_ph	=	5.0 # Maximum photo-z
-
-# Fractional errors on 'fudge factors' we are using to get a handle on the relative importance of different systematic errors.
-fudge_frac_level = [0.02, 0.04, 0.06, 0.08, 0.1, 0.2, 0.4, 0.6, 0.8]
-fudge_Ncorr = 	[0.02, 0.04, 0.06, 0.08, 0.1, 0.2, 0.4, 0.6, 0.8]
-fudge_czA	= 	0.
-fudge_czB	=	0.
-fudge_sigA	=	0.
-fudge_sigB	=	0.
-fudge_FA	=	0.
-fudge_FB	=	0.
 
 # Constants / conversions
 mperMpc = 3.0856776*10**22
@@ -132,9 +101,8 @@ C1rho = 0.0134
 # 1 halo gal-gal term parameters
 Mvir = 4.5 * 10**13 #heavily estimated SDSS LRG value from Reid & Spergel 2009. #10**(13.18) BOSS LOWZ value
 ng_Bl =  10**(-4) # SDSS LRG value #3. * 10**(-4) # volume density of galaxies for BOSS, in h^3 / Mpc^3.
-#Mstar_src_low = 8.*10**9 * (HH0/100.) # Lower edge of stellar mass range in units of Msol / h^2
-#Mstar_src_high = 1.2*10**10 * (HH0/100.) # Upper edge of stellar mass range in units of Msol / h^2
-Mstar_src_thresh = 10** (9.95) * (HH0/100.)**2 # Lower threshold of galaxy stellar mass sample in units of Msol / h^2, from BOSS 2012
+Mstar_src_low = 8.*10**9 * (HH0/100.) # Lower edge of stellar mass range in units of Msol / h^2
+Mstar_src_high = 1.2*10**10 * (HH0/100.) # Upper edge of stellar mass range in units of Msol / h^2
 fsat_LRG = 0.0636 # Satelite fraction from Reid & Spergel 2008 # 0.14 approximate boss lowz val .
 # From Zu & Mandelbaum 2015, 1505.02781:
 delta = 0.42
@@ -149,6 +117,7 @@ Bcut = 0.86
 beta_cut = 0.41
 eta = -0.04
 sigMs = 0.50
+
 
 
 # 1 halo IA term parameters, from Singh et al. 2014 Table 1
@@ -173,5 +142,3 @@ q31_shapes = 4.154  #3.1
 q32_shapes = 0.1912
 q33_shapes = 0.4368
 ah_shapes =  0.05
-
-

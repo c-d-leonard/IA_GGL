@@ -9,6 +9,7 @@ import shutil
 import numpy as np
 import shared_functions_setup as setup
 import os.path
+import pyccl as ccl
 
 # Functions shared between w_{l+} and w_{ls}
 
@@ -264,14 +265,14 @@ def wgp_full(rp_c, bd, Ai, ah, q11, q12, q13, q21, q22, q23, q31, q32, q33, save
 	#plt.savefig('./plots/wgp_2h_LRG.pdf')
 	#plt.close()
 	
-	plt.figure()
-	plt.loglog(rp_c, wgp_tot, 'go')
-	plt.xlim(0.05, 30.)
-	plt.ylabel('$w_{gp}$, Mpc/h')
-	plt.title('$w_{gp}$, 1halo+2halo')
-	plt.xlabel('$r_p$, Mpc/h')
-	plt.savefig(plotfile)
-	plt.close()
+	#plt.figure()
+	#plt.loglog(rp_c, wgp_tot, 'go')
+	#plt.xlim(0.05, 30.)
+	#plt.ylabel('$w_{gp}$, Mpc/h')
+	#plt.title('$w_{gp}$, 1halo+2halo')
+	#plt.xlabel('$r_p$, Mpc/h')
+	#plt.savefig(plotfile)
+	#plt.close()
 	
 	return wgp_tot
 
@@ -400,7 +401,14 @@ def get_Pkgg_1halo(rvec_nfw, kvec_ft, fsat, fsky):
 	Ncen_lens = 1. # We assume that every halo has a central lens galaxy, so the mean number of central galaxies / halo is 1.
 	
 	Nsat_lens = fsat / (1. - fsat) # For the lenses, assuming we have the satelite fraction.
-	Nsat_src = get_Nsat_src(pa.Mvir, pa.Mstar_src_high, pa.Mstar_src_low) # For source galaxies, using a halo model, as in Zu & Mandelbaum 2015.
+	#Nsat_src = get_Nsat_src(pa.Mvir, pa.Mstar_src_high, pa.Mstar_src_low) # For source galaxies, using a halo model, as in Zu & Mandelbaum 2015.
+	
+	# Get the lower stellar mass cutoff corresponding to the total empirical volume density of the source sample:
+	Mstarlow = get_Mstar_low()
+	
+	Nsat_src = get_Nsat_src(pa.Mvir, Mstarlow) # For source galaxies, using a halo model, as in Zu & Mandelbaum 2015.
+	
+	print "Nsat_src=", Nsat_src
 
 	NcNs = NcenNsat(alpha, Ncen_lens, Nsat_src) # The average number of central-satelite pairs in a halo of mass M
 	NsNs = NsatNsat(alpha, Nsat_lens, Nsat_src) # The average number of satelite-satelite pairs in a halo of mass M
@@ -413,14 +421,14 @@ def get_Pkgg_1halo(rvec_nfw, kvec_ft, fsat, fsky):
 	#Pkgg_save = np.column_stack((kvec_ft, Pkgg))
 	#np.savetxt('./txtfiles/Pkgg_1h.txt', Pkgg_save)
 	
-	#plt.figure()
-	#plt.loglog(kvec_ft, 4* np.pi * kvec_ft**3 * Pkgg / (2* np.pi)**3, 'm')
-	#plt.ylim(0.001, 100000)
-	#plt.xlim(0.01, 100)
-	#plt.ylabel('$4\pi k^3 P_{gg}^{1h}(k)$, $(Mpc/h)^3$, com')
-	#plt.xlabel('$k$, h/Mpc, com')
-	#plt.savefig('./plots/Pkgg_1halo_LRG_Nsrcsat.png')
-	#plt.close()
+	plt.figure()
+	plt.loglog(kvec_ft, 4* np.pi * kvec_ft**3 * Pkgg / (2* np.pi)**3, 'm')
+	plt.ylim(0.001, 100000)
+	plt.xlim(0.01, 100)
+	plt.ylabel('$4\pi k^3 P_{gg}^{1h}(k)$, $(Mpc/h)^3$, com')
+	plt.xlabel('$k$, h/Mpc, com')
+	plt.savefig('./plots/Pkgg_1halo_LRG_calcMstarlow.png')
+	plt.close()
 	
 	return Pkgg
 	
@@ -464,27 +472,102 @@ def get_alpha(M):
 		alpha = 1.
 		
 	return alpha
+
+def get_Mstar_low():
+	""" For a given number density of source galaxies (calculated in the vol_dens function), get the appropriate choice for the lower bound of Mstar """
 	
-def get_Nsat_src(M_h, Mstar_high, Mstar_low):
+	nsrc = vol_dens(pa.fsky, pa.zmin_dndz, pa.zmax_dndz, pa.N_shapes) # The true total volume density of sources (from the empirial surface density and z range of surey).
+	print "nsrc=", nsrc
+	
+	# Define a vector of Mstar_low value to try
+	Ms_low_vec = np.logspace(8., 12.,1000)
+	# Define a vector of Mh values to integrate over
+	Mh_vec = np.logspace(9., 16., 1000)
+	
+	# Get Nsat as a function of the values of the two above arrays
+	Nsat = get_Nsat_src(Mh_vec, Ms_low_vec)
+	Ncen = get_Ncen_src(Mh_vec, Ms_low_vec)
+	
+	# Check the shape of how these things are ocming out:
+	Nsat_fixMs= get_Nsat_src(Mh_vec, 10.**10)
+	Ncen_fixMs = get_Ncen_src(Mh_vec, 10.**10)
+	Nsat_fixMh = get_Nsat_src(10.**13, Ms_low_vec)
+	Ncen_fixMh = get_Ncen_src(10.**13, Ms_low_vec)
+	
+	"""plt.figure()
+	plt.semilogx(Mh_vec, Nsat_fixMs)
+	plt.savefig('./plots/test_NsatfixMs.pdf')
+	plt.close()
+	
+	plt.figure()
+	plt.semilogx(Ms_low_vec, Nsat_fixMh)
+	plt.savefig('./plots/test_NsatfixMh.pdf')
+	plt.close()
+	
+	plt.figure()
+	plt.semilogx(Mh_vec, Ncen_fixMs)
+	plt.savefig('./plots/test_NcenfixMs.pdf')
+	plt.close()
+	
+	plt.figure()
+	plt.semilogx(Ms_low_vec, Ncen_fixMh)
+	plt.savefig('./plots/test_NcenfixMh.pdf')
+	plt.close()"""
+	
+	# Get the halo mass function (from CCL) to integrate over (dn / dlog10M, Tinker 2010 I think)
+	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = 2.1*10**(-9), n_s=0.96)
+	cosmo = ccl.Cosmology(p)
+	HMF = ccl.massfunction.massfunc(cosmo, Mh_vec / (pa.HH0/100.), 1./ (1. + pa.zeff), odelta=200.)
+	
+	"""plt.figure()
+	plt.loglog(Mh_vec, HMF)
+	plt.savefig('./plots/test_HMF.pdf')
+	plt.close()"""
+	
+	# Now get what nsrc should be for each Mstar_low cut 
+	nsrc_of_Mstar = np.zeros(len(Ms_low_vec))
+	for i in range(0,len(Ms_low_vec)):
+		nsrc_of_Mstar[i] = scipy.integrate.simps(HMF * ( Nsat[i, :] + Ncen[i, :]), np.log10(Mh_vec))
+		
+	"""plt.figure()
+	plt.loglog(Ms_low_vec, nsrc_of_Mstar)
+	plt.savefig('./plots/test_nsrc_of_Mstar.pdf')
+	plt.close()"""
+	
+	ind = next(j[0] for j in enumerate(nsrc_of_Mstar) if j[1]<=nsrc)
+	"""print "nsrc of Mstar=", nsrc_of_Mstar[ind]
+	print "nsrc direcr=", nsrc
+	print "Mstar threshold calculated=", Ms_low_vec[ind]"""
+	
+	return Ms_low_vec[ind]
+	
+def get_Nsat_src(M_h, Mstar_low):
 	""" Gets the fraction of source galaxies that are satelites in halos associated with the lens sample using the equivalent CDF. Zu & Mandelbaum 2015"""
 	
-	Nsat_upper = get_Nsatsrc_CDF(M_h, Mstar_high)
-	Nsat_lower = get_Nsatsrc_CDF(M_h, Mstar_low)
+	#Nsat_upper = get_Nsatsrc_CDF(M_h, Mstar_high)
+	#Nsat_lower = get_Nsatsrc_CDF(M_h, Mstar_low)
+	#Nsat = Nsat_lower - Nsat_upper
 	
-	Nsat = Nsat_lower - Nsat_upper
+	# Mstar_low is the lower mass threshold of the sample
+	Nsat = get_Nsatsrc_CDF(M_h, Mstar_low)
 	
 	return Nsat
 	
 def get_Nsatsrc_CDF(M_h, Mstar):
-	""" Gets the fraction of source galaxies that are satelites in halos associated with the lens sample, for stellars masses AT OR ABOVE the average one for our source sampleusing the HOD model from Zu & Mandelbaum 2015."""
+	""" Gets the fraction of source galaxies that are satelites in halos associated with the lens sample, for stellars masses AT OR ABOVE the average one for our source sample using the HOD model from Zu & Mandelbaum 2015."""
 	
 	f_Mh = fSHMR_inverse(Mstar)
 	Ncen_src = get_Ncen_src(M_h, Mstar)
 	Msat = get_Msat(f_Mh)
 	Mcut = get_Mcut(f_Mh)
-
-	Nsat = Ncen_src * (M_h / Msat)**(pa.alpha_sat) * np.exp(-Mcut / M_h)
 	
+	if ((type(M_h)==float) or (type(Mstar)==float)):
+		Nsat = Ncen_src * (M_h / Msat)**(pa.alpha_sat) * np.exp(-Mcut / M_h)
+	elif(((type(Mstar)==list) or isinstance(Mstar, np.ndarray)) and ((type(M_h)==list) or isinstance(M_h, np.ndarray))):
+		Nsat=np.zeros((len(M_h), len(Mstar)))
+		for i in range(0,len(Mstar)):
+			for j in range(0,len(M_h)):
+				Nsat[i,j] = Ncen_src[i,j] * (M_h[j] / Msat[i])**(pa.alpha_sat) * np.exp(-Mcut[i] / M_h[j])
 	return Nsat
 	
 def get_Ncen_src(Mh, Mstar):
@@ -492,27 +575,43 @@ def get_Ncen_src(Mh, Mstar):
 	
 	sigmaMstar = get_sigMs(Mh)
 	fshmr = get_fSHMR(Mh)
-		
-	Ncen_CDF = 0.5 * (1. - scipy.special.erf((np.log(Mstar) - np.log(fshmr)) / (np.sqrt(2.) * sigmaMstar)))
+	
+	if ((type(Mstar)==float) or (type(Mh)==float)):
+		Ncen_CDF = 0.5 * (1. - scipy.special.erf((np.log(Mstar) - np.log(fshmr)) / (np.sqrt(2.) * sigmaMstar)))
+	elif(((type(Mstar)==list) or (isinstance(Mstar, np.ndarray))) and ((type(Mh)==list) or isinstance(Mh, np.ndarray))):
+		Ncen_CDF = np.zeros((len(Mstar), len(Mh)))
+		for i in range(0,len(Mstar)):
+			for j in range(0, len(Mh)):
+				Ncen_CDF[i,j] = 0.5 * (1. - scipy.special.erf((np.log(Mstar[i]) - np.log(fshmr[j])) / (np.sqrt(2.) * sigmaMstar[j])))
 	
 	return Ncen_CDF
 	
 def get_sigMs(Mh):
 	""" Get sigma_ln(M*) as a function of the halo mass."""
 	
-	if (Mh<pa.M1):
-		sigM = pa.sigMs
-	else:
-		sigM = pa.sigMs + pa.eta * np.log10( Mh / pa.M1)
+	if (type(Mh)==float):
 	
+		if (Mh<pa.M1):
+			sigM = pa.sigMs
+		else:
+			sigM = pa.sigMs + pa.eta * np.log10( Mh / pa.M1)
+	elif ((type(Mh) == list) or (isinstance(Mh, np.ndarray))):
+		sigM = np.zeros(len(Mh))
+		for i in range(0,len(Mh)):
+			if (Mh[i]<pa.M1):
+				sigM[i] = pa.sigMs
+			else:
+				sigM[i] = pa.sigMs + pa.eta * np.log10( Mh[i] / pa.M1)
+
 	return sigM
 	
 def get_fSHMR(Mh):
 	""" Get Mstar in terms of Mh using f_SHMR inverse relationship."""
 	
-	Mstar = np.logspace(7, 13,2000)
+	Mstar = np.logspace(0, 13, 2000)
 	
 	Mh_vec = fSHMR_inverse(Mstar)
+	print "Mh_vec=", Mh_vec
 	
 	Mh_interp = scipy.interpolate.interp1d(Mh_vec, Mstar)
 	
@@ -651,15 +750,15 @@ def wgg_full(rp_c, fsat, fsky, bd, bs, savefile_1h, savefile_2h, plotfile):
 	
 	#print "wgg=", zip(rp_c, wgg_tot)
 	
-	plt.figure()
-	plt.loglog(rp_c, wgg_tot, 'mo')
-	plt.xlim(0.05, 30.)
-	plt.ylim(1., 5000.)
-	plt.ylabel('$w_{gg}$, Mpc/h, com')
-	plt.xlabel('$r_p$, Mpc/h, com')
-	plt.title('$w_{gg}$, 1halo + 2halo')
-	plt.savefig(plotfile)
-	plt.close()
+	#plt.figure()
+	#plt.loglog(rp_c, wgg_tot, 'mo')
+	#plt.xlim(0.05, 30.)
+	#plt.ylim(1., 5000.)
+	#plt.ylabel('$w_{gg}$, Mpc/h, com')
+	#plt.xlabel('$r_p$, Mpc/h, com')
+	#plt.title('$w_{gg}$, 1halo + 2halo')
+	#plt.savefig(plotfile)
+	#plt.close()
 	
 	#plt.figure()
 	#plt.semilogx(rp_c, rp_c * wgg_tot, 'mo')
