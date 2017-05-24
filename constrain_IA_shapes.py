@@ -44,7 +44,7 @@ def shapenoise_cov(e_rms, z_p_l, z_p_h, B_samp, rp_c, rp, dNdzpar, pzpar):
 def gamma_fid(rp):
 	""" Returns the fiducial gamma_IA from a combination of terms from different models which are valid at different scales """
 	
-	wgg_rp = ws.wgg_full(rp, pa.fsat_LRG, pa.fsky, pa.bd_shapes, pa.bs_shapes, './txtfiles/wgg_1h_LRG-shapes_7bins_NsatHOD.txt', './txtfiles/wgg_2h_LRG-shapes_7bins.txt', './plots/wgg_full_shapes_7bins_NsatHOD.pdf')
+	wgg_rp = ws.wgg_full(rp, pa.fsat_LRG, pa.fsky, pa.bd_shapes, pa.bs_shapes, './txtfiles/wgg_1h_SDSS.txt', './txtfiles/wgg_2h_LRG-shapes_7bins.txt', './plots/wgg_full_shapes_7bins_NsatHOD.pdf')
 	wgp_rp = ws.wgp_full(rp, pa.bd_shapes, pa.Ai_shapes, pa.ah_shapes, pa.q11_shapes, pa.q12_shapes, pa.q13_shapes, pa.q21_shapes, pa.q22_shapes, pa.q23_shapes, pa.q31_shapes, pa.q32_shapes, pa.q33_shapes, './txtfiles/wgp_1h_LRG-shapes_7bins.txt','./txtfiles/wgp_2h_LRG-shapes_7bins.txt', './plots/wgp_full_LRG-shapes_7bins.pdf')
 	
 	gammaIA = wgp_rp / (wgg_rp + 2. * pa.close_cut) 
@@ -108,28 +108,45 @@ def N_corr_stat_err(rp_cents_, boost_error_file, dNdzpar, pzpar):
 def boost_errors(rp_bins_c, filename):
 	""" Imports a file with 2 columns, [rp (kpc/h), sigma(boost-1)]. Interpolates and returns the value of the error on the boost at the center of each bin. """
 	
-	(rp_kpc, boost_error_raw) = np.loadtxt(filename, unpack=True)
-	
-	# Convert the projected radius to Mpc/h
-	rp_Mpc = rp_kpc / 1000.
-	
-	interpolate_boost_error = scipy.interpolate.interp1d(rp_Mpc, boost_error_raw)
-	
-	boost_error = interpolate_boost_error(rp_bins_c)
+	if (pa.survey == 'SDSS'):
+		(rp_kpc, boost_error_raw) = np.loadtxt(filename, unpack=True)
+		# Convert the projected radius to Mpc/h
+		rp_Mpc = rp_kpc / 1000.	
+		interpolate_boost_error = scipy.interpolate.interp1d(rp_Mpc, boost_error_raw)
+		boost_error = interpolate_boost_error(rp_bins_c)
+		
+	elif (pa.survey = 'LSST_DESI'):
+		# At the moment I don't have a good model for the boost errors for LSST x DESI, so I'm assuming it's zero (aka subdominant)
+		print "The boost statistical error is currently assumed to be subdominant and set to zero."
+		boost_error = np.zeros(len(rp_bins_c))
+	else:
+		print "That survey doesn't have a boost statistical error model yet."
+		exit()
 	
 	return boost_error
 
-def sigma_e(z_s_, s_to_n):
+def sigma_e(z_s_):
 	""" Returns a value for the model for the per-galaxy noise as a function of source redshift"""
-
-	sig_e = 2. / s_to_n * np.ones(len(z_s_))
+	
+	if (pa.survey=='SDSS'):
+		
+		if hasattr(z_s_, "__len__"):
+			sig_e = 2. / pa.S_to_N * np.ones(len(z_s_))
+		else:
+			sig_e = 2. / pa.S_to_N
+			
+	elif(pa.survey=='LSST_DESI'):
+		if hasattr(z_s_, "__len__"):
+			sig_e = pa.a_sm / pa.SN_med * ( 1. + (pa.b_sm / pa.R_med)**pa.c_sm) * np.ones(len(z_s_))
+		else:
+			sig_e = pa.a_sm / pa.SN_med * ( 1. + (pa.b_sm / pa.R_med)**pa.c_sm) 
 
 	return sig_e
 
 def weights(e_rms, z_):
 	""" Returns the inverse variance weights as a function of redshift. """
 	
-	weights = (1./(sigma_e(z_, pa.S_to_N)**2 + e_rms**2)) * np.ones(len(z_))
+	weights = (1./(sigma_e(z_)**2 + e_rms**2)) * np.ones(len(z_))
 	
 	return weights
 
@@ -337,6 +354,8 @@ z_of_com 	= 	setup.z_interpof_com()
 
 # Get the fiducial value of gamma_IA in each projected radial bin (this takes a while so only do it once
 fid_gIA		=	gamma_fid(rp_cents)
+
+exit()
 
 # Get the covariance matrix in projected radial bins of gamma_t for both shape measurement methods
 #Cov_a		=	shapenoise_cov(pa.e_rms_a, z_close_low, z_close_high, , rp_c, rp, alpha_dN, zs_dN, sigz) #setup_shapenoise_cov(pa.e_rms_a, N_ls_pbin) 

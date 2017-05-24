@@ -1,7 +1,7 @@
 # This is a script which predicts constraints on intrinsic alignments, using an updated version of the method of Blazek et al 2012 in which it is not assumed that only excess galaxies contribute to IA (rather it is assumed that source galaxies which are close to the lens along the line-of-sight can contribute.)
 
 import numpy as np
-import params as pa
+import params_LSST_DESI as pa
 import scipy
 import scipy.integrate
 import matplotlib.pyplot as plt
@@ -36,18 +36,36 @@ def N_of_zph(z_a_def_s, z_b_def_s, z_a_norm_s, z_b_norm_s, z_a_def_ph, z_b_def_p
 		
 	norm = scipy.integrate.simps(int_dzs_norm, z_ph_vec_norm)
 	
+	plt.figure()
+	plt.plot(z_ph_vec, int_dzs / norm)
+	plt.savefig('./plots/dNdz_ph.pdf')
+	plt.close()
+	
+	save_dNdzph = np.column_stack((z_ph_vec, int_dzs / norm))
+	np.savetxt('./txtfiles/dNdz_ph_DESI_LSST.txt', save_dNdzph)
+	
+	exit()
+	
 	return (z_ph_vec, int_dzs / norm)
 
 ################### THEORETICAL VALUES FOR FRACTIONAL ERROR CALCULATION ########################333
 
-def sigma_e(z_s_, s_to_n):
+def sigma_e(z_s_):
 	""" Returns a value for the model for the per-galaxy noise as a function of source redshift"""
 
-	# This is a dummy things for now
-	if hasattr(z_s_, "__len__"):
-		sig_e = 2. / s_to_n * np.ones(len(z_s_))
-	else:
-		sig_e = 2. / s_to_n
+	if (pa.survey=='SDSS'):
+		
+		if hasattr(z_s_, "__len__"):
+			sig_e = 2. / pa.S_to_N * np.ones(len(z_s_))
+		else:
+			sig_e = 2. / pa.S_to_N
+			
+	elif(pa.survey)=='LSST_DESI'):
+		if hasattr(z_s_, "__len__"):
+			sig_e = pa.a_sm / pa.SN_med * ( 1. + (pa.b_sm / pa.R_med)**pa.c_sm) * np.ones(len(z_s_))
+		else:
+			sig_e = pa.a_sm / pa.SN_med * ( 1. + (pa.b_sm / pa.R_med)**pa.c_sm) 
+
 
 	return sig_e
 
@@ -57,7 +75,7 @@ def weights(e_rms, z_, z_l_):
 	
 	SigC_t_inv = get_SigmaC_inv(z_, z_l_)
 	
-	weights = SigC_t_inv**2/(sigma_e(z_, pa.S_to_N)**2 + e_rms**2 * np.ones(len(z_)))
+	weights = SigC_t_inv**2/(sigma_e(z_)**2 + e_rms**2 * np.ones(len(z_)))
 	
 	return weights
 		
@@ -66,7 +84,7 @@ def weights_times_SigC(e_rms, z_, z_l_):
 	
 	SigC_t_inv = get_SigmaC_inv(z_, z_l_)
 	
-	weights = SigC_t_inv/(sigma_e(z_, pa.S_to_N)**2 + e_rms**2 * np.ones(len(z_)))
+	weights = SigC_t_inv/(sigma_e(z_)**2 + e_rms**2 * np.ones(len(z_)))
 	
 	return weights
 
@@ -133,7 +151,7 @@ def get_bSigW(z_p_min, z_p_max, e_rms, pzpar, pztype):
 			#print "after if"
 		#print "before get mean"		
 		# Find the mean bsigma at this zphoto
-		bsw[zi] = (4. * np.pi * (pa.Gnewt * pa.Msun) * (10**12 / pa.c**2) / pa.mperMpc)**2   / (e_rms**2 + sigma_e(z_p_vec[zi], pa.S_to_N)**2) * (1. +pa.zeff)**4 * Dl**2 * (Ds_photo[zi]-Dl) / Ds_photo[zi] * np.mean(Dls / Ds_spec)
+		bsw[zi] = (4. * np.pi * (pa.Gnewt * pa.Msun) * (10**12 / pa.c**2) / pa.mperMpc)**2   / (e_rms**2 + sigma_e(z_p_vec[zi])**2) * (1. +pa.zeff)**4 * Dl**2 * (Ds_photo[zi]-Dl) / Ds_photo[zi] * np.mean(Dls / Ds_spec)
 		#print "after get mean"
 	
 	# Interpolate the mean bsigmas such that we can report at any zspec in the range:
@@ -363,14 +381,20 @@ def shapenoise_cov(e_rms, z_p_l, z_p_h, B_samp, rp_c, rp, dNdzpar, pzpar, dNdzty
 def boost_errors(rp_bins_c, filename):
 	""" Imports a file with 2 columns, [rp (kpc/h), sigma(boost-1)]. Interpolates and returns the value of the error on the boost at the center of each bin. """
 	
-	(rp_kpc, boost_error_raw) = np.loadtxt(filename, unpack=True)
-	
-	# Convert the projected radius to Mpc/h
-	rp_Mpc = rp_kpc / 1000.
-	
-	interpolate_boost_error = scipy.interpolate.interp1d(rp_Mpc, boost_error_raw)
-	
-	boost_error = interpolate_boost_error(rp_bins_c)
+	if (pa.survey == 'SDSS'):
+		(rp_kpc, boost_error_raw) = np.loadtxt(filename, unpack=True)
+		# Convert the projected radius to Mpc/h
+		rp_Mpc = rp_kpc / 1000.	
+		interpolate_boost_error = scipy.interpolate.interp1d(rp_Mpc, boost_error_raw)
+		boost_error = interpolate_boost_error(rp_bins_c)
+		
+	elif (pa.survey = 'LSST_DESI'):
+		# At the moment I don't have a good model for the boost errors for LSST x DESI, so I'm assuming it's zero (aka subdominant)
+		print "The boost statistical error is currently assumed to be subdominant and set to zero."
+		boost_error = np.zeros(len(rp_bins_c))
+	else:
+		print "That survey doesn't have a boost statistical error model yet."
+		exit()
 	
 	return boost_error
 
@@ -831,6 +855,12 @@ def plot_variance(cov_1, fidvalues_1, bin_centers):
 # Set up projected bins
 rp_bins 	= 	setup.setup_rp_bins(pa.rp_min, pa.rp_max, pa.N_bins)
 rp_cent		=	setup.rp_bins_mid(rp_bins)
+
+z, nofz = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, pa.zsmin, pa.zsmax, 5000)
+
+z, dNdz_ph = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, pa.zphmin, pa.zphmax, pa.zphmin, pa.zphmax, pa.dNdzpar_fid, pa.pzpar_sys, pa.dNdztype, pa.pztype)
+
+exit()
 
 # Set up a function to get z as a function of comoving distance
 (z_of_com, com_of_z) = setup.z_interpof_com()

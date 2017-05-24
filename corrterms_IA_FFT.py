@@ -6,6 +6,7 @@ import scipy.interpolate
 import scipy.integrate
 import time
 import matplotlib.pyplot as plt
+import params_LSST_DESI as pa
 
 ###############################################################
 ################### FUNCTIONS DEFINITIONS #####################
@@ -97,21 +98,21 @@ folderpath 	= 	'/home/danielle/Dropbox/CMU/Research/Intrinsic_Alignments/' #This
 
 # Set parameters which are used to create vectors in Delta and R
 Rpts		=	400 	#Number of points in Rvec
-Rmin 		= 	0.000246558
+Rmin 		= 	0.0002
 Rmax		=	200.
 Dnegmax = 1000.
 Dposmax = 1000.
-Deltamin = 0.000246558
-zval = 0.28
+Deltamin = 0.0002
+zval = 0.77
 kmax=4000 #This is the max k in the power spectrum file.
 
-bias = 1.77
+bias = pa.bd_Bl
 
 outputfolder	= 	'/txtfiles/'
-corrfunc2dfile	=	'/corr_2d_z='+str(zval)+'_Singh2014params.txt'
+corrfunc2dfile	=	'/corr_2d_z='+str(zval)+'.txt'
 Rintfile	=	'/Rint_z='+str(zval)+'_kmax='+str(kmax)+'_M6e13h_fixRhoC.txt'
 #corrfunc1dfile ='/corr_1d_NL_z='+str(zval)+'_kmax'+str(kmax)+'.txt'
-corrfunc1dfile = '/corr_z=0.28_Singh2014params.txt'
+corrfunc1dfile = '/xi_z='+str(zval)+'.txt'
 
 ##############################################################
 ############## Set up the Delta and R vectors ################

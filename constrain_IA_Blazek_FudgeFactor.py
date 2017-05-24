@@ -1,7 +1,10 @@
 # This is a script which predicts constraints on intrinsic alignments, using an updated version of the method of Blazek et al 2012 in which it is not assumed that only excess galaxies contribute to IA (rather it is assumed that source galaxies which are close to the lens along the line-of-sight can contribute.)
 
+SURVEY = 'SDSS'
+
 import numpy as np
-import params as pa
+#import params_LSST_DESI as pa
+#import params as pa
 import scipy
 import scipy.integrate
 import matplotlib.pyplot as plt
@@ -20,8 +23,8 @@ import shared_functions_wlp_wls as ws
 def N_of_zph(z_a_def_s, z_b_def_s, z_a_norm_s, z_b_norm_s, z_a_def_ph, z_b_def_ph, z_a_norm_ph, z_b_norm_ph, dNdzpar, pzpar, dNdztype, pztype):
 	""" Returns dNdz_ph, the number density in terms of photometric redshift, defined over photo-z range (z_a_def_ph, z_b_def_ph), normalized over the photo-z range (z_a_norm_ph, z_b_norm_ph), normalized over the spec-z range (z_a_norm, z_b_norm), and defined on the spec-z range (z_a_def, z_b_def)"""
 	
-	(z, dNdZ) = setup.get_NofZ_unnormed(dNdzpar, dNdztype, z_a_def_s, z_b_def_s, pa.zpts)
-	(z_norm, dNdZ_norm) = setup.get_NofZ_unnormed(dNdzpar, dNdztype, z_a_norm_s, z_b_norm_s, pa.zpts)
+	(z, dNdZ) = setup.get_NofZ_unnormed(dNdzpar, dNdztype, z_a_def_s, z_b_def_s, 1000)
+	(z_norm, dNdZ_norm) = setup.get_NofZ_unnormed(dNdzpar, dNdztype, z_a_norm_s, z_b_norm_s, 1000)
 	
 	z_ph_vec = scipy.linspace(z_a_def_ph, z_b_def_ph, 500)
 	z_ph_vec_norm = scipy.linspace(z_a_norm_ph, z_b_norm_ph, 500)
@@ -33,6 +36,7 @@ def N_of_zph(z_a_def_s, z_b_def_s, z_a_norm_s, z_b_norm_s, z_a_def_ph, z_b_def_p
 	int_dzs_norm = np.zeros(len(z_ph_vec_norm))
 	for i in range(0,len(z_ph_vec_norm)):
 		int_dzs_norm[i] = scipy.integrate.simps(dNdZ_norm*setup.p_z(z_ph_vec_norm[i], z_norm, pzpar, pztype), z_norm)
+		int_dzs_norm[i] = scipy.integrate.simps(dNdZ_norm*setup.p_z(z_ph_vec_norm[i], z_norm, pzpar, pztype), z_norm)
 		
 	norm = scipy.integrate.simps(int_dzs_norm, z_ph_vec_norm)
 	
@@ -40,14 +44,21 @@ def N_of_zph(z_a_def_s, z_b_def_s, z_a_norm_s, z_b_norm_s, z_a_def_ph, z_b_def_p
 
 ################### THEORETICAL VALUES FOR FRACTIONAL ERROR CALCULATION ########################333
 
-def sigma_e(z_s_, s_to_n):
+def sigma_e(z_s_):
 	""" Returns a value for the model for the per-galaxy noise as a function of source redshift"""
-
-	# This is a dummy things for now
-	if hasattr(z_s_, "__len__"):
-		sig_e = 2. / s_to_n * np.ones(len(z_s_))
-	else:
-		sig_e = 2. / s_to_n
+	
+	if (pa.survey=='SDSS'):
+		
+		if hasattr(z_s_, "__len__"):
+			sig_e = 2. / pa.S_to_N * np.ones(len(z_s_))
+		else:
+			sig_e = 2. / pa.S_to_N
+			
+	elif(pa.survey=='LSST_DESI'):
+		if hasattr(z_s_, "__len__"):
+			sig_e = pa.a_sm / pa.SN_med * ( 1. + (pa.b_sm / pa.R_med)**pa.c_sm) * np.ones(len(z_s_))
+		else:
+			sig_e = pa.a_sm / pa.SN_med * ( 1. + (pa.b_sm / pa.R_med)**pa.c_sm) 
 
 	return sig_e
 
@@ -57,7 +68,7 @@ def weights(e_rms, z_, z_l_):
 	
 	SigC_t_inv = get_SigmaC_inv(z_, z_l_)
 	
-	weights = SigC_t_inv**2/(sigma_e(z_, pa.S_to_N)**2 + e_rms**2 * np.ones(len(z_)))
+	weights = SigC_t_inv**2/(sigma_e(z_)**2 + e_rms**2 * np.ones(len(z_)))
 	
 	return weights
 		
@@ -66,7 +77,7 @@ def weights_times_SigC(e_rms, z_, z_l_):
 	
 	SigC_t_inv = get_SigmaC_inv(z_, z_l_)
 	
-	weights = SigC_t_inv/(sigma_e(z_, pa.S_to_N)**2 + e_rms**2 * np.ones(len(z_)))
+	weights = SigC_t_inv/(sigma_e(z_)**2 + e_rms**2 * np.ones(len(z_)))
 	
 	return weights
 
@@ -111,7 +122,7 @@ def get_bSigW(z_p_min, z_p_max, e_rms, pzpar, pztype):
 		
 		if (pztype == 'Gaussian'):
 			# Draw a set of points from a normal dist with mean zspec and variance pa.sigz^2. These are the spec-z's for this photo-z.
-			zsvec = np.random.normal(z_p_vec[zi], pzpar[0], 5000000)
+			zsvec = np.random.normal(z_p_vec[zi], pzpar[0], 500000) #5000000)
 			# Set points below 0 to zero, it doesn't matter because they will always be lower redshift than the lens, just prevents errors in getting Ds:
 			for i in range(0, len(zsvec)):
 				if (zsvec[i]<0.):
@@ -133,7 +144,7 @@ def get_bSigW(z_p_min, z_p_max, e_rms, pzpar, pztype):
 			#print "after if"
 		#print "before get mean"		
 		# Find the mean bsigma at this zphoto
-		bsw[zi] = (4. * np.pi * (pa.Gnewt * pa.Msun) * (10**12 / pa.c**2) / pa.mperMpc)**2   / (e_rms**2 + sigma_e(z_p_vec[zi], pa.S_to_N)**2) * (1. +pa.zeff)**4 * Dl**2 * (Ds_photo[zi]-Dl) / Ds_photo[zi] * np.mean(Dls / Ds_spec)
+		bsw[zi] = (4. * np.pi * (pa.Gnewt * pa.Msun) * (10**12 / pa.c**2) / pa.mperMpc)**2   / (e_rms**2 + sigma_e(z_p_vec[zi])**2) * (1. +pa.zeff)**4 * Dl**2 * (Ds_photo[zi]-Dl) / Ds_photo[zi] * np.mean(Dls / Ds_spec)
 		#print "after get mean"
 	
 	# Interpolate the mean bsigmas such that we can report at any zspec in the range:
@@ -268,7 +279,13 @@ def get_DeltaSig_theory(z_l, rp_bins, rp_bins_c):
 	###### First get the term from halofit (valid at larger scales) ######
 	# Import the correlation function as a function of R and Pi, obtained via getting P(k) from CAMB and then using FFT_log, Anze Slozar version. 
 	# Note that since CAMB uses comoving distances, all distances here should be comoving. rpvec and Pivec are in Mpc/h.
-	corr = np.loadtxt('./txtfiles/corr_2d_z='+str(z_l)+'_Singh2014params.txt')
+	if (pa.survey == 'SDSS'):
+		corr = np.loadtxt('./txtfiles/corr_2d_z='+str(z_l)+'_Singh2014params.txt')
+	elif (pa.survey =='LSST_DESI'):
+		corr = np.loadtxt('./txtfiles/corr_2d_z='+str(z_l)+'.txt')
+	else:
+		print "No support for that survey yet."
+		exit()
 	rpvec = np.loadtxt('./txtfiles/corr_rp_z='+str(z_l)+'.txt')
 	Pivec = np.loadtxt('./txtfiles/corr_delta_z='+str(z_l)+'.txt') 
 	
@@ -294,7 +311,7 @@ def get_DeltaSig_theory(z_l, rp_bins, rp_bins_c):
 	
 	rvec = np.logspace(-7, 4, 10000)
 	
-	rho = ws.rho_NFW(rvec, pa.Mvir, z_l) # In units of Msol h^2 / Mpc^3 
+	rho = ws.rho_NFW(rvec, pa.Mvir, z_l, SURVEY) # In units of Msol h^2 / Mpc^3 
 	
 	rho_interp = scipy.interpolate.interp1d(rvec, rho)
 
@@ -349,25 +366,35 @@ def shapenoise_cov(e_rms, z_p_l, z_p_h, B_samp, rp_c, rp, dNdzpar, pzpar, dNdzty
 	""" Returns a diagonal covariance matrix in bins of projected radius for a measurement dominated by shape noise. Elements are 1 / (sum_{ls} w), carefully normalized, in each bin. """
 	
 	# Get the area of each projected radial bin in square arcminutes
-	bin_areas       =       setup.get_areas(rp, pa.zeff)
+	bin_areas       =       setup.get_areas(rp, pa.zeff, SURVEY)
 	
 	sum_denom =  pa.n_l * pa.Area_l * bin_areas * pa.n_s * np.asarray(sum_weights(pa.zeff, pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, z_p_l, z_p_h, pa.zphmin, pa.zphmax, e_rms, rp, rp_c, dNdzpar, pzpar, dNdztype, pztype))
 	
 	cov = 1. / (B_samp * sum_denom)
 	
+	#sum_denom =  np.asarray(sum_weights(pa.zeff, pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, z_p_l, z_p_h, pa.zphmin, pa.zphmax, e_rms, rp, rp_c, dNdzpar, pzpar, dNdztype, pztype))
+	
+	#cov = 1. / (sum_denom)
+	
 	return cov
 	
 def boost_errors(rp_bins_c, filename):
-	""" Imports a file with 2 columns, [rp (kpc/h), sigma(boost-1)]. Interpolates and returns the value of the error on the boost at the center of each bin. """
+	""" For the SDSS case, imports a file with 2 columns, [rp (kpc/h), sigma(boost-1)]. Interpolates and returns the value of the error on the boost at the center of each bin. """
 	
-	(rp_kpc, boost_error_raw) = np.loadtxt(filename, unpack=True)
-	
-	# Convert the projected radius to Mpc/h
-	rp_Mpc = rp_kpc / 1000.
-	
-	interpolate_boost_error = scipy.interpolate.interp1d(rp_Mpc, boost_error_raw)
-	
-	boost_error = interpolate_boost_error(rp_bins_c)
+	if (pa.survey == 'SDSS'):
+		(rp_kpc, boost_error_raw) = np.loadtxt(filename, unpack=True)
+		# Convert the projected radius to Mpc/h
+		rp_Mpc = rp_kpc / 1000.	
+		interpolate_boost_error = scipy.interpolate.interp1d(rp_Mpc, boost_error_raw)
+		boost_error = interpolate_boost_error(rp_bins_c)
+		
+	elif (pa.survey == 'LSST_DESI'):
+		# At the moment I don't have a good model for the boost errors for LSST x DESI, so I'm assuming it's zero (aka subdominant)
+		print "The boost statistical error is currently assumed to be subdominant and set to zero."
+		boost_error = np.zeros(len(rp_bins_c))
+	else:
+		print "That survey doesn't have a boost statistical error model yet."
+		exit()
 	
 	return boost_error
 
@@ -399,23 +426,23 @@ def get_gammaIA_cov(rp_bins, rp_bins_c, fudgeczA, fudgeczB, fudgeFA, fudgeFB, fu
 		#F_b_sp = np.zeros(len(rp_bins_c))
 		#print "F_a_sp=", F_a_sp[0], "F_b_sp=", F_b_sp[0]
 	
-		save_F = np.column_stack((rp_bins_c, F_a_fid, F_b_fid, F_a_sp, F_b_sp))
-		np.savetxt('./txtfiles/F_afid_bfid_asp_bsp.txt', save_F)
+		save_F = np.column_stack((rp_bins_c, F_a_fid, F_b_fid))
+		np.savetxt('./txtfiles/F_afid_bfid_survey='+pa.survey+'.txt', save_F)
 	
-		plt.figure()
-		plt.loglog(rp_bins_c, F_a_fid, 'g+', label='a fid')
-		plt.hold(True)
-		plt.loglog(rp_bins_c, F_b_fid, 'm+', label='b fid')
-		plt.hold(True)
-		plt.loglog(rp_bins_c, F_a_sp, 'go', label='a sp')
-		plt.hold(True)
-		plt.loglog(rp_bins_c, F_b_sp, 'mo', label='b sp')
-		plt.legend()
-		plt.xlabel('$r_p$')
-		plt.ylabel('$F$')
-		plt.xlim(0.04, 20)
-		plt.savefig('./plots/F_%sys='+str((pa.dNdzpar_fid[0]- dNdz_sys[0]) / pa.dNdzpar_fid[0])+'_param_mod.pdf')
-		plt.close()
+		#plt.figure()
+		#plt.loglog(rp_bins_c, F_a_fid, 'g+', label='a fid')
+		#plt.hold(True)
+		#plt.loglog(rp_bins_c, F_b_fid, 'm+', label='b fid')
+		#plt.hold(True)
+		#plt.loglog(rp_bins_c, F_a_sp, 'go', label='a sp')
+		#plt.hold(True)
+		#plt.loglog(rp_bins_c, F_b_sp, 'mo', label='b sp')
+		#plt.legend()
+		#plt.xlabel('$r_p$')
+		#plt.ylabel('$F$')
+		#plt.xlim(0.04, 20)
+		#plt.savefig('./plots/F_%sys='+str((pa.dNdzpar_fid[0]- dNdz_sys[0]) / pa.dNdzpar_fid[0])+'_param_mod.pdf')
+		#plt.close()
 	
 		############# Sig_IA's ##############
 	
@@ -431,23 +458,23 @@ def get_gammaIA_cov(rp_bins, rp_bins_c, fudgeczA, fudgeczB, fudgeFA, fudgeFB, fu
 		#print "Sig_IA_a_sp=", Sig_IA_a_sp
 		#print "Sig_IA_b_sp=", Sig_IA_b_sp
 	
-		save_SigIA = np.column_stack((rp_bins_c, Sig_IA_a_fid, Sig_IA_b_fid, Sig_IA_a_sp, Sig_IA_b_sp))
-		np.savetxt('./txtfiles/Sig_IA_afid_bfid_asp_bsp.txt', saveSigIA)
+		save_SigIA = np.column_stack((rp_bins_c, Sig_IA_a_fid, Sig_IA_b_fid))
+		np.savetxt('./txtfiles/Sig_IA_afid_bfid_survey='+pa.survey+'.txt', save_SigIA)
 	
-		plt.figure()
-		plt.loglog(rp_bins_c, Sig_IA_a_fid, 'g+', label='a fid')
-		plt.hold(True)
-		plt.loglog(rp_bins_c, Sig_IA_b_fid, 'm+', label='b fid')
-		plt.hold(True)
-		plt.loglog(rp_bins_c, Sig_IA_a_sp, 'go', label='a sp')
-		plt.hold(True)
-		plt.loglog(rp_bins_c, Sig_IA_b_sp, 'mo', label='b sp')
-		plt.legend()
-		plt.xlabel('$r_p$')
-		plt.ylabel('$\Sigma_c$')
-		plt.xlim(0.04, 20)
-		plt.savefig('./plots/SigC_%sys='+str((pa.dNdzpar_fid[0]- dNdz_sys[0]) / pa.dNdzpar_fid[0])+'_param_mod.pdf')
-		plt.close()
+		#plt.figure()
+		#plt.loglog(rp_bins_c, Sig_IA_a_fid, 'g+', label='a fid')
+		#plt.hold(True)
+		#plt.loglog(rp_bins_c, Sig_IA_b_fid, 'm+', label='b fid')
+		#plt.hold(True)
+		#plt.loglog(rp_bins_c, Sig_IA_a_sp, 'go', label='a sp')
+		#plt.hold(True)
+		#plt.loglog(rp_bins_c, Sig_IA_b_sp, 'mo', label='b sp')
+		#plt.legend()
+		#plt.xlabel('$r_p$')
+		#plt.ylabel('$\Sigma_c$')
+		#plt.xlim(0.04, 20)
+		#plt.savefig('./plots/SigC_%sys='+str((pa.dNdzpar_fid[0]- dNdz_sys[0]) / pa.dNdzpar_fid[0])+'_param_mod.pdf')
+		#plt.close()
 	
 		############ c_z's ##############
 	
@@ -461,23 +488,23 @@ def get_gammaIA_cov(rp_bins, rp_bins_c, fudgeczA, fudgeczB, fudgeFA, fudgeFB, fu
 		#cz_b_sp = get_cz(pa.zeff, pa.zeff+pa.delta_z, pa.zphmax, pa.e_rms_Bl_b, rp_bins, rp_bins_c,   dNdz_sys, pz_sys,  pa.dNdztype, pa.pztype)
 		#print "cz_a_sp =", cz_a_sp, "cz_b_sp=", cz_b_sp
 		
-		save_cz = np.column_stack(([cz_a_fid], [cz_b_fid], [cz_a_sp], [cz_b_sp]))
-		np.savetxt('./txtfiles/cz_afid_bfid_asp_bsp.txt', save_cz)
+		save_cz = np.column_stack(([cz_a_fid], [cz_b_fid]))
+		np.savetxt('./txtfiles/cz_afid_bfid_survey='+pa.survey+'.txt', save_cz)
 	
-		plt.figure()
-		plt.semilogx(rp_bins_c, cz_a_fid * np.ones(len(rp_bins_c)), 'g+', label='a fid')
-		plt.hold(True)
-		plt.semilogx(rp_bins_c, cz_b_fid * np.ones(len(rp_bins_c)), 'm+', label='b fid')
-		plt.hold(True)
-		plt.semilogx(rp_bins_c, cz_a_sp * np.ones(len(rp_bins_c)), 'go', label='a sp')
-		plt.hold(True)
-		plt.semilogx(rp_bins_c, cz_b_sp * np.ones(len(rp_bins_c)), 'mo', label='b sp')
-		plt.legend()
-		plt.xlabel('$r_p$')
-		plt.ylabel('$\Sigma_c$')
-		plt.xlim(0.04, 20)
-		plt.savefig('./plots/cz_%sys='+str((pa.dNdzpar_fid[0]- dNdz_sys[0]) / pa.dNdzpar_fid[0])+'_param_mod.pdf')
-		plt.close()
+		#plt.figure()
+		#plt.semilogx(rp_bins_c, cz_a_fid * np.ones(len(rp_bins_c)), 'g+', label='a fid')
+		#plt.hold(True)
+		#plt.semilogx(rp_bins_c, cz_b_fid * np.ones(len(rp_bins_c)), 'm+', label='b fid')
+		#plt.hold(True)
+		#plt.semilogx(rp_bins_c, cz_a_sp * np.ones(len(rp_bins_c)), 'go', label='a sp')
+		#plt.hold(True)
+		#plt.semilogx(rp_bins_c, cz_b_sp * np.ones(len(rp_bins_c)), 'mo', label='b sp')
+		#plt.legend()
+		#plt.xlabel('$r_p$')
+		#plt.ylabel('$\Sigma_c$')
+		#plt.xlim(0.04, 20)
+		#plt.savefig('./plots/cz_%sys='+str((pa.dNdzpar_fid[0]- dNdz_sys[0]) / pa.dNdzpar_fid[0])+'_param_mod.pdf')
+		#plt.close()
 	
 	############ gamma_IA ###########
 	
@@ -486,9 +513,9 @@ def get_gammaIA_cov(rp_bins, rp_bins_c, fudgeczA, fudgeczB, fudgeFA, fudgeFB, fu
 	
 	if pa.run_quants==False :
 		# Load stuff if we haven't computed it this time around:
-		(rp_bins_c, F_a_fid, F_b_fid, F_a_sp, F_b_sp) = np.loadtxt('./txtfiles/F_afid_bfid_asp_bsp.txt', unpack=True)
-		(rp_bins_c, Sig_IA_a_fid, Sig_IA_b_fid, Sig_IA_a_sp, Sig_IA_b_sp) = np.loadtxt('./txtfiles/Sig_IA_afid_bfid_asp_bsp.txt', unpack=True)
-		(cz_a_fid, cz_b_fid, cz_a_sp, cz_b_sp) = np.loadtxt('./txtfiles/cz_afid_bfid_asp_bsp.txt', unpack=True)
+		(rp_bins_c, F_a_fid, F_b_fid) = np.loadtxt('./txtfiles/F_afid_bfid_survey='+pa.survey+'.txt', unpack=True)
+		(rp_bins_c, Sig_IA_a_fid, Sig_IA_b_fid) = np.loadtxt('./txtfiles/Sig_IA_afid_bfid_survey='+pa.survey+'.txt', unpack=True)
+		(cz_a_fid, cz_b_fid) = np.loadtxt('./txtfiles/cz_afid_bfid_survey='+pa.survey+'.txt', unpack=True)
 	
 	# Estimated Delta Sigmas
 	DeltaSig_est_a = get_est_DeltaSig(pa.zeff, rp_bins, rp_bins_c, Boost_a, F_a_fid, cz_a_fid, Sig_IA_a_fid, g_IA_fid)
@@ -503,9 +530,17 @@ def get_gammaIA_cov(rp_bins, rp_bins_c, fudgeczA, fudgeczB, fudgeFA, fudgeFB, fu
 	DeltaCov_a = shapenoise_cov(pa.e_rms_Bl_a, pa.zeff, pa.zeff+pa.delta_z, Boost_a, rp_bins_c, rp_bins, pa.dNdzpar_fid, pa.pzpar_fid,  pa.dNdztype, pa.pztype)
 	DeltaCov_b = shapenoise_cov(pa.e_rms_Bl_b, pa.zeff+pa.delta_z, pa.zphmax, Boost_b, rp_bins_c, rp_bins, pa.dNdzpar_fid, pa.pzpar_fid,  pa.dNdztype, pa.pztype)
 	
-	# Get the errors boost-1. First, stat
-	sigBa_stat = boost_errors(rp_bins_c, pa.sigBF_a)
-	sigBb_stat = boost_errors(rp_bins_c, pa.sigBF_b)
+	# Get the errors on boost-1. First, stat
+	
+	if (pa.survey=='SDSS'):
+		sigBa_stat = boost_errors(rp_bins_c, pa.sigBF_a)
+		sigBb_stat = boost_errors(rp_bins_c, pa.sigBF_b)
+	elif(pa.survey=='LSST_DESI'):
+		sigBa_stat = boost_errors(rp_bins_c, 'nonsense')
+		sigBb_stat = boost_errors(rp_bins_c, 'nonsense')
+	else:
+		print "We don't have support for that survey yet"
+		exit()
 	# Then, add in quadrature with the LSS / observational lens density variation systematic
 	boosterr_sq_a = sigBa_stat**2 + ((pa.boost_sys - 1.)*(Boost_a-1.))**2
 	boosterr_sq_b = sigBb_stat**2 + ((pa.boost_sys - 1.)*(Boost_b-1.))**2
@@ -513,6 +548,8 @@ def get_gammaIA_cov(rp_bins, rp_bins_c, fudgeczA, fudgeczB, fudgeFA, fudgeFB, fu
 	gammaIA_tot_cov = np.zeros((len(rp_bins_c), len(rp_bins_c))) 
 	gammaIA_stat_cov = np.zeros((len(rp_bins_c), len(rp_bins_c)))
 	gammaIA_sysZ_cov = np.zeros((len(rp_bins_c), len(rp_bins_c)))
+	#num_stat= np.zeros(len(rp_bins_c))
+	#denom_stat = np.zeros(len(rp_bins_c))
 	# Calculate the covariance
 	for i in range(0,len((rp_bins_c))):	 	
 		
@@ -532,16 +569,35 @@ def get_gammaIA_cov(rp_bins, rp_bins_c, fudgeczA, fudgeczB, fudgeFA, fudgeFB, fu
 		
 		num_term_stat = (( cz_a_fid * DeltaSig_est_a[i])**2  * (DeltaCov_a[i] / DeltaSig_est_a[i]**2)  + ( cz_b_fid * DeltaSig_est_b[i])**2  * (DeltaCov_b[i] / DeltaSig_est_b[i]**2) ) / (( cz_a_fid * DeltaSig_est_a[i]) - ( cz_b_fid * DeltaSig_est_b[i]))**2
 		
+		#num_stat[i] = np.sqrt(cz_a_fid**2  * DeltaCov_a[i] + cz_b_fid**2  * DeltaCov_b[i] )
+		#denom_stat[i] = (cz_a_fid * (Boost_a[i] -1. + F_a_fid[i]) * Sig_IA_a_fid[i] -  cz_b_fid * (Boost_b[i] -1. + F_b_fid[i]) * Sig_IA_b_fid[i])
+		#denom_stat[i] = ( cz_a_fid * DeltaSig_est_a[i]) - ( cz_b_fid * DeltaSig_est_b[i])
+		
+		#denom_compare = (cz_a_fid * (Boost_a[i] -1. + F_a_fid[i]) * Sig_IA_a_fid[i] -  cz_b_fid * (Boost_b[i] -1. + F_b_fid[i]) * Sig_IA_b_fid[i]) * g_IA_fid[i]
+		#print "denom stat=", denom_stat[i], "denom_compare=", denom_compare
+		#denom_stat[i] = (cz_a_fid * (Boost_a[i] -1. + F_a_fid[i]) * Sig_IA_a_fid[i] -  cz_b_fid * (Boost_b[i] -1. + F_b_fid[i]) * Sig_IA_b_fid[i])
+		#print "denom, a=", cz_a_fid * (Boost_a[i] -1. + F_a_fid[i]) * Sig_IA_a_fid[i], "denom, b=", cz_b_fid * (Boost_b[i] -1. + F_b_fid[i]) * Sig_IA_b_fid[i]
+		#print "cza=", cz_a_fid, "czb=", cz_b_fid, "Ba", (Boost_a[i] -1. + F_a_fid[i]), "Bb", (Boost_b[i] -1. + F_b_fid[i]), "Siga=", Sig_IA_a_fid[i], "Sigb=",Sig_IA_b_fid[i]
+		
+		#print "num term num=", np.sqrt((( cz_a_fid * DeltaSig_est_a[i])**2  * (DeltaCov_a[i] / DeltaSig_est_a[i]**2)  + ( cz_b_fid * DeltaSig_est_b[i])**2  * (DeltaCov_b[i] / DeltaSig_est_b[i]**2) )), "num term denom=", (( cz_a_fid * DeltaSig_est_a[i]) - ( cz_b_fid * DeltaSig_est_b[i]))
+		
 		denom_term_stat = ( ( cz_a_fid * (Boost_a[i] -1. + F_a_fid[i]) * Sig_IA_a_fid[i])**2 * (boosterr_sq_a[i]  / (Boost_a[i] -1. + F_a_fid[i])**2 ) + ( cz_b_fid * (Boost_b[i] -1. + F_b_fid[i]) * Sig_IA_b_fid[i])**2 * ( boosterr_sq_b[i]   / (Boost_b[i] -1. + F_b_fid[i])**2 ) ) / ( ( cz_a_fid * (Boost_a[i] -1. + F_a_fid[i]) * Sig_IA_a_fid[i]) -  ( cz_b_fid * (Boost_b[i] -1. + F_b_fid[i]) * Sig_IA_b_fid[i]) )**2
 		
 		gammaIA_stat_cov[i,i] = g_IA_fid[i]**2 * (num_term_stat + denom_term_stat)
+		
+		#print "gammaIA_stat_cov[i,i] =", gammaIA_stat_cov[i,i]
+		
+		#print "num term=", num_term_stat
+		#print "denom=", denom_term_stat
+		
+	#save_comp = np.column_stack((num_stat, denom_stat))
+	#np.savetxt('./txtfiles/compare_Blazek_survey='+SURVEY+'.txt', save_comp)
 		
 	# For the stat-only case, we're done, because the covariance matrix is diagonal. For the systematics case, we are not done. We need to add off-diagonal elements - we assume full correlations.
 	for i in range(0,len((rp_bins_c))):	
 		for j in range(0,len((rp_bins_c))):
 			if (i != j):
 				gammaIA_sysZ_cov[i,j] = np.sqrt(gammaIA_sysZ_cov[i,i]) * np.sqrt(gammaIA_sysZ_cov[j,j])
-				gammaIA_sysZ_cov[j,i] = gammaIA_sysZ_cov[i,j]
 				
 	# Now get the total covariance matrix, stat + sys. The diagonal is the same as if we did this via error propagation formulas all together:
 	gammaIA_tot_cov = gammaIA_sysZ_cov + gammaIA_stat_cov
@@ -601,9 +657,9 @@ def gamma_fid_from_quants(rp_bins_c, Boost_a, Boost_b, F_a, F_b, Sig_IA_a, Sig_I
 	
 	#gamm_fid = (cz_a * DeltaSig_est_a - cz_b*DeltaSig_est_b) / (((Boost_a -1. +F_a)*cz_a*Sig_IA_a) - ((Boost_b -1. +F_b)*cz_b*Sig_IA_b))
 	gamm_fid = cz_a * DeltaSig_est_a / (((Boost_a -1. +F_a)*cz_a*Sig_IA_a) - ((Boost_b -1. +F_b)*cz_b*Sig_IA_b)) - cz_b * DeltaSig_est_b / (((Boost_a -1. +F_a)*cz_a*Sig_IA_a) - ((Boost_b -1. +F_b)*cz_b*Sig_IA_b))
-	print "in gamma fid from quants"
-	print "num=", (cz_a * DeltaSig_est_a - cz_b*DeltaSig_est_b)
-	print "denom=", (((Boost_a -1. +F_a)*cz_a*Sig_IA_a) - ((Boost_b -1. +F_b)*cz_b*Sig_IA_b))
+	#print "in gamma fid from quants"
+	#print "num=", (cz_a * DeltaSig_est_a - cz_b*DeltaSig_est_b)
+	#print "denom=", (((Boost_a -1. +F_a)*cz_a*Sig_IA_a) - ((Boost_b -1. +F_b)*cz_b*Sig_IA_b))
 	
 	#plt.figure()
 	#plt.loglog(rp_bins_c, gamm_fid_check, 'go')
@@ -615,8 +671,8 @@ def gamma_fid_from_quants(rp_bins_c, Boost_a, Boost_b, F_a, F_b, Sig_IA_a, Sig_I
 	
 def gamma_fid(rp):
 	""" Returns the fiducial gamma_IA from a combination of terms from different models which are valid at different scales """
-	wgg_rp = ws.wgg_full(rp, pa.fsat_LRG, pa.fsky, pa.bd_Bl, pa.bs_Bl, './txtfiles/wgg_1h_Blazek_LRG-shapes_7bins_testMlowFinder.txt', './txtfiles/wgg_2h_Blazek_LRG_shapes_7bins.txt', './plots/wgg_full_Blazek_LRG-shapes_7bins_NsatThresh.pdf')
-	wgp_rp = ws.wgp_full(rp, pa.bd_Bl, pa.Ai_Bl, pa.ah_Bl, pa.q11_Bl, pa.q12_Bl, pa.q13_Bl, pa.q21_Bl, pa.q22_Bl, pa.q23_Bl, pa.q31_Bl, pa.q32_Bl, pa.q33_Bl, './txtfiles/wgp_1h_Blazek_LRG-shapes_7bins.txt','./txtfiles/wgp_2h_Blazek_LRG-shapes_7bins.txt', './plots/wgp_full_Blazek_LRG-shapes_7bins.pdf')
+	wgg_rp = ws.wgg_full(rp, pa.fsat_LRG, pa.fsky, pa.bd_Bl, pa.bs_Bl, './txtfiles/wgg_1h_Blazek_survey='+pa.survey+'.txt', './txtfiles/wgg_2h_Blazek_survey='+pa.survey+'_kpts='+str(pa.kpts_wgg)+'.txt', './plots/wgg_full_Blazek_survey='+pa.survey+'.pdf', SURVEY)
+	wgp_rp = ws.wgp_full(rp, pa.bd_Bl, pa.Ai_Bl, pa.ah_Bl, pa.q11_Bl, pa.q12_Bl, pa.q13_Bl, pa.q21_Bl, pa.q22_Bl, pa.q23_Bl, pa.q31_Bl, pa.q32_Bl, pa.q33_Bl, './txtfiles/wgp_1h_Blazek_survey='+pa.survey+'.txt','./txtfiles/wgp_2h_Blazek_survey='+pa.survey+'.txt', './plots/wgp_full_Blazek_survey='+pa.survey+'.pdf', SURVEY)
 	
 	gammaIA = wgp_rp / (wgg_rp + 2. * pa.close_cut) 
 	
@@ -626,7 +682,7 @@ def gamma_fid(rp):
 	plt.ylabel('$\gamma_{IA}$')
 	plt.xlabel('$r_p$')
 	plt.title('Fiducial values of $\gamma_{IA}$')
-	plt.savefig('./plots/gammaIA_Blazek_LRG-shapes_7bins_NsatThresh.pdf')
+	plt.savefig('./plots/gammaIA_Blazek_survey='+pa.survey+'.pdf')
 	plt.close()
 	
 	return gammaIA
@@ -772,18 +828,27 @@ def plot_variance(cov_1, fidvalues_1, bin_centers):
 
 ######## MAIN CALLS ##########
 
+# Import the parameter file:
+if (SURVEY=='SDSS'):
+	import params as pa
+elif (SURVEY=='LSST_DESI'):
+	import params_LSST_DESI as pa
+else:
+	print "We don't have support for that survey yet; exiting."
+	exit()
+
 # Set up projected bins
 rp_bins 	= 	setup.setup_rp_bins(pa.rp_min, pa.rp_max, pa.N_bins)
 rp_cent		=	setup.rp_bins_mid(rp_bins)
 
 # Set up a function to get z as a function of comoving distance
-(z_of_com, com_of_z) = setup.z_interpof_com()
+(z_of_com, com_of_z) = setup.z_interpof_com(SURVEY)
 
 # Get the redshift corresponding to the maximum separation from the effective lens redshift at which we assume IA may be present
 # pa.close_cut is the separation in Mpc/h.
-(z_close_high, z_close_low)	= 	setup.get_z_close(pa.zeff, pa.close_cut)
+(z_close_high, z_close_low)	= 	setup.get_z_close(pa.zeff, pa.close_cut, SURVEY)
 
-gammaIA = gamma_fid(rp_cent)
+#gammaIA = gamma_fid(rp_cent)
 
 StoN_cza = np.zeros(len(pa.fudge_frac_level))
 StoN_czb = np.zeros(len(pa.fudge_frac_level))
@@ -801,7 +866,7 @@ for i in range(0,len(pa.fudge_frac_level)):
 	print "StoNstat, StoNcza=", np.sqrt(StoNstat), np.sqrt(StoN_cza[i])
 	StoNstat_save = [StoNstat]
 	print "StoNstat=", StoNstat
-	np.savetxt('./txtfiles/StoNstat_Blazek.txt', StoNstat_save)
+	np.savetxt('./txtfiles/StoNstat_Blazek_survey='+SURVEY+'.txt', StoNstat_save)
 	exit()
 	"""(StoNstat, StoN_czb[i]) = get_gammaIA_cov(rp_bins, rp_cent, 0., pa.fudge_frac_level[i], 0., 0., 0., 0.)
 	print "StoNstat, StoNczb=", np.sqrt(StoNstat), np.sqrt(StoN_czb[i])

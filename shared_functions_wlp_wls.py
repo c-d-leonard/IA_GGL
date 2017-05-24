@@ -1,6 +1,7 @@
 # This file contains functions for getting w_{l+} w_{ls} which are shared between the Blazek et al. 2012 method and the multiple shape measurements method.
 
-import params as pa
+#import params as pa
+#import params_LSST_DESI as pa
 import scipy.integrate
 import matplotlib.pyplot as plt
 import scipy.interpolate
@@ -13,8 +14,16 @@ import pyccl as ccl
 
 # Functions shared between w_{l+} and w_{ls}
 
-def window():
+def window(survey):
 	""" Get window function for w_{l+} and w_{ls} 2-halo terms."""
+	
+	if (survey == 'SDSS'):
+		import params as pa
+	elif (survey == 'LSST_DESI'):
+		import params_LSST_DESI as pa
+	else:
+		print "We don't have support for that survey yet; exiting."
+		exit()
 	
 	sigz = pa.sigz_gwin  # This is a very small value to basically set the lenses to a delta function.
 	z = scipy.linspace(pa.zeff-5.*sigz, pa.zeff+5.*sigz, 50)
@@ -24,7 +33,7 @@ def window():
 	OmL = 1. - pa.OmC - pa.OmB - pa.OmR - pa.OmN
 	dzdchi = pa.H0 * ( (pa.OmC+pa.OmB)*(1+z)**3 + OmL + (pa.OmR+pa.OmN) * (1+z)**4 )**(0.5)
 	
-	(z, dNdz_2) = setup.get_NofZ_unnormed(pa.alpha_fid, pa.zs_fid, pa.zeff-5.*sigz, pa.zeff+5.*sigz, 50)
+	(z, dNdz_2) = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, pa.zeff-5.*sigz, pa.zeff+5.*sigz, 50)  
 		
 	norm = scipy.integrate.simps(dNdz_1*dNdz_2 / chi**2 * dzdchi, z)
 	
@@ -32,8 +41,16 @@ def window():
 	
 	return (z, win )
 
-def get_Pk(z_):
+def get_Pk(z_,survey):
 	""" Calls camb and returns the nonlinear halofit power spectrum for the current cosmological parameters and at the redshifts of interest. Returns a 2D array in k and z."""
+	
+	if (survey == 'SDSS'):
+		import params as pa
+	elif (survey == 'LSST_DESI'):
+		import params_LSST_DESI as pa
+	else:
+		print "We don't have support for that survey yet; exiting."
+		exit()
 	
 	# The redshifts have to be in a certain order to make camb happy:
 	z_list = list(z_)
@@ -112,8 +129,16 @@ def get_P1haloIA(z, k, ah, q11, q12, q13, q21, q22, q23, q31, q32, q33):
 	
 	return P1halo
 
-def growth(z_):
+def growth(z_,survey):
 	""" Returns the growth factor, normalized to 1 at z=0"""
+	
+	if (survey == 'SDSS'):
+		import params as pa
+	elif (survey == 'LSST_DESI'):
+		import params_LSST_DESI as pa
+	else:
+		print "We don't have support for that survey yet; exiting."
+		exit()
 	
 	def int_(z):
 		OmL = 1. - pa.OmC - pa.OmB - pa.OmR - pa.OmN
@@ -129,10 +154,18 @@ def growth(z_):
 	
 	return D
 
-def wgp_1halo(rp_c_, bd, Ai, ah, q11, q12, q13, q21, q22, q23, q31, q32, q33, savefile):
+def wgp_1halo(rp_c_, bd, Ai, ah, q11, q12, q13, q21, q22, q23, q31, q32, q33, savefile, survey):
 	""" Returns the 1 halo term of wg+(rp) """
 	
-	(z, w) = window() 
+	if (survey == 'SDSS'):
+		import params as pa
+	elif (survey == 'LSST_DESI'):
+		import params_LSST_DESI as pa
+	else:
+		print "We don't have support for that survey yet; exiting."
+		exit()
+	
+	(z, w) = window(survey) 
 	
 	# Set up a k vector to integrate over:
 	k = np.logspace(-5., 7., 100000)
@@ -155,7 +188,7 @@ def wgp_1halo(rp_c_, bd, Ai, ah, q11, q12, q13, q21, q22, q23, q31, q32, q33, sa
 		#ans[rpi] = scipy.integrate.simps(k * P1h * scipy.special.j0(rp_c_[rpi] * k), k)
 		
 	# Set this to zero above about 2 * virial radius (I've picked this value somewhat aposteriori, should do better). This is to not include 1halo contributions well outside the halo.
-	Rvir = Rhalo(pa.Mvir)
+	Rvir = Rhalo(pa.Mvir, survey)
 
 	for ri in range(0,len(rp_c_)):
 		if (rp_c_[ri]> 2.*Rvir):
@@ -177,17 +210,25 @@ def wgp_1halo(rp_c_, bd, Ai, ah, q11, q12, q13, q21, q22, q23, q31, q32, q33, sa
 		
 	return wgp1h
 
-def wgp_2halo(rp_cents_, bd, Ai, savefile):
+def wgp_2halo(rp_cents_, bd, Ai, savefile, survey):
 	""" Returns wgp from the nonlinear alignment model (2-halo term only). """
 	
+	if (survey == 'SDSS'):
+		import params as pa
+	elif (survey == 'LSST_DESI'):
+		import params_LSST_DESI as pa
+	else:
+		print "We don't have support for that survey yet; exiting."
+		exit()
+	
 	# Get the redshift window function
-	z_gp, win_gp = window()
+	z_gp, win_gp = window(survey)
 	
 	# Get the required matter power spectrum from camb 
-	(k_gp, P_gp) = get_Pk(z_gp)
+	(k_gp, P_gp) = get_Pk(z_gp, survey)
 	
 	# Get the growth factor
-	D_gp = growth(z_gp)
+	D_gp = growth(z_gp, survey)
 	
 	# First do the integral over z. Don't yet interpolate in k.
 	zint_gp = np.zeros(len(k_gp))
@@ -224,7 +265,7 @@ def wgp_2halo(rp_cents_, bd, Ai, savefile):
 	
 	return wgp_NLA
 
-def wgp_full(rp_c, bd, Ai, ah, q11, q12, q13, q21, q22, q23, q31, q32, q33, savefile_1h, savefile_2h, plotfile):
+def wgp_full(rp_c, bd, Ai, ah, q11, q12, q13, q21, q22, q23, q31, q32, q33, savefile_1h, savefile_2h, plotfile, survey):
 	""" Combine 1 and 2 halo terms of wgg """
 	
 	# Check if savefile_1h exists, and if not, calculate 1 halo term.
@@ -233,7 +274,7 @@ def wgp_full(rp_c, bd, Ai, ah, q11, q12, q13, q21, q22, q23, q31, q32, q33, save
 		(rp_cen, wgp_1h) = np.loadtxt(savefile_1h, unpack=True)
 	else:
 		print "Computing wgp 1halo term"
-		wgp_1h = wgp_1halo(rp_c, bd, Ai, ah, q11, q12, q13, q21, q22, q23, q31, q32, q33, savefile_1h)
+		wgp_1h = wgp_1halo(rp_c, bd, Ai, ah, q11, q12, q13, q21, q22, q23, q31, q32, q33, savefile_1h, survey)
 		
 	# Check if savefile_2h exists, and if not, calculate 2 halo term.
 	if (os.path.isfile(savefile_2h)):
@@ -241,7 +282,7 @@ def wgp_full(rp_c, bd, Ai, ah, q11, q12, q13, q21, q22, q23, q31, q32, q33, save
 		(rp_cen, wgp_2h) = np.loadtxt(savefile_2h, unpack=True)
 	else:
 		print "Computing wgp 2halo term"
-		wgp_2h = wgp_2halo(rp_c, bd, Ai, savefile_2h)
+		wgp_2h = wgp_2halo(rp_c, bd, Ai, savefile_2h, survey)
 	
 	wgp_tot = wgp_1h + wgp_2h 
 	
@@ -279,15 +320,31 @@ def wgp_full(rp_c, bd, Ai, ah, q11, q12, q13, q21, q22, q23, q31, q32, q33, save
 	
 # Functions to get the 1halo term of w_{ls}
 
-def vol_dens(fsky, zmin_dndz, zmax_dndz, N):
+def vol_dens(fsky, zmin_dndz, zmax_dndz, N,survey):
 	""" Computes the volume density of galaxies given the fsky, minimum z, max z, and number of galaxies."""
+	
+	if (survey == 'SDSS'):
+		import params as pa
+	elif (survey == 'LSST_DESI'):
+		import params_LSST_DESI as pa
+	else:
+		print "We don't have support for that survey yet; exiting."
+		exit()
 	
 	V = fsky * 4. / 3. * np.pi * (setup.com(pa.zmax_dndz)**3 - setup.com(pa.zmin_dndz)**3)
 	ndens = N / V
 	return ndens
 
-def Rhalo(M_insol):
+def Rhalo(M_insol, survey):
 	""" Get the radius of a halo in COMOVING Mpc/h given its mass."""
+	
+	if (survey == 'SDSS'):
+		import params as pa
+	elif (survey == 'LSST_DESI'):
+		import params_LSST_DESI as pa
+	else:
+		print "We don't have support for that survey yet; exiting."
+		exit()
 	
 	#rho_crit = 3. * 10**10 * pa.mperMpc / (8. * np.pi * pa.Gnewt * pa.Msun * (pa. HH0 / 100.)) # Msol h^3 / Mpc^3, for use with M in Msol.
 	rho_crit = 3. * 10**10 * pa.mperMpc / (8. * np.pi * pa.Gnewt * pa.Msun)  # Msol h^2 / Mpc^3, for use with M in Msol / h
@@ -310,10 +367,10 @@ def rho_s(cvi, Rvi, M_insol):
 	
 	return rhos
 
-def rho_NFW(r_, M_insol, z):
+def rho_NFW(r_, M_insol, z, survey):
 	""" Returns the density for an NFW profile in real space at distance r from the center. Units = units of rhos. (Usually Msol * h^2 / Mpc^3 in comoving distances). r_ MUST be in the same units as Rv; usually Mpc / h."""
 
-	Rv = Rhalo(M_insol)
+	Rv = Rhalo(M_insol, survey)
 	cv = cvir(M_insol, z)
 	rhos = rho_s(cv, Rv, M_insol)
 	
@@ -343,10 +400,18 @@ def rho_NFW(r_, M_insol, z):
 	
 	return rho_nfw
 
-def wgg_1halo_Four(rp_cents_, fsat, fsky, savefile):
+def wgg_1halo_Four(rp_cents_, fsat, fsky, savefile, survey):
 	""" Gets the 1halo term of wgg via Fourier space, to account for central-satelite pairs and satelite-satelite pairs. """
 	
-	Rvir = Rhalo(pa.Mvir)
+	if (survey == 'SDSS'):
+		import params as pa
+	elif (survey == 'LSST_DESI'):
+		import params_LSST_DESI as pa
+	else:
+		print "We don't have support for that survey yet; exiting."
+		exit()
+	
+	Rvir = Rhalo(pa.Mvir, survey)
 	
 	kvec_FT = np.logspace(-7, 5, 1000000)
 	rvec_NFW = np.logspace(-8, np.log10(Rvir), 5000000)
@@ -355,7 +420,7 @@ def wgg_1halo_Four(rp_cents_, fsat, fsky, savefile):
 	rpvec = np.logspace(-7, np.log10(1000./np.sqrt(2.01)), 1000)
 	
 	#print "Before getting P_{gg}(k)"
-	Pk = get_Pkgg_1halo(rvec_NFW, kvec_FT, fsat, fsky) # Gets the 1halo galaxy power spectrum including c-s and s-s terms. Pass rvec because need to get rho_NFW in here.
+	Pk = get_Pkgg_1halo(rvec_NFW, kvec_FT, fsat, fsky, survey) # Gets the 1halo galaxy power spectrum including c-s and s-s terms. Pass rvec because need to get rho_NFW in here.
 	#(k_dummy, Pk) = np.loadtxt('./txtfiles/Pkgg_1h.txt', unpack=True)
 	#print "After getting P_{gg}(k), before getting xi_{gg}(r)."
 	
@@ -365,6 +430,11 @@ def wgg_1halo_Four(rp_cents_, fsat, fsky, savefile):
 	for ri in range(0, len(rvec_xi)):
 		if (rvec_xi[ri]>Rvir):
 			xi_gg_1h[ri] = 0.0
+	
+	#save_xi_gg = np.column_stack((rvec_xi, xi_gg_1h))		
+	#np.savetxt('./txtfiles/xi_gg_1halo_SDSS.txt', save_xi_gg)
+	
+	#exit()
 	
 	xi_interp = scipy.interpolate.interp1d(rvec_xi, xi_gg_1h)
 	
@@ -391,11 +461,19 @@ def get_xi_1h(r, kvec, Pofk):
 	
 	return xi
 	
-def get_Pkgg_1halo(rvec_nfw, kvec_ft, fsat, fsky):
+def get_Pkgg_1halo(rvec_nfw, kvec_ft, fsat, fsky, survey):
 	""" Returns the 1halo galaxy power spectrum with c-s and s-s terms."""
 	
+	if (survey == 'SDSS'):
+		import params as pa
+	elif (survey == 'LSST_DESI'):
+		import params_LSST_DESI as pa
+	else:
+		print "We don't have support for that survey yet; exiting."
+		exit()
+	
 	# Get ingredients we need here:
-	y = gety(rvec_nfw, pa.Mvir, pa.zeff, kvec_ft) # Mass-averaged Fourier transform of the density profile
+	y = gety(rvec_nfw, pa.Mvir, pa.zeff, kvec_ft, survey) # Mass-averaged Fourier transform of the density profile
 
 	alpha = get_alpha(pa.Mvir) # The number which accounts for deviation from Poisson statistics
 	Ncen_lens = 1. # We assume that every halo has a central lens galaxy, so the mean number of central galaxies / halo is 1.
@@ -404,17 +482,17 @@ def get_Pkgg_1halo(rvec_nfw, kvec_ft, fsat, fsky):
 	#Nsat_src = get_Nsat_src(pa.Mvir, pa.Mstar_src_high, pa.Mstar_src_low) # For source galaxies, using a halo model, as in Zu & Mandelbaum 2015.
 	
 	# Get the lower stellar mass cutoff corresponding to the total empirical volume density of the source sample:
-	Mstarlow = get_Mstar_low()
+	Mstarlow = get_Mstar_low(survey)
 	
-	Nsat_src = get_Nsat_src(pa.Mvir, Mstarlow) # For source galaxies, using a halo model, as in Zu & Mandelbaum 2015.
+	Nsat_src = get_Nsat_src(pa.Mvir, Mstarlow, survey) # For source galaxies, using a halo model, as in Zu & Mandelbaum 2015.
 	
-	print "Nsat_src=", Nsat_src
+	#print "Nsat_src=", Nsat_src
 
 	NcNs = NcenNsat(alpha, Ncen_lens, Nsat_src) # The average number of central-satelite pairs in a halo of mass M
 	NsNs = NsatNsat(alpha, Nsat_lens, Nsat_src) # The average number of satelite-satelite pairs in a halo of mass M
 
 	# Get the volume density of the source galaxy sample:
-	ns = vol_dens(fsky, pa.zmin_dndz, pa.zmax_dndz, pa.N_shapes)
+	ns = vol_dens(fsky, pa.zmin_dndz, pa.zmax_dndz, pa.N_shapes, survey)
 
 	Pkgg = (1. - fsat) / ns * ( NcNs * y + NsNs * y**2)
 	
@@ -432,11 +510,11 @@ def get_Pkgg_1halo(rvec_nfw, kvec_ft, fsat, fsky):
 	
 	return Pkgg
 	
-def gety(rvec, M, z, kvec):
+def gety(rvec, M, z, kvec, survey):
 	""" Fourier transforms the density profile to get the power spectrum. """
 	
 	# Get the nfw density profile at the correct mass and redshift and at a variety of r
-	rho = rho_NFW(rvec, M, z)  # Units Msol h^2 / Mpc^3, comoving.
+	rho = rho_NFW(rvec, M, z, survey)  # Units Msol h^2 / Mpc^3, comoving.
 	
 	# Use a downsampled kvec to speed computation
 	kvec_gety = np.logspace(np.log10(kvec[0]), np.log10(kvec[-1]), 100) 
@@ -473,11 +551,19 @@ def get_alpha(M):
 		
 	return alpha
 
-def get_Mstar_low():
+def get_Mstar_low(survey):
 	""" For a given number density of source galaxies (calculated in the vol_dens function), get the appropriate choice for the lower bound of Mstar """
 	
-	nsrc = vol_dens(pa.fsky, pa.zmin_dndz, pa.zmax_dndz, pa.N_shapes) # The true total volume density of sources (from the empirial surface density and z range of surey).
-	print "nsrc=", nsrc
+	if (survey == 'SDSS'):
+		import params as pa
+	elif (survey == 'LSST_DESI'):
+		import params_LSST_DESI as pa
+	else:
+		print "We don't have support for that survey yet; exiting."
+		exit()
+	
+	nsrc = vol_dens(pa.fsky, pa.zmin_dndz, pa.zmax_dndz, pa.N_shapes, survey) # The true total volume density of sources (from the empirial surface density and z range of surey).
+	#print "nsrc=", nsrc
 	
 	# Define a vector of Mstar_low value to try
 	Ms_low_vec = np.logspace(8., 12.,1000)
@@ -485,14 +571,14 @@ def get_Mstar_low():
 	Mh_vec = np.logspace(9., 16., 1000)
 	
 	# Get Nsat as a function of the values of the two above arrays
-	Nsat = get_Nsat_src(Mh_vec, Ms_low_vec)
-	Ncen = get_Ncen_src(Mh_vec, Ms_low_vec)
+	Nsat = get_Nsat_src(Mh_vec, Ms_low_vec, survey)
+	Ncen = get_Ncen_src(Mh_vec, Ms_low_vec, survey)
 	
 	# Check the shape of how these things are ocming out:
-	Nsat_fixMs= get_Nsat_src(Mh_vec, 10.**10)
-	Ncen_fixMs = get_Ncen_src(Mh_vec, 10.**10)
-	Nsat_fixMh = get_Nsat_src(10.**13, Ms_low_vec)
-	Ncen_fixMh = get_Ncen_src(10.**13, Ms_low_vec)
+	#Nsat_fixMs= get_Nsat_src(Mh_vec, 10.**10,survey)
+	#Ncen_fixMs = get_Ncen_src(Mh_vec, 10.**10)
+	#Nsat_fixMh = get_Nsat_src(10.**13, Ms_low_vec)
+	#Ncen_fixMh = get_Ncen_src(10.**13, Ms_low_vec)
 	
 	"""plt.figure()
 	plt.semilogx(Mh_vec, Nsat_fixMs)
@@ -541,7 +627,7 @@ def get_Mstar_low():
 	
 	return Ms_low_vec[ind]
 	
-def get_Nsat_src(M_h, Mstar_low):
+def get_Nsat_src(M_h, Mstar_low, survey):
 	""" Gets the fraction of source galaxies that are satelites in halos associated with the lens sample using the equivalent CDF. Zu & Mandelbaum 2015"""
 	
 	#Nsat_upper = get_Nsatsrc_CDF(M_h, Mstar_high)
@@ -549,17 +635,25 @@ def get_Nsat_src(M_h, Mstar_low):
 	#Nsat = Nsat_lower - Nsat_upper
 	
 	# Mstar_low is the lower mass threshold of the sample
-	Nsat = get_Nsatsrc_CDF(M_h, Mstar_low)
+	Nsat = get_Nsatsrc_CDF(M_h, Mstar_low, survey)
 	
 	return Nsat
 	
-def get_Nsatsrc_CDF(M_h, Mstar):
+def get_Nsatsrc_CDF(M_h, Mstar, survey):
 	""" Gets the fraction of source galaxies that are satelites in halos associated with the lens sample, for stellars masses AT OR ABOVE the average one for our source sample using the HOD model from Zu & Mandelbaum 2015."""
 	
-	f_Mh = fSHMR_inverse(Mstar)
-	Ncen_src = get_Ncen_src(M_h, Mstar)
-	Msat = get_Msat(f_Mh)
-	Mcut = get_Mcut(f_Mh)
+	if (survey == 'SDSS'):
+		import params as pa
+	elif (survey == 'LSST_DESI'):
+		import params_LSST_DESI as pa
+	else:
+		print "We don't have support for that survey yet; exiting."
+		exit()
+	
+	f_Mh = fSHMR_inverse(Mstar, survey)
+	Ncen_src = get_Ncen_src(M_h, Mstar,survey)
+	Msat = get_Msat(f_Mh, survey)
+	Mcut = get_Mcut(f_Mh, survey)
 	
 	if ((type(M_h)==float) or (type(Mstar)==float)):
 		Nsat = Ncen_src * (M_h / Msat)**(pa.alpha_sat) * np.exp(-Mcut / M_h)
@@ -570,11 +664,11 @@ def get_Nsatsrc_CDF(M_h, Mstar):
 				Nsat[i,j] = Ncen_src[i,j] * (M_h[j] / Msat[i])**(pa.alpha_sat) * np.exp(-Mcut[i] / M_h[j])
 	return Nsat
 	
-def get_Ncen_src(Mh, Mstar):
+def get_Ncen_src(Mh, Mstar, survey):
 	""" Get the CUMULATIVE distribution of central galaxies for the sources from the HOD model from Zu & Mandelbaum 2015"""
 	
-	sigmaMstar = get_sigMs(Mh)
-	fshmr = get_fSHMR(Mh)
+	sigmaMstar = get_sigMs(Mh, survey)
+	fshmr = get_fSHMR(Mh, survey)
 	
 	if ((type(Mstar)==float) or (type(Mh)==float)):
 		Ncen_CDF = 0.5 * (1. - scipy.special.erf((np.log(Mstar) - np.log(fshmr)) / (np.sqrt(2.) * sigmaMstar)))
@@ -586,8 +680,16 @@ def get_Ncen_src(Mh, Mstar):
 	
 	return Ncen_CDF
 	
-def get_sigMs(Mh):
+def get_sigMs(Mh, survey):
 	""" Get sigma_ln(M*) as a function of the halo mass."""
+	
+	if (survey == 'SDSS'):
+		import params as pa
+	elif (survey == 'LSST_DESI'):
+		import params_LSST_DESI as pa
+	else:
+		print "We don't have support for that survey yet; exiting."
+		exit()
 	
 	if (type(Mh)==float):
 	
@@ -605,13 +707,21 @@ def get_sigMs(Mh):
 
 	return sigM
 	
-def get_fSHMR(Mh):
+def get_fSHMR(Mh, survey):
 	""" Get Mstar in terms of Mh using f_SHMR inverse relationship."""
+	
+	if (survey == 'SDSS'):
+		import params as pa
+	elif (survey == 'LSST_DESI'):
+		import params_LSST_DESI as pa
+	else:
+		print "We don't have support for that survey yet; exiting."
+		exit()
 	
 	Mstar = np.logspace(0, 13, 2000)
 	
-	Mh_vec = fSHMR_inverse(Mstar)
-	print "Mh_vec=", Mh_vec
+	Mh_vec = fSHMR_inverse(Mstar, survey)
+	#print "Mh_vec=", Mh_vec
 	
 	Mh_interp = scipy.interpolate.interp1d(Mh_vec, Mstar)
 	
@@ -619,23 +729,47 @@ def get_fSHMR(Mh):
 	
 	return Mstar_ans
 	
-def fSHMR_inverse(Ms):
+def fSHMR_inverse(Ms, survey):
 	""" Get Mh in terms of Mstar """
+	
+	if (survey == 'SDSS'):
+		import params as pa
+	elif (survey == 'LSST_DESI'):
+		import params_LSST_DESI as pa
+	else:
+		print "We don't have support for that survey yet; exiting."
+		exit()
 	
 	m = Ms / pa.Mso
 	Mh = pa.M1 * m**(pa.beta) * np.exp( m**pa.delta / (1. + m**(-pa.gamma)) - 0.5)
 	
 	return Mh
 	
-def get_Msat(f_Mh):
+def get_Msat(f_Mh, survey):
 	""" Returns parameter representing the characteristic mass of a single-satelite hosting galaxy, Zu & Mandelbaum 2015."""
+	
+	if (survey == 'SDSS'):
+		import params as pa
+	elif (survey == 'LSST_DESI'):
+		import params_LSST_DESI as pa
+	else:
+		print "We don't have support for that survey yet; exiting."
+		exit()
 	
 	Msat = pa.Bsat * 10**12 * (f_Mh / 10**12)**pa.beta_sat
 	
 	return Msat
 	
-def get_Mcut(f_Mh):
+def get_Mcut(f_Mh, survey):
 	""" Returns the parameter representing the cutoff mass scales """
+	
+	if (survey == 'SDSS'):
+		import params as pa
+	elif (survey == 'LSST_DESI'):
+		import params_LSST_DESI as pa
+	else:
+		print "We don't have support for that survey yet; exiting."
+		exit()
 	
 	Mcut = pa.Bcut * 10**12 * ( f_Mh / 10**12) ** pa.beta_cut
 	
@@ -655,14 +789,22 @@ def NsatNsat(alpha, Nsat_1, Nsat_2):
 	
 	return NsNs
 		
-def wgg_2halo(rp_cents_, bd, bs, savefile):
+def wgg_2halo(rp_cents_, bd, bs, savefile, survey):
 	""" Returns wgg for the 2-halo term only."""
 	
+	if (survey == 'SDSS'):
+		import params as pa
+	elif (survey == 'LSST_DESI'):
+		import params_LSST_DESI as pa
+	else:
+		print "We don't have support for that survey yet; exiting."
+		exit()
+	
 	# Get the redshift window functions
-	z_gg, win_gg = window()
+	z_gg, win_gg = window(survey)
 	
 	# Get the NL DM power spectrum from camb (this is only for the 2-halo term)
-	(k_gg, P_gg) = get_Pk(z_gg)
+	(k_gg, P_gg) = get_Pk(z_gg, survey)
 	
 	# First do the integral over z. Don't yet interpolate in k.
 	zint_gg = np.zeros(len(k_gg))
@@ -698,7 +840,7 @@ def wgg_2halo(rp_cents_, bd, bs, savefile):
 	
 	return wgg_2h
 
-def wgg_full(rp_c, fsat, fsky, bd, bs, savefile_1h, savefile_2h, plotfile):
+def wgg_full(rp_c, fsat, fsky, bd, bs, savefile_1h, savefile_2h, plotfile,survey):
 	""" Combine 1 and 2 halo terms of wgg """
 	
 	# Check if savefile_1h exists and if not compute the 1halo term.
@@ -707,7 +849,7 @@ def wgg_full(rp_c, fsat, fsky, bd, bs, savefile_1h, savefile_2h, plotfile):
 		(rp_cen, wgg_1h) = np.loadtxt(savefile_1h, unpack=True)	
 	else:
 		print "Computing wgg 1halo term."
-		wgg_1h = wgg_1halo_Four(rp_c, fsat, fsky, savefile_1h)
+		wgg_1h = wgg_1halo_Four(rp_c, fsat, fsky, savefile_1h, survey)
 		
 	# Same for savefile_2h 
 	if (os.path.isfile(savefile_2h)):
@@ -715,7 +857,7 @@ def wgg_full(rp_c, fsat, fsky, bd, bs, savefile_1h, savefile_2h, plotfile):
 		(rp_cen, wgg_2h) = np.loadtxt(savefile_2h, unpack=True)
 	else:	
 		print "Computing wgg 2halo term."
-		wgg_2h = wgg_2halo(rp_c, bd, bs, savefile_2h)
+		wgg_2h = wgg_2halo(rp_c, bd, bs, savefile_2h,survey)
 	
 	wgg_tot = wgg_1h + wgg_2h 
 	

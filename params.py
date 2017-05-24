@@ -3,6 +3,7 @@
 import numpy as np
 
 run_quants 		=	False # For the Blazek case, whether you want to recompute F, cz, and SigIA
+survey			=	'SDSS'
 
 # Parameters associated with the sample / shape noise calcuation 
 e_rms_Bl_a 		= 	0.3 # rms ellipticity of sample a, Blazek method
@@ -14,8 +15,8 @@ Area_l 			=	7131 # Area associated with the lens sample in square DEGREES
 fsky			=   Area_l / 41253. # Assumes the lens area is the limiting factor
 n_s 			=	1.2 # The number density of sources in the sample per square ARCMINUTE
 S_to_N 			= 	15. # The signal to noise of the lensing measurement (?) - necessary for estimating sigma_e
-a_con			=	[0.7] #[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9] #[1./1.25, 1./1.5, 1./1.75]	# Fiducial constant offset, approximated from Singh 2016 assuming unprimed method isophotal and primed ReGaussianisation
-cov_perc 		= 	[0.6] #[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9] #percentage covariance between methods, shape measurement method
+a_con			=	[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9] #[1./1.25, 1./1.5, 1./1.75]	# Fiducial constant offset, approximated from Singh 2016 assuming unprimed method isophotal and primed ReGaussianisation
+cov_perc 		= 	[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9] #percentage covariance between methods, shape measurement method
 e_rms_mean 		=	np.abs((e_rms_b+e_rms_a)/2.) # This is the e_rms used in computing the shared weight for shapes methods
 N_shapes		= 	3.0*10**7 # Number of galaxies in the shape sample.
 N_LRG			=	62081 # Numbr of galaxies in the LRG sample.
@@ -92,7 +93,7 @@ zmax_ph	=	5.0 # Maximum photo-z
 
 # Fractional errors on 'fudge factors' we are using to get a handle on the relative importance of different systematic errors.
 fudge_frac_level = [0.02, 0.04, 0.06, 0.08, 0.1, 0.2, 0.4, 0.6, 0.8]
-fudge_Ncorr = 	[0.02, 0.04, 0.06, 0.08, 0.1, 0.2, 0.4, 0.6, 0.8]
+fudge_Ncorr = 	0. #[0.02, 0.04, 0.06, 0.08, 0.1, 0.2, 0.4, 0.6, 0.8]
 fudge_czA	= 	0.
 fudge_czB	=	0.
 fudge_sigA	=	0.
@@ -125,8 +126,8 @@ bs_Bl = 1. # SDSS shape sample - "garden variety" galaxies.
 bs_shapes = 1. # SDSS shape sample - "garden variety" galaxies.
 bd_Bl = 2.07 #1.77
 bd_shapes = 2.07 #1.77
-Ai_Bl = 3.0 # CURRENTLY USING BOSS LOWZ VALUE scaled ad hoc for luminosity.
-Ai_shapes = 3.0  # CURRENTLY USING BOSS LOWZ VALUE scaled ad hoc for luminosity.
+Ai_Bl = 0.25 # SDSS shape sample has luminosity ~ SDSS L4 aka M_r ~ [-20 -> -19], aka much fainter than LOWZ. This Ai computed by using this M_r in eqn 34 of Singh 2014 (pwr law A_i(L_r)).
+Ai_shapes = 0.25  # Is this power law still valid for such dimmer galaxies? Not entirely sure.
 C1rho = 0.0134
 
 # 1 halo gal-gal term parameters
@@ -136,42 +137,49 @@ ng_Bl =  10**(-4) # SDSS LRG value #3. * 10**(-4) # volume density of galaxies f
 #Mstar_src_high = 1.2*10**10 * (HH0/100.) # Upper edge of stellar mass range in units of Msol / h^2
 Mstar_src_thresh = 10** (9.95) * (HH0/100.)**2 # Lower threshold of galaxy stellar mass sample in units of Msol / h^2, from BOSS 2012
 fsat_LRG = 0.0636 # Satelite fraction from Reid & Spergel 2008 # 0.14 approximate boss lowz val .
-# From Zu & Mandelbaum 2015, 1505.02781:
+
+##### Parameters of the HOD model, taken from Zu & Mandelbaum 2015, 1505.02781.  #####
+# Ncen params: these refer to the central galaxies for SDSS MGS, which I think is close enough to SDSS LRGs to be okay to map to our case:
+sigMs = 0.50
+eta = -0.04
+M1 = 10**(12.10)
+
+# Nsat params: these refer at the moment to satellite occupation for SDSS MGS galaxies, which are much brighter than the SDSS shapes sample we care about...
+Bsat = 8.98
+beta_sat =0.90
+Bcut = 0.86
+beta_cut = 0.41
+alpha_sat = 1.00
+
+# f_SHMR parameters: these are used in getting Ncen and Nsat. They are probably okay for Ncen but perhaps not for Nsat. We may need to have two sets of these parameters.
 delta = 0.42
 gamma= 1.21
 Mso = 10**(10.31)
-M1 = 10**(12.10)
 beta = 0.33
-Bsat = 8.98
-beta_sat =0.90
-alpha_sat = 1.00
-Bcut = 0.86
-beta_cut = 0.41
-eta = -0.04
-sigMs = 0.50
 
-
-# 1 halo IA term parameters, from Singh et al. 2014 Table 1
-q11_Bl = 0.02056  #0.005 LOWZ   
+# 1-halo IA term parameters.
+# These are for the model given by Schneider & Bridle 2010, 0903.3870, but for the parameters given in Table 1 of Singh et al. 2014.
+# The q_ij parameters are taken directly from this table. a_h is computed by taking the power law of a_h as a function of luminosity a_h(L) from Singh et al. 2014 and integrating it over the Schechter luminosity function from Krause et al. 2015 for the limiting magnitude of SDSS shapes, r<21.8, and the Nakajima redshift distribution. (see ./secondary_scripts/ah_calculation.ipynb)
+ah_Bl  =  0.01 
+q11_Bl = 0.005    
 q12_Bl  = 5.909
 q13_Bl  = 0.3798
-q21_Bl  = 1.978  #0.6    
+q21_Bl  = 0.6    
 q22_Bl  = 1.087
 q23_Bl  = 0.6655
-q31_Bl  = 4.154  #3.1    
+q31_Bl  = 3.1    
 q32_Bl  = 0.1912
 q33_Bl  = 0.4368
-ah_Bl  =  0.05 # BOSS LOWZ value scaled in an adhoc was for luminosity (April 11 2017)
-
-q11_shapes = 0.02056  #0.005 LOWZ   
+ah_shapes =  0.01
+q11_shapes = 0.005  
 q12_shapes = 5.909
 q13_shapes = 0.3798
-q21_shapes = 1.978  #0.6    
+q21_shapes = 0.6    
 q22_shapes = 1.087
 q23_shapes = 0.6655
-q31_shapes = 4.154  #3.1    
+q31_shapes = 3.1    
 q32_shapes = 0.1912
 q33_shapes = 0.4368
-ah_shapes =  0.05
+
 
 

@@ -1,10 +1,9 @@
 # This file contains setup-type functions which are shared between the method from Blazek et al 2012 and the shape measurement method.
 
-import IA_params_Fisher as pa
-
 import numpy as np
 import scipy.interpolate
 import scipy.integrate
+import matplotlib.pyplot as plt
 
 # Functions to set up the rp bins
 
@@ -37,7 +36,7 @@ def average_in_bins(F_, R_, Rp_):
 		
 	return F_binned
 	
-def get_areas(bins, z_eff):
+def get_areas(bins, z_eff, survey):
 	"""Gets the area of each projected radial bin, in square arcminutes. z_eff = effective lens redshift. """
 
 	# Areas in units (Mpc/h)^2
@@ -46,7 +45,7 @@ def get_areas(bins, z_eff):
 		areas_mpch[i] = np.pi * (bins[i+1]**2 - bins[i]**2) 
 
 	#Comoving distance out to effective lens redshift in Mpc/h
-	chi_eff = com(z_eff)
+	chi_eff = com(z_eff, survey)
 
 	# Areas in square arcminutes (466560000 / pi = sqAM in a sphere)
 	areas_sqAM = areas_mpch * (466560000. / np.pi) / (4 * np.pi * chi_eff**2)
@@ -55,15 +54,15 @@ def get_areas(bins, z_eff):
 	
 # Redshift / comoving distance-related functions 
 
-def get_z_close(z_l, cut_MPc_h):
+def get_z_close(z_l, cut_MPc_h, survey):
 	""" Gets the z above z_l which is the highest z at which we expect IA to be present for that lens. cut_Mpc_h is that separation in Mpc/h."""
 
-	com_l = com(z_l) # Comoving distance to z_l, in Mpc/h
+	com_l = com(z_l, survey) # Comoving distance to z_l, in Mpc/h
 
 	tot_com_high = com_l + cut_MPc_h
 	tot_com_low = com_l - cut_MPc_h
 	
-	z_of_com, com_of_z = z_interpof_com()
+	z_of_com, com_of_z = z_interpof_com(survey)
 
 	# Convert tot_com back to a redshift.
 
@@ -72,8 +71,16 @@ def get_z_close(z_l, cut_MPc_h):
 
 	return (z_cl_high, z_cl_low)
 
-def com(z_):
+def com(z_, survey):
 	""" Gets the comoving distance in units of Mpc/h at a given redshift, z_ (assuming the cosmology defined in the params file). """
+
+	if (survey == 'SDSS'):
+		import params as pa
+	elif (survey == 'LSST_DESI'):
+		import params_LSST_DESI as pa
+	else:
+		print "We don't have support for that survey yet; exiting."
+		exit()
 
 	OmL = 1. - pa.OmC - pa.OmB - pa.OmR - pa.OmN
 	def chi_int(z):
@@ -89,12 +96,12 @@ def com(z_):
 
 	return chi
 
-def z_interpof_com():
+def z_interpof_com(survey):
 	""" Returns an interpolating function which can give z as a function of comoving distance. """
 
 	z_vec = scipy.linspace(0., 10., 10000) # This hardcodes that we don't care about anything over z=2100
 
-	com_vec = com(z_vec)
+	com_vec = com(z_vec, survey)
 
 	z_of_com = scipy.interpolate.interp1d(com_vec, z_vec)
 	com_of_z =  scipy.interpolate.interp1d(z_vec, com_vec)
@@ -132,6 +139,11 @@ def get_NofZ_unnormed(dNdzpar, dNdztype, z_min, z_max, zpts):
 	else:
 		print "dNdz type "+str(dNdztype)+" not yet supported; exiting."
 		exit()
+		
+	plt.figure()
+	plt.plot(z, nofz_)
+	plt.savefig('./plots/dNdz_unnormed_LSST.pdf')
+	plt.close()
 
 	return (z, nofz_)
 	
