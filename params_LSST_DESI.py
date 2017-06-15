@@ -13,7 +13,7 @@ e_rms_b 		= 	0.185 # rms ellipticity of sample measured with method b, shapes me
 n_l 			= 	300. # The number of lenses in the lens sample per square DEGREE. DESI Final Design Report, top of page 52. 
 Area_l 			=	3000. # Area associated with the lens sample in square DEGREES. Overlap with LSST given in "Spectroscopic Needs for Calibration of LSST Photometric Redshifts" whitepaper.
 fsky			=   Area_l / 41253. # Assumes the lens area is the limiting factor
-n_s 			=	26. # The number density of sources in the sample per square ARCMINUTE. In the abstract of Chang et al. 2013.
+n_s 			=	26. # The effective number density of sources in the sample per square ARCMINUTE. In the abstract of Chang et al. 2013.
 a_con			=	[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]	# Fiducial constant offset, approximated from Singh 2016 assuming unprimed method isophotal and primed ReGaussianisation
 cov_perc 		= 	[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9] #percentage covariance between methods, shape measurement method
 e_rms_mean 		=	np.abs((e_rms_b+e_rms_a)/2.) # This is the e_rms used in computing the shared weight for shapes methods
@@ -69,7 +69,7 @@ close_cut = 100 # Mpc/h # The maximum separation from a lens to consider part of
 #Blazek et al. case
 zsmin 	=	0.0
 zsmax 	= 	6.0
-zphmin	=	zeff
+zphmin	=	0.
 zphmax	=	7.0
 delta_z	=	0.57 # The width of the redshift slice which begins at the lens and ends at the top of sample a. Chosen to have roughly same number of l-s pairs in each bin for zeff = 0.77 and LSST dNdzph.
 zmin_dndz = zsmin

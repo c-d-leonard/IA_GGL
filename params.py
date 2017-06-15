@@ -13,7 +13,7 @@ e_rms_b 		= 	0.31 # rms ellipticity of sample measured with method b, shapes met
 n_l 			= 	8.7 # The number of lenses in the lens sample per square DEGREE
 Area_l 			=	7131 # Area associated with the lens sample in square DEGREES
 fsky			=   Area_l / 41253. # Assumes the lens area is the limiting factor
-n_s 			=	1.2 # The number density of sources in the sample per square ARCMINUTE
+n_s 			=	1. # The EFFECTIVE number density of sources in the sample per square ARCMINUTE - 1.2 is unweighted. This number is from Rachel in an email June 7.
 S_to_N 			= 	15. # The signal to noise of the lensing measurement (?) - necessary for estimating sigma_e
 a_con			=	[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9] #[1./1.25, 1./1.5, 1./1.75]	# Fiducial constant offset, approximated from Singh 2016 assuming unprimed method isophotal and primed ReGaussianisation
 cov_perc 		= 	[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9] #percentage covariance between methods, shape measurement method
@@ -78,7 +78,7 @@ close_cut = 100 # Mpc/h # The maximum separation from a lens to consider part of
 #Blazek et al. case
 zsmin 	=	0.0
 zsmax 	= 	3.0
-zphmin	=	zeff
+zphmin	=	0.
 zphmax	=	5.0
 delta_z	=	0.17  # The width of the redshift slice which begins at the lens and ends at the top of sample a
 zmin_dndz = zsmin

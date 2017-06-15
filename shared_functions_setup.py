@@ -139,11 +139,6 @@ def get_NofZ_unnormed(dNdzpar, dNdztype, z_min, z_max, zpts):
 	else:
 		print "dNdz type "+str(dNdztype)+" not yet supported; exiting."
 		exit()
-		
-	plt.figure()
-	plt.plot(z, nofz_)
-	plt.savefig('./plots/dNdz_unnormed_LSST.pdf')
-	plt.close()
 
 	return (z, nofz_)
 	
