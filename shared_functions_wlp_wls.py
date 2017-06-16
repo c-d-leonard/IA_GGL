@@ -1,7 +1,5 @@
 # This file contains functions for getting w_{l+} w_{ls} which are shared between the Blazek et al. 2012 method and the multiple shape measurements method.
 
-#import params as pa
-#import params_LSST_DESI as pa
 import scipy.integrate
 import matplotlib.pyplot as plt
 import scipy.interpolate
@@ -320,7 +318,7 @@ def wgp_full(rp_c, bd, Ai, ah, q11, q12, q13, q21, q22, q23, q31, q32, q33, save
 	
 # Functions to get the 1halo term of w_{ls}
 
-def vol_dens(fsky, zmin_dndz, zmax_dndz, N,survey):
+def vol_dens(fsky, N,survey):
 	""" Computes the volume density of galaxies given the fsky, minimum z, max z, and number of galaxies."""
 	
 	if (survey == 'SDSS'):
@@ -331,7 +329,7 @@ def vol_dens(fsky, zmin_dndz, zmax_dndz, N,survey):
 		print "We don't have support for that survey yet; exiting."
 		exit()
 	
-	V = fsky * 4. / 3. * np.pi * (setup.com(pa.zmax_dndz)**3 - setup.com(pa.zmin_dndz)**3)
+	V = fsky * 4. / 3. * np.pi * (setup.com(pa.zmax_dndz, survey)**3 - setup.com(pa.zmin_dndz, survey)**3)
 	ndens = N / V
 	return ndens
 
@@ -482,7 +480,8 @@ def get_Pkgg_1halo(rvec_nfw, kvec_ft, fsat, fsky, survey):
 	#Nsat_src = get_Nsat_src(pa.Mvir, pa.Mstar_src_high, pa.Mstar_src_low) # For source galaxies, using a halo model, as in Zu & Mandelbaum 2015.
 	
 	# Get the lower stellar mass cutoff corresponding to the total empirical volume density of the source sample:
-	Mstarlow = get_Mstar_low(survey)
+	nsrc = vol_dens(pa.fsky, pa.N_shapes, survey) # The true total volume density of sources (from the empirial surface density and z range of surey).
+	Mstarlow = get_Mstar_low(survey, nsrc)
 	
 	Nsat_src = get_Nsat_src(pa.Mvir, Mstarlow, survey) # For source galaxies, using a halo model, as in Zu & Mandelbaum 2015.
 	
@@ -551,7 +550,94 @@ def get_alpha(M):
 		
 	return alpha
 
-def get_Mstar_low(survey):
+def get_Mh_avg(Mlow_star, ngvol, survey):
+	""" This function gets the average halo mass for the sample """
+	
+	# Get the high and low edges of halo mass distribution for this sample
+	Mh_low = get_Mhlow( Mlow_star, survey )
+	Mh_high = 10**16 # This is the max value included in calculating M*; alternatively just use a very large value, large enough the HMF is practically 0.
+	
+	# Get the average halo mass:
+	if (survey == 'SDSS'):
+		import params as pa
+	elif (survey == 'LSST_DESI'):
+		import params_LSST_DESI as pa
+	else:
+		print "We don't have support for that survey yet; exiting."
+		exit()
+	
+	Mh_test = np.logspace(np.log10(Mh_low), np.log10(Mh_high), 10000)
+	# Get the halo mass function (from CCL) to integrate over (dn / dlog10M, Tinker 2010 I think)
+	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = 2.1*10**(-9), n_s=0.96)
+	cosmo = ccl.Cosmology(p)
+	HMF = ccl.massfunction.massfunc(cosmo, Mh_test / (pa.HH0/100.), 1./ (1. + pa.zeff), odelta=200.)
+	Ncen = get_Ncen_src(Mh_test, Mlow_star, survey)
+	
+	logMh_bins = np.linspace(np.log10(Mh_low), np.log10(Mh_high),20)
+	
+	n_in_bin = np.zeros(len(logMh_bins)-1) # Number density of halos with at least a central galaxy in this bin.
+	for i in range(0, len(logMh_bins)-1):
+		ind_low = next(j[0] for j in enumerate(Mh_test) if j[1]>=10**(logMh_bins[i]))
+		ind_high = next(j[0] for j in enumerate(Mh_test) if j[1]>=10**(logMh_bins[i+1]))
+		n_in_bin[i] = scipy.integrate.simps(HMF[ind_low:ind_high]*Ncen[ind_low:ind_high], np.log10(Mh_test)[ind_low:ind_high])
+	
+	logMcentres = np.zeros(len(logMh_bins)-1)
+	for i in range(0,len(logMcentres)):
+		logMcentres[i] = logMh_bins[i] + (logMh_bins[i+1] - logMh_bins[i])
+		
+	avg = 10**(np.sum( n_in_bin * logMcentres) / np.sum(n_in_bin))
+	
+	return avg
+
+def get_Mhlow( Mlow_star, survey):
+	""" This function gets the lowest value of the halo mass for which the halo is at all likely to host a galaxy, for this sample """
+	
+	Mh_test = np.logspace(9., 16., 1000)
+	Ncen_of_Mh = get_Ncen_src(Mh_test, Mlow_star, survey)
+	Nsat_of_Mh = get_Nsat_src(Mh_test, Mlow_star, survey)
+	
+	not_zero = 0.0001
+	ind = next(j[0] for j in enumerate(Ncen_of_Mh) if j[1]>=not_zero)
+	
+	Mhlow = Mh_test[ind]
+	
+	return Mhlow
+	
+def get_Mhhigh( Mh_low, Mlow_star, ngvol, survey ):
+	""" This function gets the max value of the halos mass that should be included to match the galaxy density of the sample. """
+	""" Turns out this is definitionally the highest value of the halo mass includes when computing the stellar mass cutoff, so I'm not using this function, but I'm going to keep hold of it for now in case I need it."""
+	
+	Mh_test = np.logspace(np.log10(Mh_low), 16., 1000)
+	Ncen_of_Mh = get_Ncen_src(Mh_test, Mlow_star, survey)
+	Nsat_of_Mh = get_Nsat_src(Mh_test, Mlow_star, survey)
+	
+	if (survey == 'SDSS'):
+		import params as pa
+	elif (survey == 'LSST_DESI'):
+		import params_LSST_DESI as pa
+	else:
+		print "We don't have support for that survey yet; exiting."
+		exit()
+	
+	# Get the halo mass function (from CCL) to integrate over (dn / dlog10M, Tinker 2010 I think)
+	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = 2.1*10**(-9), n_s=0.96)
+	cosmo = ccl.Cosmology(p)
+	HMF = ccl.massfunction.massfunc(cosmo, Mh_test / (pa.HH0/100.), 1./ (1. + pa.zeff), odelta=200.)
+	
+	ng_of_Mh = np.zeros(len(Mh_test))
+	for i in range(1,len(Mh_test)):
+		#ng_of_Mh[i] = scipy.integrate.simps(HMF[0:i] * (Ncen_of_Mh[0:i] + Nsat_of_Mh[0:i]), np.log10(Mh_test)[0:i])
+		ng_of_Mh[i] = scipy.integrate.simps(HMF * (Ncen_of_Mh + Nsat_of_Mh), np.log10(Mh_test))
+	print "ng=", ng_of_Mh
+		
+	ind = next(j[0] for j in enumerate(ng_of_Mh) if j[1]>=ngvol)
+	
+	Mhigh = Mh_test[ind]
+	
+	return Mhigh
+	
+
+def get_Mstar_low(survey, ngal):
 	""" For a given number density of source galaxies (calculated in the vol_dens function), get the appropriate choice for the lower bound of Mstar """
 	
 	if (survey == 'SDSS'):
@@ -562,68 +648,27 @@ def get_Mstar_low(survey):
 		print "We don't have support for that survey yet; exiting."
 		exit()
 	
-	nsrc = vol_dens(pa.fsky, pa.zmin_dndz, pa.zmax_dndz, pa.N_shapes, survey) # The true total volume density of sources (from the empirial surface density and z range of surey).
-	#print "nsrc=", nsrc
-	
 	# Define a vector of Mstar_low value to try
-	Ms_low_vec = np.logspace(8., 12.,1000)
+	Ms_low_vec = np.logspace(9., 12.,1000)
 	# Define a vector of Mh values to integrate over
 	Mh_vec = np.logspace(9., 16., 1000)
 	
-	# Get Nsat as a function of the values of the two above arrays
+	# Get Nsat and Ncen as a function of the values of the two above arrays
 	Nsat = get_Nsat_src(Mh_vec, Ms_low_vec, survey)
 	Ncen = get_Ncen_src(Mh_vec, Ms_low_vec, survey)
-	
-	# Check the shape of how these things are ocming out:
-	#Nsat_fixMs= get_Nsat_src(Mh_vec, 10.**10,survey)
-	#Ncen_fixMs = get_Ncen_src(Mh_vec, 10.**10)
-	#Nsat_fixMh = get_Nsat_src(10.**13, Ms_low_vec)
-	#Ncen_fixMh = get_Ncen_src(10.**13, Ms_low_vec)
-	
-	"""plt.figure()
-	plt.semilogx(Mh_vec, Nsat_fixMs)
-	plt.savefig('./plots/test_NsatfixMs.pdf')
-	plt.close()
-	
-	plt.figure()
-	plt.semilogx(Ms_low_vec, Nsat_fixMh)
-	plt.savefig('./plots/test_NsatfixMh.pdf')
-	plt.close()
-	
-	plt.figure()
-	plt.semilogx(Mh_vec, Ncen_fixMs)
-	plt.savefig('./plots/test_NcenfixMs.pdf')
-	plt.close()
-	
-	plt.figure()
-	plt.semilogx(Ms_low_vec, Ncen_fixMh)
-	plt.savefig('./plots/test_NcenfixMh.pdf')
-	plt.close()"""
 	
 	# Get the halo mass function (from CCL) to integrate over (dn / dlog10M, Tinker 2010 I think)
 	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = 2.1*10**(-9), n_s=0.96)
 	cosmo = ccl.Cosmology(p)
 	HMF = ccl.massfunction.massfunc(cosmo, Mh_vec / (pa.HH0/100.), 1./ (1. + pa.zeff), odelta=200.)
 	
-	"""plt.figure()
-	plt.loglog(Mh_vec, HMF)
-	plt.savefig('./plots/test_HMF.pdf')
-	plt.close()"""
-	
 	# Now get what nsrc should be for each Mstar_low cut 
 	nsrc_of_Mstar = np.zeros(len(Ms_low_vec))
 	for i in range(0,len(Ms_low_vec)):
 		nsrc_of_Mstar[i] = scipy.integrate.simps(HMF * ( Nsat[i, :] + Ncen[i, :]), np.log10(Mh_vec))
-		
-	"""plt.figure()
-	plt.loglog(Ms_low_vec, nsrc_of_Mstar)
-	plt.savefig('./plots/test_nsrc_of_Mstar.pdf')
-	plt.close()"""
 	
-	ind = next(j[0] for j in enumerate(nsrc_of_Mstar) if j[1]<=nsrc)
-	"""print "nsrc of Mstar=", nsrc_of_Mstar[ind]
-	print "nsrc direcr=", nsrc
-	print "Mstar threshold calculated=", Ms_low_vec[ind]"""
+	# Get the correct Mstar cut	
+	ind = next(j[0] for j in enumerate(nsrc_of_Mstar) if j[1]<=ngal)
 	
 	return Ms_low_vec[ind]
 	
@@ -655,7 +700,7 @@ def get_Nsatsrc_CDF(M_h, Mstar, survey):
 	Msat = get_Msat(f_Mh, survey)
 	Mcut = get_Mcut(f_Mh, survey)
 	
-	if ((type(M_h)==float) or (type(Mstar)==float)):
+	if ((type(M_h)==float) or (type(Mstar)==float) or(type(M_h)==np.float64) or (type(Mstar)==np.float64) ):
 		Nsat = Ncen_src * (M_h / Msat)**(pa.alpha_sat) * np.exp(-Mcut / M_h)
 	elif(((type(Mstar)==list) or isinstance(Mstar, np.ndarray)) and ((type(M_h)==list) or isinstance(M_h, np.ndarray))):
 		Nsat=np.zeros((len(M_h), len(Mstar)))
@@ -670,7 +715,7 @@ def get_Ncen_src(Mh, Mstar, survey):
 	sigmaMstar = get_sigMs(Mh, survey)
 	fshmr = get_fSHMR(Mh, survey)
 	
-	if ((type(Mstar)==float) or (type(Mh)==float)):
+	if ((type(Mstar)==float) or (type(Mh)==float) or(type(Mh)==np.float64) or (type(Mstar)==np.float64) ):
 		Ncen_CDF = 0.5 * (1. - scipy.special.erf((np.log(Mstar) - np.log(fshmr)) / (np.sqrt(2.) * sigmaMstar)))
 	elif(((type(Mstar)==list) or (isinstance(Mstar, np.ndarray))) and ((type(Mh)==list) or isinstance(Mh, np.ndarray))):
 		Ncen_CDF = np.zeros((len(Mstar), len(Mh)))
@@ -718,10 +763,23 @@ def get_fSHMR(Mh, survey):
 		print "We don't have support for that survey yet; exiting."
 		exit()
 	
-	Mstar = np.logspace(0, 13, 2000)
+	Mstar = np.logspace(0, 14, 2000)
 	
 	Mh_vec = fSHMR_inverse(Mstar, survey)
-	#print "Mh_vec=", Mh_vec
+	
+	#plt.figure()
+	#plt.loglog(Mh_vec, Mstar)
+	#plt.xlim(10**11, 3*10**15)
+	#plt.ylim(7*10**8, 6*10**11)
+	#plt.savefig('./plots/infSHMR.pdf')
+	#plt.close()
+	
+	#plt.figure()
+	#plt.loglog(Mstar, Mh_vec)
+	#plt.ylim(10**11, 3*10**15)
+	#plt.xlim(7*10**8, 6*10**11)
+	#plt.savefig('./plots/infSHMR_inv.pdf')
+	#plt.close()
 	
 	Mh_interp = scipy.interpolate.interp1d(Mh_vec, Mstar)
 	

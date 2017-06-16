@@ -28,7 +28,7 @@ SN_med			=	11.8
 R_med			=	1.63
 
 # Fractional errors on 'fudge factors' we are using to get a handle on the relative importance of different systematic errors.
-fudge_frac_level = [0.02, 0.04, 0.06, 0.08, 0.1, 0.2, 0.4, 0.6, 0.8]
+fudge_frac_level = np.logspace(-4, 0, 15)
 fudge_Ncorr = 	0.
 fudge_czA	= 	0.
 fudge_czB	=	0.
@@ -60,8 +60,8 @@ pztype		=	'Gaussian'
 sigz_fid	=	0.05  # The photometric redshift error given a Gaussian photo_z model. From LSST specifications confluence page.
 pzpar_fid 	=	[sigz_fid] # Make this a list to make it more generic to pass around
 
-boost_sys	=	1.00 # Setting this to 1 for now because I want to ignore boost sys error at the moment.
-#boost_sys	=	1.03 # Multiplier for the boost systematic error. This is the value given in Blazek et al. 2012. It may need to changet to be accurate for LSST + DESI but I'm not sure how right now. 
+#boost_sys	=	1.00 # Setting this to 1 for now because I want to ignore boost sys error at the moment.
+boost_sys	=	1.03 # Multiplier for the boost systematic error. This is the value given in Blazek et al. 2012. It is probably quite a conservative estimate for LSST + DESI.
 
 # Parameters related to the spec and photo z's of the source sample and other redshift cuts.
 zeff 	= 	0.77  # The effective redshift of the lens sample. Estimated from Figure 3.8 (COSMOS photo-z estimate) of the DESI final design report, see ./plotting_scripts/DESI_zeff.ipynb
@@ -111,7 +111,8 @@ Ai_shapes = 4.28 # Computed assuming r_lim = 27 and lum func / A(L) relationship
 C1rho = 0.0134
 
 # 1 halo gal-gal term parameters
-Mvir = 1.6 * 10**(14) # I have estiated this from extending the Mavg line in Figure 3.4 of the DESI design book to z=0.8. This is for the BGS sample in the first place so I'm not sure it makes sense. 
+Mvir = 1.6 * 10**(14) # I have estimated this from extending the Mavg line in Figure 3.4 of the DESI design book to z=0.8. This is for the BGS sample in the first place so I'm not sure it makes sense. 
+ng_Bl = 3. * 10**(-4)
 fsat_LRG = 0.14 # The DESI volume density is roughly the same as that of BOSS LOWZ, so I am using the value for BOSS LOWZ that Sukhdeep told me. But I'm not sure sure about this, because it assumes the DESI LRG sample is volume-limited and there is no effect from going to higher redshift.
 
 ##### Parameters of the HOD model, taken from Zu & Mandelbaum 2015, 1505.02781.  #####

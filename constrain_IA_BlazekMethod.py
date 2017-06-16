@@ -1,6 +1,6 @@
 # This is a script which predicts constraints on intrinsic alignments, using an updated version of the method of Blazek et al 2012 in which it is not assumed that only excess galaxies contribute to IA (rather it is assumed that source galaxies which are close to the lens along the line-of-sight can contribute.)
 
-SURVEY = 'SDSS'
+SURVEY = 'LSST_DESI'
 print "SURVEY=", SURVEY
 
 import numpy as np
@@ -265,11 +265,11 @@ def get_Sig_IA(z_l, z_ph_min_samp, z_ph_max_samp, erms, rp_bins_, rp_bin_c_, boo
 
 def get_est_DeltaSig(z_l, rp_bins, rp_bins_c, boost, F, cz, SigIA, g_IA_fid):
 	""" Returns the value of tilde Delta Sigma in bins"""
-	
 	# The first term is (1 + b_z) \Delta \Sigma ^{theory}, need theoretical Delta Sigma	
-	DS_the = get_DeltaSig_theory(z_l, rp_bins, rp_bins_c)
+	#DS_the = get_DeltaSig_theory(z_l, rp_bins, rp_bins_c)
 		
-	EstDeltaSig = np.asarray(DS_the) / cz + (boost-1.+ F) * SigIA * g_IA_fid
+	#EstDeltaSig = np.asarray(DS_the) / cz + (boost-1.+ F) * SigIA * g_IA_fid
+	EstDeltaSig = np.asarray(DeltaSigma_theoretical) / cz + (boost-1.+ F) * SigIA * g_IA_fid
 	
 	#plt.figure()
 	#plt.loglog(rp_bins_c, EstDeltaSig, 'g+', label='1-halo')
@@ -400,7 +400,6 @@ def get_gammaIA_cov(rp_bins, rp_bins_c, fudgeczA, fudgeczB, fudgeFA, fudgeFB, fu
 	# Boosts
 	Boost_a = get_boost(rp_cent, pa.boost_close)
 	Boost_b = get_boost(rp_cent, pa.boost_far)
-	
 	# Run F, cz, and SigIA, this takes a while so we don't always do it.
 	if pa.run_quants == True:
 	
@@ -436,7 +435,6 @@ def get_gammaIA_cov(rp_bins, rp_bins_c, fudgeczA, fudgeczB, fudgeFA, fudgeFB, fu
 		np.savetxt('./txtfiles/cz_afid_bfid_survey='+pa.survey+'.txt', save_cz)
 
 	############ gamma_IA ###########
-	
 	# gamma_IA_fiducial, from model
 	g_IA_fid = gamma_fid(rp_bins_c)
 	
@@ -480,94 +478,91 @@ def get_gammaIA_cov(rp_bins, rp_bins_c, fudgeczA, fudgeczB, fudgeFA, fudgeFB, fu
 	plt.savefig('./plots/check_DeltaSigma_var_SNanalytic_'+SURVEY+'_B_rpts2000.pdf')
 	plt.close()"""
 	
-	"""# Get the systematic error on boost-1. 
+	# Get the systematic error on boost-1. 
 	boosterr_sq_a = ((pa.boost_sys - 1.)*(Boost_a-1.))**2
-	boosterr_sq_b = ((pa.boost_sys - 1.)*(Boost_b-1.))**2"""
+	boosterr_sq_b = ((pa.boost_sys - 1.)*(Boost_b-1.))**2
 	
 	#gammaIA_tot_cov = np.zeros((len(rp_bins_c), len(rp_bins_c))) 
-	gammaIA_stat_cov = np.zeros((len(rp_bins_c), len(rp_bins_c)))
-	#gammaIA_sysZ_cov = np.zeros((len(rp_bins_c), len(rp_bins_c)))
+	gammaIA_stat_cov_withF = np.zeros((len(rp_bins_c), len(rp_bins_c)))
+	#gammaIA_stat_cov_noF = np.zeros((len(rp_bins_c), len(rp_bins_c)))
+	gammaIA_sysB_cov_withF = np.zeros((len(rp_bins_c), len(rp_bins_c)))
+	#gammaIA_sysB_cov_noF = np.zeros((len(rp_bins_c), len(rp_bins_c)))
+	gammaIA_sysZ_cov = np.zeros((len(rp_bins_c), len(rp_bins_c)))
 	# Calculate the covariance
 	for i in range(0,len((rp_bins_c))):	 
-		for j in range(0, len((rp_bins_c))):	
-		
-			#num_term_all = (( cz_a_fid * DeltaSig_est_a[i])**2  * ( (fudgeczA)**2 + (DeltaCov_a[i] / DeltaSig_est_a[i]**2) ) + ( cz_b_fid * DeltaSig_est_b[i])**2  * ( (fudgeczB)**2 + (DeltaCov_b[i] / DeltaSig_est_b[i]**2) )) / (( cz_a_fid * DeltaSig_est_a[i]) - ( cz_b_fid * DeltaSig_est_b[i]))**2
-		
-			#denom_term_all = ( ( cz_a_fid * (Boost_a[i] -1. + F_a_fid[i]) * Sig_IA_a_fid[i])**2 * ( (fudgeczA)**2 + (boosterr_sq_a[i] + (fudgeFA * F_a_fid[i])**2 ) / (Boost_a[i] -1. + F_a_fid[i])**2 + (fudgeSigA)**2 ) + ( cz_b_fid * (Boost_b[i] -1. + F_b_fid[i]) * Sig_IA_b_fid[i])**2 * ( (fudgeczB)**2 + (boosterr_sq_b[i] + (fudge_FB * F_b_fid[i])**2 ) / (Boost_b[i] -1. + F_b_fid[i])**2 + (fudgeSigB)**2 ) ) / ( ( cz_a_fid * (Boost_a[i] -1. + F_a_fid[i]) * Sig_IA_a_fid[i]) -  ( cz_b_fid * (Boost_b[i] -1. + F_b_fid[i]) * Sig_IA_b_fid[i]) )**2
-		
-			#gammaIA_tot_cov[i,i] = g_IA_fid[i]**2 * (num_term_all + denom_term_all)
-		
-			#num_term_sysZ = ((( cz_a_fid * DeltaSig_est_a[i])**2  * ( (fudgeczA)**2 ) ) + ( cz_b_fid * DeltaSig_est_b[i])**2  * ( (fudgeczB)**2 ) ) / (( cz_a_fid * DeltaSig_est_a[i]) - ( cz_b_fid * DeltaSig_est_b[i]))**2
-		
-			#denom_term_sysZ = ( ( cz_a_fid * (Boost_a[i] -1. + F_a_fid[i]) * Sig_IA_a_fid[i])**2 * ( (fudgeczA)**2 + ((fudgeFA * F_a_fid[i])**2 ) / (Boost_a[i] -1. + F_a_fid[i])**2 + (fudgeSigA)**2 ) + ( cz_b_fid * (Boost_b[i] -1. + F_b_fid[i]) * Sig_IA_b_fid[i])**2 * ( (fudgeczB)**2 + ((fudgeFB * F_b_fid[i])**2 ) / (Boost_b[i] -1. + F_b_fid[i])**2 + (fudgeSigB)**2 ) ) / ( ( cz_a_fid * (Boost_a[i] -1. + F_a_fid[i]) * Sig_IA_a_fid[i]) -  ( cz_b_fid * (Boost_b[i] -1. + F_b_fid[i]) * Sig_IA_b_fid[i]) )**2
-		
-			#gammaIA_sysZ_cov[i,i] = g_IA_fid[i]**2 * (num_term_sysZ + denom_term_sysZ)
-		
-			num_term_stat = cz_a_fid**2 * DeltaCov_a_import_CV[i,j] + cz_b_fid**2 * DeltaCov_b_import_CV[i,j]
-		
-			denom_term_stat =( ( cz_a_fid * (Boost_a[i] -1. + F_a_fid[i]) * Sig_IA_a_fid[i]) -  ( cz_b_fid * (Boost_b[i] -1. + F_b_fid[i]) * Sig_IA_b_fid[i]) ) * ( ( cz_a_fid * (Boost_a[j] -1. + F_a_fid[j]) * Sig_IA_a_fid[j]) -  ( cz_b_fid * (Boost_b[j] -1. + F_b_fid[j]) * Sig_IA_b_fid[j]) )
-		
-			gammaIA_stat_cov[i,j] = num_term_stat / denom_term_stat
-		
-	# For the systematics case, we need to add off-diagonal elements - we assume full correlations.
-	#for i in range(0,len((rp_bins_c))):	
-	#	for j in range(0,len((rp_bins_c))):
-	#		if (i != j):
-	#			gammaIA_sysZ_cov[i,j] = np.sqrt(gammaIA_sysZ_cov[i,i]) * np.sqrt(gammaIA_sysZ_cov[j,j])
-				
-	# Now get the total covariance matrix, stat + sys. The diagonal is the same as if we did this via error propagation formulas all together:
-	#gammaIA_tot_cov = gammaIA_sysZ_cov + gammaIA_stat_cov
+		for j in range(0, len((rp_bins_c))):
 			
-	# Save the total fractional error and the fractional error just from z-related systematics
-	"""save_variance = np.column_stack((rp_bins_c, np.sqrt(np.diag(gammaIA_tot_cov)) / g_IA_fid))
-	savefile = './txtfiles/frac_totError_Blazek_SDSS_NsatThresh'
-	save_variance_sysZ = np.column_stack((rp_bins_c, np.sqrt(np.diag(gammaIA_sysZ_cov)) / g_IA_fid))
-	savefile_sysZ = './txtfiles/frac_sysZError_Blazek_SDSS_NsatThresh'
-	if (pa.fudge_FA>0.):
-		savefile = savefile + '_fudgeFA='+str(pa.fudge_FA)
-		savefile_sysZ = savefile_sysZ + '_fudgeFA='+str(pa.fudge_FA)
-	if (pa.fudge_FB>0.):
-		savefile = savefile + '_fudgeFB='+str(pa.fudge_FB)
-		savefile_sysZ = savefile_sysZ + '_fudgeFB='+str(pa.fudge_FB)
-	if (pa.fudge_czA>0.):
-		savefile = savefile + '_fudgeczA='+str(pa.fudge_czA)
-		savefile_sysZ = savefile_sysZ + '_fudgeczA='+str(pa.fudge_czA)
-	if (pa.fudge_czB>0.):
-		savefile = savefile + '_fudgeczB='+str(pa.fudge_czB)
-		savefile_sysZ = savefile_sysZ + '_fudgeczB='+str(pa.fudge_czB)
-	if (pa.fudge_sigA>0.):
-		savefile = savefile + '_fudgesigA='+str(pa.fudge_sigA)
-		savefile_sysZ = savefile_sysZ + '_fudgesigA='+str(pa.fudge_sigA)
-	if (pa.fudge_sigB>0.):
-		savefile = savefile + '_fudgesigB='+str(pa.fudge_sigB)
-		savefile_sysZ = savefile_sysZ + '_fudgesigB='+str(pa.fudge_sigB)
-	if ((pa.boost_sys -1.)>10**(-8)):
-		savefile = savefile + '_boostsys='+str(pa.boost_sys)
-		savefile_sysZ = savefile_sysZ + '_boostsys='+str(pa.boost_sys)
-	savefile = savefile + '.txt'
-	savefile_sysZ = savefile_sysZ + '.txt'
+			# Statistical
+			num_term_stat = cz_a_fid**2 * DeltaCov_a_import_CV[i,j] + cz_b_fid**2 * DeltaCov_b_import_CV[i,j]
+			denom_term_stat_withF =( ( cz_a_fid * (Boost_a[i] -1. + F_a_fid[i]) * Sig_IA_a_fid[i]) -  ( cz_b_fid * (Boost_b[i] -1. + F_b_fid[i]) * Sig_IA_b_fid[i]) ) * ( ( cz_a_fid * (Boost_a[j] -1. + F_a_fid[j]) * Sig_IA_a_fid[j]) -  ( cz_b_fid * (Boost_b[j] -1. + F_b_fid[j]) * Sig_IA_b_fid[j]) )
+			#denom_term_stat_noF =( ( cz_a_fid * (Boost_a[i] -1.) * Sig_IA_a_fid[i]) -  ( cz_b_fid * (Boost_b[i] -1.) * Sig_IA_b_fid[i]) ) * ( ( cz_a_fid * (Boost_a[j] -1.) * Sig_IA_a_fid[j]) -  ( cz_b_fid * (Boost_b[j] -1.) * Sig_IA_b_fid[j]) )
+			gammaIA_stat_cov_withF[i,j] = num_term_stat / denom_term_stat_withF
+			#gammaIA_stat_cov_noF[i,j] = num_term_stat / denom_term_stat_noF	
+			
+			if (i==j):
+				
+				# Systematic, related to redshifts:
+				num_term_sysZ = ( cz_a_fid**2 * DeltaSig_est_a[i]**2 * fudgeczA**2 + cz_b_fid**2 * DeltaSig_est_b[i]**2  * fudgeczB**2 ) / (cz_a_fid * DeltaSig_est_a[i] - cz_b_fid * DeltaSig_est_b[i])**2
+				denom_term_sysZ = ( ( cz_a_fid * (Boost_a[i] -1. + F_a_fid[i]) * Sig_IA_a_fid[i])**2 * ( fudgeczA**2 + (fudgeFA * F_a_fid[i])**2 / (Boost_a[i] -1. + F_a_fid[i])**2 + fudgeSigA**2 ) + ( cz_b_fid * (Boost_b[i] -1. + F_b_fid[i]) * Sig_IA_b_fid[i])**2 * ( fudgeczB**2 + (fudgeFB * F_b_fid[i])**2 / (Boost_b[i] -1. + F_b_fid[i])**2 + fudgeSigB**2 ) ) / ( ( cz_a_fid * (Boost_a[i] -1. + F_a_fid[i]) * Sig_IA_a_fid[i]) -  ( cz_b_fid * (Boost_b[i] -1. + F_b_fid[i]) * Sig_IA_b_fid[i]) )**2
+				gammaIA_sysZ_cov[i,i] = g_IA_fid[i]**2 * (num_term_sysZ + denom_term_sysZ)
+				
+				# Systematic, related to boost
+				gammaIA_sysB_cov_withF[i,j] = g_IA_fid[i]**2 * ( cz_a_fid**2 * Sig_IA_a_fid[i]**2 * boosterr_sq_a[i] + cz_b_fid**2 * Sig_IA_b_fid[i]**2 * boosterr_sq_b[i] ) / ( ( cz_a_fid * (Boost_a[i] -1. + F_a_fid[i]) * Sig_IA_a_fid[i]) -  ( cz_b_fid * (Boost_b[i] -1. + F_b_fid[i]) * Sig_IA_b_fid[i]) )**2
+				#gammaIA_sysB_cov_noF[i,j] = g_IA_fid[i]**2 * ( cz_a_fid**2 * Sig_IA_a_fid[i]**2 * boosterr_sq_a[i] + cz_b_fid**2 * Sig_IA_b_fid[i]**2 * boosterr_sq_b[i] ) / ( ( cz_a_fid * (Boost_a[i] -1.) * Sig_IA_a_fid[i]) -  ( cz_b_fid * (Boost_b[i] -1.) * Sig_IA_b_fid[i]) )**2
+				
+	# For the systematic cases, we need to add off-diagonal elements - we assume fully correlated
+	for i in range(0,len((rp_bins_c))):	
+		for j in range(0,len((rp_bins_c))):
+			if (i != j):
+				gammaIA_sysB_cov_withF[i,j] = np.sqrt(gammaIA_sysB_cov_withF[i,i]) * np.sqrt(gammaIA_sysB_cov_withF[j,j])
+				#gammaIA_sysB_cov_noF[i,j] = np.sqrt(gammaIA_sysB_cov_noF[i,i]) * np.sqrt(gammaIA_sysB_cov_noF[j,j])
+				gammaIA_sysZ_cov[i,j]	=	np.sqrt(gammaIA_sysZ_cov[i,i]) * np.sqrt(gammaIA_sysZ_cov[j,j])
 		
-	np.savetxt(savefile, save_variance)
-	np.savetxt(savefile_sysZ, save_variance_sysZ)"""
+	# Get the stat + sysB covariance matrix for showing the difference between using excess and using all physically associated galaxies:
+	gammaIA_cov_stat_sysB_withF = gammaIA_sysB_cov_withF + gammaIA_stat_cov_withF
+	#gammaIA_cov_stat_sysB_noF = gammaIA_sysB_cov_noF + gammaIA_stat_cov_noF
 	
-	# Okay, let's compute the Signal to Noise things we want.
-	Cov_inv_stat = np.linalg.inv(gammaIA_stat_cov)
+	"""# Make a plot of the statistical + boost systematic errors with and without F
+	fig_sub=plt.subplot(111)
+	plt.rc('font', family='serif', size=14)
+	fig_sub.axhline(y=0, xmax=20., color='k', linewidth=1)
+	fig_sub.hold(True)
+	fig_sub.errorbar(rp_bins_c ,g_IA_fid, yerr = np.sqrt(np.diag(gammaIA_cov_stat_sysB_noF)), fmt='go', label='Excess only')
+	fig_sub.hold(True)
+	fig_sub.errorbar(rp_bins_c * 1.05,g_IA_fid, yerr = np.sqrt(np.diag(gammaIA_cov_stat_sysB_withF)), fmt='mo', label='Physically associated')
+	fig_sub.set_xscale("log")
+	#fig_sub.set_yscale("log") #, nonposy='clip')
+	fig_sub.set_xlabel('$r_p$')
+	fig_sub.set_ylabel('$\gamma_{IA}$')
+	fig_sub.set_ylim(-0.002, 0.005)
+	#fig_sub.set_ylim(-0.015, 0.015)
+	fig_sub.set_xlim(0.05,20.)
+	fig_sub.tick_params(axis='both', which='major', labelsize=12)
+	fig_sub.tick_params(axis='both', which='minor', labelsize=12)
+	fig_sub.legend()
+	plt.tight_layout()
+	plt.savefig('./plots/F_vs_noF_stat+sysB_survey='+SURVEY+'.pdf')
+	plt.close()"""
+	
+	# Now get the total covariance matrix assuming all physically associated galaxies can be subject to IA, including statistical and both types of systematics:
+	gamma_IA_cov_tot_withF = gammaIA_sysB_cov_withF + gammaIA_stat_cov_withF + gammaIA_sysZ_cov
+	
+	# Okay, let's compute the Signal to Noise things we want in order to compare statistcal-only signal to noise to that from z-related systematics
+	Cov_inv_stat = np.linalg.inv(gammaIA_stat_cov_withF)
 	StoNsq_stat = np.dot(g_IA_fid, np.dot(Cov_inv_stat, g_IA_fid))
 	
-	#Cov_inv_tot = np.linalg.inv(gammaIA_tot_cov)
-	#StoNsq_tot = np.dot(g_IA_fid, np.dot(Cov_inv_tot, g_IA_fid))
+	Cov_inv_tot = np.linalg.inv(gamma_IA_cov_tot_withF)
+	StoNsq_tot = np.dot(g_IA_fid, np.dot(Cov_inv_tot, g_IA_fid))
 	
 	#print "StoNsq_tot=", StoNsq_tot
 	#print "StoNsq_stat=", StoNsq_stat
 	
 	# Now subtract stat from total in quadrature to get sys
+	NtoSsq_sys = 1./StoNsq_tot - 1./StoNsq_stat
 	
-	#NtoSsq_sys = 1./StoNsq_tot - 1./StoNsq_stat
+	StoNsq_sys = 1. / NtoSsq_sys
 	
-	#StoNsq_sys = 1. / NtoSsq_sys
-	
-	#return (StoNsq_stat, StoNsq_sys)
-	return StoNsq_stat
+	return (StoNsq_stat, StoNsq_sys)
 	
 def gamma_fid_from_quants(rp_bins_c, Boost_a, Boost_b, F_a, F_b, Sig_IA_a, Sig_IA_b, cz_a, cz_b, DeltaSig_est_a, DeltaSig_est_b):
 	""" Returns gamma_IA as calculated from the things we put together. This is a cross check. """
@@ -596,7 +591,7 @@ def gamma_fid(rp):
 	plt.xlabel('$r_p$')
 	plt.title('Fiducial values of $\gamma_{IA}$')
 	plt.savefig('./plots/gammaIA_Blazek_survey='+pa.survey+'.pdf')
-	plt.close()"""s
+	plt.close()"""
 	
 	return gammaIA
 
@@ -782,13 +777,13 @@ rp_cent		=	setup.rp_bins_mid(rp_bins)
 # pa.close_cut is the separation in Mpc/h.
 (z_close_high, z_close_low)	= 	setup.get_z_close(pa.zeff, pa.close_cut, SURVEY)
 
-StoNstat = get_gammaIA_cov(rp_bins, rp_cent, 0., 0., 0., 0., 0., 0.)
-print "StoNstat", np.sqrt(StoNstat)
-StoNstat_save = [StoNstat]
-np.savetxt('./txtfiles/StoNstat_Blazek_withCV_SNanalytic_survey='+SURVEY+'rpts=2500.txt', StoNstat_save)
-exit()
+DeltaSigma_theoretical = get_DeltaSig_theory(pa.zeff, rp_bins, rp_cent)
 
-# Below this needs to be reworked to get systematic error stuff.
+#StoNstat = get_gammaIA_cov(rp_bins, rp_cent, 0., 0., 0., 0., 0., 0.)
+#print "StoNstat", np.sqrt(StoNstat)
+#StoNstat_save = [StoNstat]
+#np.savetxt('./txtfiles/StoNstat_Blazek_withCV_SNanalytic_survey='+SURVEY+'rpts=2500.txt', StoNstat_save)
+#exit()
 
 StoN_cza = np.zeros(len(pa.fudge_frac_level))
 StoN_czb = np.zeros(len(pa.fudge_frac_level))
@@ -803,11 +798,7 @@ for i in range(0,len(pa.fudge_frac_level)):
 	
 	# Get the statistical error on gammaIA
 	(StoNstat, StoN_cza[i]) = get_gammaIA_cov(rp_bins, rp_cent, pa.fudge_frac_level[i], 0., 0., 0., 0., 0.)
-	print "StoNstat, StoNcza=", np.sqrt(StoNstat), np.sqrt(StoN_cza[i])
-	StoNstat_save = [StoNstat]
-	print "StoNstat=", StoNstat
-	np.savetxt('./txtfiles/StoNstat_Blazek_survey='+SURVEY+'.txt', StoNstat_save)
-	exit()
+	print "StoNstat, StoNczb=", np.sqrt(StoNstat), np.sqrt(StoN_cza[i])
 	(StoNstat, StoN_czb[i]) = get_gammaIA_cov(rp_bins, rp_cent, 0., pa.fudge_frac_level[i], 0., 0., 0., 0.)
 	print "StoNstat, StoNczb=", np.sqrt(StoNstat), np.sqrt(StoN_czb[i])
 	(StoNstat, StoN_Fa[i])  = get_gammaIA_cov(rp_bins, rp_cent, 0., 0., pa.fudge_frac_level[i], 0., 0., 0.)
@@ -818,12 +809,18 @@ for i in range(0,len(pa.fudge_frac_level)):
 	print "StoNstat, StoNSiga=", np.sqrt(StoNstat), np.sqrt(StoN_Siga[i])
 	(StoNstat, StoN_Sigb[i])= get_gammaIA_cov(rp_bins, rp_cent, 0., 0., 0., 0., 0., pa.fudge_frac_level[i])
 	print "StoNstat, StoNSiga=", np.sqrt(StoNstat), np.sqrt(StoN_Sigb[i])
-	
+
+# Save the statistical-only S-to-N
+StoNstat_save = [StoNstat]
+print "StoNstat=", StoNstat
+np.savetxt('./txtfiles/StoNstat_Blazek_withCV_SNanalytic_survey='+SURVEY+'rpts=2500.txt', StoNstat_save)
+
+# Save the ratios of S/N sys to stat.	
 saveSN_ratios = np.column_stack(( pa.fudge_frac_level, np.sqrt(StoN_cza) / np.sqrt(StoNstat), np.sqrt(StoN_czb) / np.sqrt(StoNstat), np.sqrt(StoN_Fa) / np.sqrt(StoNstat), np.sqrt(StoN_Fb) / np.sqrt(StoNstat), np.sqrt(StoN_Siga) / np.sqrt(StoNstat), np.sqrt(StoN_Sigb) / np.sqrt(StoNstat)))
-np.savetxt('./plots/SN_ratios.txt', saveSN_ratios)
+np.savetxt('./txtfiles/StoN_SysToStat_Blazek_survey='+SURVEY+'.txt', saveSN_ratios)
 
-frac_levels, StoNratio_sqrt_cza, StoNratio_sqrt_czb, StoNratio_sqrt_Fa,  StoNratio_sqrt_Fb, StoNratio_sqrt_Siga, StoNratio_sqrt_Sigb = np.loadtxt('./plots/SN_ratios.txt', unpack=True)
-
+# Uncomment this to load ratios from file and plot. To plot directly use the below case.
+"""frac_levels, StoNratio_sqrt_cza, StoNratio_sqrt_czb, StoNratio_sqrt_Fa,  StoNratio_sqrt_Fb, StoNratio_sqrt_Siga, StoNratio_sqrt_Sigb = np.loadtxt('./plots/SN_ratios.txt', unpack=True)
 plt.figure()
 plt.loglog(pa.fudge_frac_level, StoNratio_sqrt_cza, 'ko', label='$c_z^a$')
 plt.hold(True)
@@ -844,35 +841,53 @@ plt.ylim(0.01, 1000)
 plt.legend()
 plt.title('Ratio, S/N, sys vs stat')
 plt.savefig('./plots/ratio_StoN.pdf')
-plt.close()
-	
-	
-exit()	
+plt.close()"""	
 
-plt.figure()
-plt.loglog(pa.fudge_frac_level, np.sqrt(StoN_cza) / np.sqrt(StoNstat), 'ko', label='$c_z^a$')
-plt.hold(True)
-plt.loglog(pa.fudge_frac_level, np.sqrt(StoN_czb) / np.sqrt(StoNstat), 'mo', label='$c_z^b$')
-plt.hold(True)
-plt.loglog(pa.fudge_frac_level, np.sqrt(StoN_Fa) / np.sqrt(StoNstat), 'bo', label='$F_a$')
-plt.hold(True)
-plt.loglog(pa.fudge_frac_level, np.sqrt(StoN_Fb) / np.sqrt(StoNstat), 'ro', label='$F_b$')
-plt.hold(True)
-plt.loglog(pa.fudge_frac_level, np.sqrt(StoN_Siga) / np.sqrt(StoNstat), 'go', label='$<\\Sigma_{IA}^a>$')
-plt.hold(True)
-plt.loglog(pa.fudge_frac_level, np.sqrt(StoN_Sigb) / np.sqrt(StoNstat), 'yo', label='$<\\Sigma_{IA}^b>$')
-plt.legend()
-plt.xlabel('Fractional error level')
-plt.ylabel('$\frac{S/N_{\rm sys}}{S/N_{\rm stat}}$')
-plt.xlim(0.005, 10)
-plt.ylim(0.001, 50)
-plt.legend()
-plt.title('Ratio, S/N, sys vs stat')
-plt.savefig('./plots/ratio_StoN.pdf')
-plt.close()
-
-	# Output a plot showing the 1-sigma error bars on gamma_IA in projected radial bins 
-	#plot_variance(Cov_gIA, fid_gIA, rp_cent)
+# Make plot of (S/N)_sys / (S/N)_stat as a function of fractional z-related systematic error on each relevant parameter.
+if (SURVEY=='SDSS'):
+	plt.figure()
+	plt.loglog(pa.fudge_frac_level, np.sqrt(StoN_cza) / np.sqrt(StoNstat), 'ks', label='$c_z^a$')
+	plt.hold(True)
+	plt.loglog(pa.fudge_frac_level, np.sqrt(StoN_czb) / np.sqrt(StoNstat), 'k^', label='$c_z^b$')
+	plt.hold(True)
+	plt.loglog(pa.fudge_frac_level, np.sqrt(StoN_Fa) / np.sqrt(StoNstat), 'ms', label='$F_a$')
+	plt.hold(True)
+	plt.loglog(pa.fudge_frac_level, np.sqrt(StoN_Fb) / np.sqrt(StoNstat), 'm^', label='$F_b$')
+	plt.hold(True)
+	plt.loglog(pa.fudge_frac_level, np.sqrt(StoN_Siga) / np.sqrt(StoNstat), 'gs', label='$<\\Sigma_{IA}^a>$')
+	plt.hold(True)
+	plt.loglog(pa.fudge_frac_level, np.sqrt(StoN_Sigb) / np.sqrt(StoNstat), 'g^', label='$<\\Sigma_{IA}^b>$')
+	plt.xlabel('Fractional error', fontsize=12)
+	plt.ylabel('$\\frac{S/N_{\\rm sys}}{S/N_{\\rm stat}}$', fontsize=16)
+	plt.tick_params(axis='both', which='major', labelsize=12)
+	plt.tick_params(axis='both', which='minor', labelsize=12)
+	plt.xlim(0.008, 2.)
+	plt.ylim(0.5, 3000)
+	plt.legend(ncol=3, numpoints=1)
+	plt.savefig('./plots/StoN_SysToStat_Blazek_survey='+SURVEY+'.pdf')
+	plt.close()
+elif(SURVEY=='LSST_DESI'):
+	plt.figure()
+	plt.loglog(pa.fudge_frac_level, np.sqrt(StoN_cza) / np.sqrt(StoNstat), 'ks', label='$c_z^a$')
+	plt.hold(True)
+	plt.loglog(pa.fudge_frac_level, np.sqrt(StoN_czb) / np.sqrt(StoNstat), 'k^', label='$c_z^b$')
+	plt.hold(True)
+	plt.loglog(pa.fudge_frac_level, np.sqrt(StoN_Fa) / np.sqrt(StoNstat), 'ms', label='$F_a$')
+	plt.hold(True)
+	plt.loglog(pa.fudge_frac_level, np.sqrt(StoN_Fb) / np.sqrt(StoNstat), 'm^', label='$F_b$')
+	plt.hold(True)
+	plt.loglog(pa.fudge_frac_level, np.sqrt(StoN_Siga) / np.sqrt(StoNstat), 'gs', label='$<\\Sigma_{IA}^a>$')
+	plt.hold(True)
+	plt.loglog(pa.fudge_frac_level, np.sqrt(StoN_Sigb) / np.sqrt(StoNstat), 'g^', label='$<\\Sigma_{IA}^b>$')
+	plt.xlabel('Fractional error', fontsize=12)
+	plt.ylabel('$\\frac{S/N_{\\rm sys}}{S/N_{\\rm stat}}$', fontsize=16)
+	plt.tick_params(axis='both', which='major', labelsize=12)
+	plt.tick_params(axis='both', which='minor', labelsize=12)
+	plt.xlim(0.000088, 2.)
+	plt.ylim(0.04, 100)
+	plt.legend(ncol=3, numpoints=1)
+	plt.savefig('./plots/StoN_SysToStat_Blazek_survey='+SURVEY+'.pdf')
+	plt.close()
 
 exit()
 # Below this is Fisher matrix stuff - don't worry about it for now.

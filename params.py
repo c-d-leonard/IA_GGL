@@ -34,8 +34,8 @@ boost_close = 0.1
 # ON SMALL SCALES, SHOT NOICE DOMINATED AND DEPEND ON NUMBER OF LENS / SOURCE PAIRS
 # CURRENTLY SET FOR SDSS LRGS / SHAPES.
 
-sigBF_a = './txtfiles/boost_error_from_rachel_assoc.txt' # File containing two columns: rp (kpc/h), sigma(Boost-1) for sample a
-sigBF_b ='./txtfiles/boost_error_from_rachel_background.txt' # Same for b
+#sigBF_a = './txtfiles/boost_error_from_rachel_assoc.txt' # File containing two columns: rp (kpc/h), sigma(Boost-1) for sample a
+#sigBF_b ='./txtfiles/boost_error_from_rachel_background.txt' # Same for b
 
 # Parameters associated with the projected radial bins
 rp_max 	=	20.0 # The maximum projected radius (Mpc/h)
@@ -67,10 +67,7 @@ pzpar_sys = [0]*num_sys
 for i in range(0, num_sys):
 	pzpar_sys[i] = [ pzpar_fid[0]* (1. - perc_sys[i]) ]
 
-# THIS MAY DEPEND ON THE SAMPLE - NOT SURE YET.
-# CURRENTLY TO 1 = NO SYS FOR TESTING OTHER SYSTEMATICS.
-boost_sys = 1.0
-#boost_sys	=	1.03 # Multiplier for the boost systematic error.
+boost_sys	=	1.03 # Multiplier for the boost systematic error. This value is given in Blazek et al. 2012.
 
 # Parameters related to the spec and photo z's of the source sample and other redshift cuts.
 zeff 	= 	0.28  # The effective redshift of the lens sample
@@ -92,7 +89,8 @@ zmin_ph	=	0.0 # Minimu photo-z
 zmax_ph	=	5.0 # Maximum photo-z
 
 # Fractional errors on 'fudge factors' we are using to get a handle on the relative importance of different systematic errors.
-fudge_frac_level = [0.02, 0.04, 0.06, 0.08, 0.1, 0.2, 0.4, 0.6, 0.8]
+fudge_frac_level = np.logspace(-2, 0, 15)
+#fudge_frac_level = [0.02, 0.04, 0.06, 0.08, 0.1, 0.2, 0.4, 0.6, 0.8]
 fudge_Ncorr = 	0. #[0.02, 0.04, 0.06, 0.08, 0.1, 0.2, 0.4, 0.6, 0.8]
 fudge_czA	= 	0.
 fudge_czB	=	0.
