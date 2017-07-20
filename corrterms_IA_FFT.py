@@ -27,9 +27,9 @@ def getcorrfunc():
 	
 	# Multiply by the desired galaxy bias amplitude - just one factor because we want e_gm
 	
-	corrfunc1d_gm = corrfunc1d * bias
+	corrfunc1d_gm = corrfunc1d 
 	
-	#plt.figure()
+	plt.figure()
 	#plt.loglog(rvec, corrfunc1d)
 	#plt.ylim(0.01, 3000)
 	#plt.xlim(0.05, 100)
@@ -103,16 +103,16 @@ Rmax		=	200.
 Dnegmax = 1000.
 Dposmax = 1000.
 Deltamin = 0.0002
-zval = 0.77
+zval = 0.28
 kmax=4000 #This is the max k in the power spectrum file.
 
 bias = pa.bd_Bl
 
 outputfolder	= 	'/txtfiles/'
-corrfunc2dfile	=	'/corr_2d_z='+str(zval)+'.txt'
+corrfunc2dfile	=	'/corr2d_forDS_z='+str(zval)+'.txt'
 Rintfile	=	'/Rint_z='+str(zval)+'_kmax='+str(kmax)+'_M6e13h_fixRhoC.txt'
 #corrfunc1dfile ='/corr_1d_NL_z='+str(zval)+'_kmax'+str(kmax)+'.txt'
-corrfunc1dfile = '/xi_z='+str(zval)+'.txt'
+corrfunc1dfile = '/corrForDeltaSigma_2h_z='+str(zval)+'.txt'
 
 ##############################################################
 ############## Set up the Delta and R vectors ################

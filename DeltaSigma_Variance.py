@@ -1,4 +1,4 @@
-""" This script computes the covariance matrix of Upsilon_{gm} in bins in R.
+""" This script computes the covariance matrix of DeltaSigma_{gm} in bins in R.
 This version assumes an effective redshift for the lenses, parameterized by comoving distance chiLmean."""
 
 import numpy as np
@@ -159,6 +159,123 @@ def getOmMx(xivec):
     
 	return OmMx
 
+def Pgm_1h2h(xivec):
+	""" Returns 1h+2h galaxy x matter power spectrum as a 2 parameter function of l and chi (xivec)."""
+	
+	# First do 2-halo
+	zivec = z_ofchi(xivec)
+	aivec = 1./ (1. + zivec)
+	# Compute the power spectrum at a bunch of z's and k's from CCL
+	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = 2.1*10**(-9), n_s=0.96)
+	cosmo = ccl.Cosmology(p)
+  
+	k = scipy.logspace(-4, 4, 1000)
+	P_2h=np.zeros((len(k), len(aivec)))
+	for ai in range(0, len(aivec)):
+		P_2h[:, ai] = ccl.nonlin_matter_power(cosmo, k, aivec[ai])
+		
+	# Now do 1-halo (this is done in a separate function
+	P_1h = ws.get_Pkgm_1halo_kz(k, zivec, SURVEY)
+	
+	# Add 
+	Pofkz = P_1h + bias * P_2h
+	#Pofkz = bias * P_2h
+	
+	# Interpolate in k
+	Pofkint=[0]*len(zivec)	
+	for zi in range(0,len(zivec)):
+		Pofkint[zi]=scipy.interpolate.interp1d(k, Pofkz[:,zi])
+
+	# evaluate at k = l / chi
+	Poflandx=np.zeros((len(lvec_less),len(xivec)))
+	for li in range(0,len(lvec_less)):
+		for xi in range(0,len(xivec)):
+			if (lvec_less[li]/xivec[xi]<k[-1] and lvec_less[li]/xivec[xi]>k[0]):
+				Poflandx[li,xi]=Pofkint[xi](lvec_less[li]/xivec[xi])
+				#if (np.abs(Poflandx[li,xi])<10**(-15)): 
+				#	Poflandx[li,xi]=0.0
+			else:
+				Poflandx[li,xi]=0.0
+
+	return Poflandx
+	
+def Pgg_1h2h(xivec):
+	""" Returns 1h+2h galaxy x matter power spectrum as a 2 parameter function of l and chi (xivec)."""
+	
+	# First do 2-halo
+	zivec = z_ofchi(xivec)
+	aivec = 1./ (1. + zivec)
+	# Compute the power spectrum at a bunch of z's and k's from CCL
+	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = 2.1*10**(-9), n_s=0.96)
+	cosmo = ccl.Cosmology(p)
+  
+	k = scipy.logspace(-4, 4, 1000)
+	P_2h=np.zeros((len(k), len(aivec)))
+	for ai in range(0, len(aivec)):
+		P_2h[:, ai] = ccl.nonlin_matter_power(cosmo, k, aivec[ai])
+		
+	# Now do 1-halo (this is done in a separate function
+	P_1h = ws.get_Pkgg_ll_1halo_kz(k, zivec, SURVEY)
+	
+	# Add 
+	Pofkz = P_1h + bias**2 * P_2h
+	#Pofkz = bias**2 * P_2h
+	
+	# Interpolate in k
+	Pofkint=[0]*len(zivec)	
+	for zi in range(0,len(zivec)):
+		Pofkint[zi]=scipy.interpolate.interp1d(k, Pofkz[:,zi])
+
+	# evaluate at k = l / chi
+	Poflandx=np.zeros((len(lvec_less),len(xivec)))
+	for li in range(0,len(lvec_less)):
+		for xi in range(0,len(xivec)):
+			if (lvec_less[li]/xivec[xi]<k[-1] and lvec_less[li]/xivec[xi]>k[0]):
+				Poflandx[li,xi]=Pofkint[xi](lvec_less[li]/xivec[xi])
+			else:
+				Poflandx[li,xi]=0.0
+
+	return Poflandx
+	
+def Pmm_1h2h(xivec):
+	""" Returns 1h+2h galaxy x matter power spectrum as a 2 parameter function of l and chi (xivec)."""
+	
+	# First do 2-halo
+	zivec = z_ofchi(xivec)
+	aivec = 1./ (1. + zivec)
+	# Compute the power spectrum at a bunch of z's and k's from CCL
+	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = 2.1*10**(-9), n_s=0.96)
+	cosmo = ccl.Cosmology(p)
+  
+	k = scipy.logspace(-4, 4, 1000)
+	P_2h=np.zeros((len(k), len(aivec)))
+	for ai in range(0, len(aivec)):
+		P_2h[:, ai] = ccl.nonlin_matter_power(cosmo, k, aivec[ai])
+		
+	# Now do 1-halo (this is done in a separate function
+	P_1h = ws.get_Pkmm_1halo_kz(k, zivec, SURVEY)
+	
+	# Add 
+	Pofkz = P_1h + P_2h
+	
+	# Interpolate in k
+	Pofkint=[0]*len(zivec)	
+	for zi in range(0,len(zivec)):
+		Pofkint[zi]=scipy.interpolate.interp1d(k, Pofkz[:,zi])
+
+	# evaluate at k = l / chi
+	Poflandx=np.zeros((len(lvec_less),len(xivec)))
+	for li in range(0,len(lvec_less)):
+		for xi in range(0,len(xivec)):
+			if (lvec_less[li]/xivec[xi]<k[-1] and lvec_less[li]/xivec[xi]>k[0]):
+				Poflandx[li,xi]=Pofkint[xi](lvec_less[li]/xivec[xi])
+				#if (np.abs(Poflandx[li,xi])<10**(-15)): 
+				#	Poflandx[li,xi]=0.0
+			else:
+				Poflandx[li,xi]=0.0
+
+	return Poflandx
+
 def PofkGR(xivec):
 	""" Returns the nonlinear (halofit) 2-halo matter power spectrum today as a 2 parameter function of l and chi (xivec)."""
 	
@@ -222,59 +339,57 @@ def get_Pgg():
 	""" This function computes P_{gg}(l, chiLmean) """
 	
 	# Get the nonlinear matter power spectrum:
-	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = 2.1*10**(-9), n_s=0.96)
-	cosmo = ccl.Cosmology(p)
-	
+	#p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = 2.1*10**(-9), n_s=0.96)
+	#cosmo = ccl.Cosmology(p)
 	# We are going to get Cl_{gg} using CCL. For this, we need to define a N(z) for the lenses, even though we are using an effective redshifts. We're going to use a narrow Gaussian.
 	
+	# Define a relatively narrow N_of_z for lens galaxies. This should be replaced when we have full support for an effective lens dist
 	sig_fudge = 0.05
 	z = np.linspace(zval - 5. * sig_fudge, zval + 5. * sig_fudge, 1000)
 	N_of_z = 1. / np.sqrt(2. * np.pi) / sig_fudge * np.exp( - (z-zval)**2 / (2. *sig_fudge**2))
 	b_of_z = bias * np.ones(len(z))
 	
-	gtracer = ccl.cls.ClTracerNumberCounts(cosmo = cosmo, has_rsd = False, has_magnification = False, n = N_of_z, bias = b_of_z, z = z)
+	#gtracer = ccl.cls.ClTracerNumberCounts(cosmo = cosmo, has_rsd = False, has_magnification = False, n = N_of_z, bias = b_of_z, z = z)
+	#Clgg = ccl.cls.angular_cl(cosmo, gtracer, gtracer, lvec_less)
 	
-	ltracer = ccl.cls.ClTracerLensing(cosmo=cosmo,has_intrinsic_alignment=False, n= dNdz_spec, z= z_spec)
+	# Get things we need 
+	chi = com_of_z(z)
 	
-	Clgg = ccl.cls.angular_cl(cosmo, gtracer, gtracer, lvec_less)
+	#Pdelta = PofkGR(chi)
+	Pdelta = Pgg_1h2h(chi)
 	
-	Clgk = ccl.cls.angular_cl(cosmo, gtracer, ltracer, lvec_less)
+	H = getHconf(chi) * (1. + z)
 	
-	Clkk = ccl.cls.angular_cl(cosmo, ltracer, ltracer, lvec_less)
+	# Test the explicit expression (Limber approximated)
+	Clgg_calc = np.zeros(len(lvec_less))
+	for li in range(0,len(lvec_less)):
+		Clgg_calc[li] = scipy.integrate.simps(N_of_z**2 * (H**2) * Pdelta[li, :] / chi**2, chi)
 	
-	plt.figure()
-	plt.loglog(lvec_less, Clgg, 'g+')
-	plt.hold(True)
-	plt.loglog(lvec_less, Clgk, 'm+')
-	plt.hold(True)
-	plt.loglog(lvec_less, Clkk, 'b+')
-	plt.savefig('./plots/three_spectra_CCL.pdf')
-	plt.close()
+	#plt.figure()
+	#plt.loglog(lvec_less, Clgg, 'g+')
+	#plt.hold(True)
+	#plt.loglog(lvec_less, Clgg_calc, 'm+')
+	#plt.ylim(10**(-12), 10**(-2))
+	#plt.savefig('./plots/Clgg_test.pdf')
+	#plt.close()
 	
-	
-
-	return  Clgg
+	return  Clgg_calc
 	
 def get_Pgk():
 	""" This function computes P_{gk}(l, chi_L, chi_S) """
 	
-	# We're going to try doing this in terms of a slightly less thing lens distribution to see if a failing Limber approximation is causing a problem:
 	sig_fudge = 0.05
 	z = z_spec
-	#z = np.linspace(zval - 5. * sig_fudge, zval + 5. * sig_fudge, 200)
 	N_of_z = 1. / np.sqrt(2. * np.pi) / sig_fudge * np.exp( - (z-zval)**2 / (2. *sig_fudge**2))
-	
-	#N_of_z_src = 1. / np.sqrt(2. * np.pi) / sig_fudge * np.exp( - (z-0.8)**2 / (2. *sig_fudge**2))
-	b_of_z = bias * np.ones(len(z))
+	b_of_z 			= bias * np.ones(len(z))
 	chiLext			=		com_of_z(z)
-	
 	norm_dNdz_spec = scipy.integrate.simps(dNdz_spec, z_spec)
 	
 	chiSvec = setup.com(z_spec, SURVEY)
 	
 	H=getHconf(chiLext)
 	Omz=getOmMx(chiLext)
-	Pof_lx=PofkGR(chiLext)
+	Pof_lx=Pgm_1h2h(chiLext)  #PofkGR(chiLext)
 	
 	H_interp = scipy.interpolate.interp1d(chiLext, H)
 	Omz_interp = scipy.interpolate.interp1d(chiLext, Omz)
@@ -282,16 +397,11 @@ def get_Pgk():
 	for li in range(0,len(lvec_less)):
 		P_interp[li] = scipy.interpolate.interp1d(chiLext, Pof_lx[li, :])
 	
-	#plt.figure()
-	#plt.plot(z_spec, N_of_z_src)
-	#plt.show()
-	
 	# Get the max index in chiLext up to which we want to integrate:
 	index_chiL = [0]*len(chiSvec)
 	for ci in range(0, len(chiSvec)):
 		if (chiSvec[ci]<max(chiLext)):
 			index_chiL[ci] = next(j[0] for j in enumerate(chiLext) if j[1]>=chiSvec[ci])
-			#print "ci=", ci, "index=", index_chiL[ci]
 	
 	Clgk=np.zeros((len(lvec_less), len(chiSvec)))
 	for li in range(0, len(lvec_less)):
@@ -302,61 +412,26 @@ def get_Pgk():
 			else:
 				chiext = scipy.linspace(chiLext[0], chiLext[index_chiL[xiS]], 1000)
 				N_of_z_inst =1. / np.sqrt(2. * np.pi) / sig_fudge * np.exp( - (z_ofchi(chiext) - zval)**2 / (2. *sig_fudge**2))
-				#Clgk[li, xiS] = 1.5 * bias * H0**3 * scipy.integrate.simps((chiSvec[xiS] - chiLext[0:index_chiL[xiS]]) / chiSvec[xiS] * N_of_z[0:index_chiL[xiS]] * H[0:index_chiL[xiS]] / H0 / chiLext[0:index_chiL[xiS]]* (H[0:index_chiL[xiS]] / H0)**2 * Omz[0:index_chiL[xiS]] * Pof_lx[li, :][0:index_chiL[xiS]], chiLext[0:index_chiL[xiS]])
-				Clgk[li, xiS] = 1.5 * bias * H0**3 * scipy.integrate.simps((chiSvec[xiS] - chiext) / chiSvec[xiS] * N_of_z_inst * H_interp(chiext) / H0 / chiext* (H_interp(chiext) / H0)**2 * Omz_interp(chiext) * P_interp[li](chiext), chiext)
-			#if (chiSvec[xiS]<min(chiLext)):
-			#	Clgk[li, xiS] = 0.
-			#elif (chiSvec[xiS]<max(chiLext)):
-			#	Clgk[li, xiS] = 1.5 * bias * scipy.integrate.simps((chiSvec[xiS] - chiLext[0:index_chiL[xiS]]) / chiSvec[xiS] * N_of_z[0:index_chiL[xiS]] * H[0:index_chiL[xiS]] / chiLext[0:index_chiL[xiS]]* H[0:index_chiL[xiS]]**2 * Omz[0:index_chiL[xiS]] * Pof_lx[li, :][0:index_chiL[xiS]], chiLext[0:index_chiL[xiS]]) 
-			#else: 
-			#	Clgk[li, xiS] = 0.
+				Clgk[li, xiS] = 1.5 * H0**3 * scipy.integrate.simps((chiSvec[xiS] - chiext) / chiSvec[xiS] * N_of_z_inst * H_interp(chiext) / H0 / chiext* (H_interp(chiext) / H0)**2 * Omz_interp(chiext) * P_interp[li](chiext), chiext)
 				
 	# Try seeing what this looks like integrated over dNdzspec- it should in principle match ccl pretty well:
-	Clgk_intS = np.zeros(len(lvec_less))
-	for li in range(0,len(lvec_less)):
-		Clgk_intS[li] = scipy.integrate.simps(Clgk[li, :] * dNdz_spec / norm_dNdz_spec, z_spec)
+	#Clgk_intS = np.zeros(len(lvec_less))
+	#for li in range(0,len(lvec_less)):
+	#	Clgk_intS[li] = scipy.integrate.simps(Clgk[li, :] * dNdz_spec / norm_dNdz_spec, z_spec)
 		
-	
-		
-	#plt.figure()
-	#plt.plot(z_spec, dNdz_spec)
-	#plt.show()
-	
-	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = 2.1*10**(-9), n_s=0.96)
-	cosmo = ccl.Cosmology(p)	
-	gtracer = ccl.cls.ClTracerNumberCounts(cosmo = cosmo, has_rsd = False, has_magnification = False, n = N_of_z, bias = b_of_z, z = z)
-	ltracer = ccl.cls.ClTracerLensing(cosmo=cosmo,has_intrinsic_alignment=False, n= dNdz_spec, z= z_spec)
-	Clgg_CCL = ccl.cls.angular_cl(cosmo, gtracer, gtracer, lvec_less)
-	Clgk_CCL = ccl.cls.angular_cl(cosmo, gtracer, ltracer, lvec_less)
-	Clkk_CCL = ccl.cls.angular_cl(cosmo, ltracer, ltracer, lvec_less)
+	#p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = 2.1*10**(-9), n_s=0.96)
+	#cosmo = ccl.Cosmology(p)
+	#gtracer = ccl.cls.ClTracerNumberCounts(cosmo = cosmo, has_rsd = False, has_magnification = False, n = N_of_z, bias = b_of_z, z = z)
+	#ltracer = ccl.cls.ClTracerLensing(cosmo=cosmo,has_intrinsic_alignment=False, n= dNdz_spec, z= z_spec)
+	#Clgk_ccl = ccl.cls.angular_cl(cosmo, gtracer, ltracer, lvec_less)
 	
 	#plt.figure()
-	#plt.loglog(lvec_less, Clgg, 'g+')
+	#plt.loglog(lvec_less, Clgk_ccl, 'm+')
 	#plt.hold(True)
-	#plt.loglog(lvec_less, Clgk, 'm+')
-	#plt.hold(True)
-	#plt.loglog(lvec_less, Clkk, 'b+')
-	#plt.savefig('./plots/three_spectra_CCL.pdf')
+	#plt.loglog(lvec_less, Clgk_intS, 'g+')
+	#plt.ylim(10**(-10), 10**(-2))
+	#plt.savefig('./plots/Clgk_compare.pdf')
 	#plt.close()
-
-		
-	plt.figure()
-	plt.loglog(lvec_less, Clgg_CCL, 'k+')
-	plt.hold(True)
-	plt.loglog(lvec_less, Clgk_intS, 'm+')
-	plt.hold(True)
-	plt.loglog(lvec_less, Clgk_CCL, 'g+')
-	plt.hold(True)
-	plt.loglog(lvec_less, Clkk_CCL, 'k+')
-	plt.ylim(10**(-13), 10**(-3))
-	plt.savefig('./plots/spectra_compare.pdf')
-	plt.close()
-	
-	plt.figure()
-	plt.plot(lvec_less, np.abs((Clgk_intS - Clgk_CCL) / Clgk_CCL), 'm+')
-	#plt.ylim(10**(-13), 10**(-3))
-	plt.savefig('./plots/Clgk_fracdiff_300zpts.pdf')
-	plt.close()
 	
 	return  Clgk
 
@@ -396,7 +471,7 @@ def doints_Pgg(Clgg):
 
 	# Now load Clgg
 	#Clgg=np.loadtxt(folderpath+outputfolder+'/Clgg_'+endfilename+'.txt')	
-	np.savetxt('./txtfiles/Pggterm_DeltaSig_'+endfilename+'_sample='+SAMPLE+'.txt', barchiS_int**2 * Clgg )
+	np.savetxt('./txtfiles/Pggterm_DeltaSig_1h2h_lpts=1e6_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'.txt', barchiS_int**2 * Clgg )
 	
 	return barchiS_int**2 * Clgg
 	
@@ -427,7 +502,7 @@ def doints_Pgk(Clgk):
 	
 	chiL_intans = int_dzph / norm
 	
-	np.savetxt('./txtfiles/Pgkterm_DeltaSig_'+endfilename+'_sample='+SAMPLE+'.txt', chiL_intans**2 )
+	np.savetxt('./txtfiles/Pgkterm_DeltaSig_1h2h_lpts=1e6_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'.txt', chiL_intans**2 )
 		
 	return chiL_intans**2
 	
@@ -439,7 +514,10 @@ def doints_Pkk():
 	
 	H=getHconf(chiLext)
 	Omz=getOmMx(chiLext)
-	Pof_lx=PofkGR(chiLext)
+	
+	Pof_lx_2h =PofkGR(chiLext)
+	Pof_lx = Pmm_1h2h(chiLext)
+	
 	zLext = z_ofchi(chiLext)
 	
 	# Define the zph vector
@@ -483,8 +561,10 @@ def doints_Pkk():
 		
 	# Now do the integral over chi, the "extended lens" comoving distance for cosmic shear
 	int_chiLext = np.zeros(len(lvec_less))
+	#int_chiLext_2h = np.zeros(len(lvec_less))
 	for li in range(0,len(lvec_less)):
 		int_chiLext[li] = 9./4.*H0**4 * scipy.integrate.simps((H/H0)**4 * Omz**2 * Pof_lx[li,:] * int_z_p_prime , chiLext)
+		#int_chiLext_2h[li] = 9./4.*H0**4 * scipy.integrate.simps((H/H0)**4 * Omz**2 * Pof_lx_2h[li,:] * int_z_p_prime , chiLext)
 		
 	# Get the factor to normalize this:
 	int_dzs_norm = np.zeros(len(z_ph_vec))
@@ -495,8 +575,17 @@ def doints_Pkk():
 
 	# Norm is squared because there are two integrals over dNdz_s here.
 	bchiS_intans = int_chiLext / norm**2
+	#bchiS_intans_2h = int_chiLext_2h / norm**2
 	
-	np.savetxt('./txtfiles/Pkkterm_DeltaSig_'+endfilename+'_sample='+SAMPLE+'.txt', bchiS_intans )
+	#plt.figure()
+	#plt.loglog(lvec_less, bchiS_intans, 'm+')
+	#plt.hold(True)
+	#plt.loglog(lvec_less, bchiS_intans_2h, 'g+')
+	#plt.ylim(10**(-26), 10**(-15))
+	#plt.savefig('./plots/Clkk_compare.pdf')
+	#plt.close()
+	
+	np.savetxt('./txtfiles/Pkkterm_DeltaSig_1h2h_lpts=1e6_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'.txt', bchiS_intans )
 	
 	return bchiS_intans
 	
@@ -512,7 +601,7 @@ def doints_PggPkk(Pkkterm, Clgg):
 	#The PggPkk term is simply these two things multiplied in the effective lens redshift case:
 	PggPkk = Clgg * Pkkterm
 	
-	np.savetxt(folderpath+outputfolder+'/PggPkkterm_DeltaSig_'+endfilename+'_sample='+SAMPLE+'.txt', PggPkk)
+	np.savetxt(folderpath+outputfolder+'/PggPkkterm_DeltaSig_1h2h_lpts=1e6_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'.txt', PggPkk)
 	
 	return PggPkk
 	
@@ -531,18 +620,18 @@ def doconstint():
 	save=[0]
 	save[0]=chiSans ** 2 * gam ** 2 / ns / nl
 	
-	np.savetxt('./txtfiles/const_DeltaSig_'+endfilename+'_sample='+SAMPLE+'.txt', save)
+	np.savetxt('./txtfiles/const_DeltaSig_1h2h_lpts=1e6_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'.txt', save)
 	ns = get_ns_partial()
 	
 	return chiSans ** 2 * gam ** 2 / ns / nl
 	
 def get_lint():
 	""" Gets the integral over ell at each R and R' """
-	Pgkterm		=	np.loadtxt('./txtfiles/Pgkterm_DeltaSig_'+endfilename+'_sample='+SAMPLE+'.txt')
-	PggPkkterm	=	np.loadtxt('./txtfiles/PggPkkterm_DeltaSig_'+endfilename+'_sample='+SAMPLE+'.txt')
-	Pkkterm		= 	np.loadtxt('./txtfiles/Pkkterm_DeltaSig_'+endfilename+'_sample='+SAMPLE+'.txt')
-	Pggterm		=	np.loadtxt('./txtfiles/Pggterm_DeltaSig_'+endfilename+'_sample='+SAMPLE+'.txt')
-	constterm	=	np.loadtxt('./txtfiles/const_DeltaSig_'+endfilename+'_sample='+SAMPLE+'.txt')
+	Pgkterm		=	np.loadtxt('./txtfiles/Pgkterm_DeltaSig_1h2h_lpts=1e6_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'.txt')
+	PggPkkterm	=	np.loadtxt('./txtfiles/PggPkkterm_DeltaSig_1h2h_lpts=1e6_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'.txt')
+	Pkkterm		= 	np.loadtxt('./txtfiles/Pkkterm_DeltaSig_1h2h_lpts=1e6_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'.txt')
+	Pggterm		=	np.loadtxt('./txtfiles/Pggterm_DeltaSig_1h2h_lpts=1e6_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'.txt')
+	constterm	=	np.loadtxt('./txtfiles/const_DeltaSig_1h2h_lpts=1e6_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'.txt')
 	
 	# plot each thing to see what is dominating:
 	plt.figure()
@@ -558,7 +647,7 @@ def get_lint():
 	plt.xlabel('$l$')
 	plt.title('Survey='+SURVEY+', sample='+SAMPLE)
 	plt.legend()
-	plt.savefig('./plots/compareterms_powerspectra_alone_survey='+SURVEY+'_sample='+SAMPLE+'.pdf')
+	plt.savefig('./plots/compareterms_powerspectra_alone_1h2h_survey='+SURVEY+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'.pdf')
 	plt.close()
 	
 	print "nl=", nl
@@ -583,7 +672,7 @@ def get_lint():
 	plt.xlabel('$l$')
 	plt.title('Survey='+SURVEY+', sample='+SAMPLE)
 	plt.legend()
-	plt.savefig('./plots/compareterms_DeltaSigcov_survey='+SURVEY+'_sample='+SAMPLE+'.pdf')
+	plt.savefig('./plots/compareterms_DeltaSigcov_1h2h_survey='+SURVEY+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'.pdf')
 	plt.close()
 	
 	exit()
@@ -705,7 +794,7 @@ src_ph_pts		=	200
 Rpts			=	1500
 Rmin			=	pa.rp_min
 Rmax			=	pa.rp_max
-lpts			=	10**5
+lpts			=	10**6
 lpts_less		=	500
 lmin			=	3
 lmax			=	10**6

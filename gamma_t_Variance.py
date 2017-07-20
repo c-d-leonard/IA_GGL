@@ -146,6 +146,44 @@ def PofkGR(xivec):
 				Poflandx[li,xi]=0.0
 
 	return Poflandx
+
+def Pgg_1h2h(xivec):
+	""" Returns 1h+2h galaxy x matter power spectrum as a 2 parameter function of l and chi (xivec)."""
+	
+	# First do 2-halo
+	zivec = z_ofchi(xivec)
+	aivec = 1./ (1. + zivec)
+	# Compute the power spectrum at a bunch of z's and k's from CCL
+	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = 2.1*10**(-9), n_s=0.96)
+	cosmo = ccl.Cosmology(p)
+  
+	k = scipy.logspace(-4, 4, 1000)
+	P_2h=np.zeros((len(k), len(aivec)))
+	for ai in range(0, len(aivec)):
+		P_2h[:, ai] = ccl.nonlin_matter_power(cosmo, k, aivec[ai])
+		
+	# Now do 1-halo (this is done in a separate function
+	P_1h = ws.get_Pkgg_ll_1halo_kz(k, zivec, SURVEY)
+	
+	# Add 
+	Pofkz = P_1h + bias**2 * P_2h
+	#Pofkz = bias**2 * P_2h
+	
+	# Interpolate in k
+	Pofkint=[0]*len(zivec)	
+	for zi in range(0,len(zivec)):
+		Pofkint[zi]=scipy.interpolate.interp1d(k, Pofkz[:,zi])
+
+	# evaluate at k = l / chi
+	Poflandx=np.zeros((len(lvec_less),len(xivec)))
+	for li in range(0,len(lvec_less)):
+		for xi in range(0,len(xivec)):
+			if (lvec_less[li]/xivec[xi]<k[-1] and lvec_less[li]/xivec[xi]>k[0]):
+				Poflandx[li,xi]=Pofkint[xi](lvec_less[li]/xivec[xi])
+			else:
+				Poflandx[li,xi]=0.0
+
+	return Poflandx
 	
 def PofkGR_chimean(xi):
 	""" Returns the nonlinear (halofit) 2-halo matter power spectrum today as a function of l at the comoving distance OF THE LENSES."""
@@ -177,8 +215,8 @@ def get_Pgg():
 	""" This function computes P_{gg}(l, chiLmean) """
 	
 	# Get the nonlinear matter power spectrum:
-	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = 2.1*10**(-9), n_s=0.96)
-	cosmo = ccl.Cosmology(p)
+	#p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = 2.1*10**(-9), n_s=0.96)
+	#cosmo = ccl.Cosmology(p)
 	
 	# We are going to get Cl_{gg} using CCL. For this, we need to define a N(z) for the lenses, even though we are using an effective redshifts. We're going to use a narrow Gaussian.
 	
@@ -187,11 +225,32 @@ def get_Pgg():
 	N_of_z = 1. / np.sqrt(2. * np.pi) / sig_fudge * np.exp( - (z-zval)**2 / (2. *sig_fudge**2))
 	b_of_z = bias * np.ones(len(z))
 	
-	gtracer = ccl.cls.ClTracerNumberCounts(cosmo = cosmo, has_rsd = False, has_magnification = False, n = N_of_z, bias = b_of_z, z = z)
+	#gtracer = ccl.cls.ClTracerNumberCounts(cosmo = cosmo, has_rsd = False, has_magnification = False, n = N_of_z, bias = b_of_z, z = z)
 	
-	Clgg = ccl.cls.angular_cl(cosmo, gtracer, gtracer, lvec_less)
+	#Clgg = ccl.cls.angular_cl(cosmo, gtracer, gtracer, lvec_less)
 	
-	return  Clgg
+	# Get things we need 
+	chi = com_of_z(z)
+	
+	#Pdelta = PofkGR(chi)
+	Pdelta = Pgg_1h2h(chi)
+	
+	H = getHconf(chi) * (1. + z)
+	
+	# Test the explicit expression (Limber approximated)
+	Clgg_calc = np.zeros(len(lvec_less))
+	for li in range(0,len(lvec_less)):
+		Clgg_calc[li] = scipy.integrate.simps(N_of_z**2 * (H**2) * Pdelta[li, :] / chi**2, chi)
+	
+	#plt.figure()
+	#plt.loglog(lvec_less, Clgg, 'g+')
+	#plt.hold(True)
+	#plt.loglog(lvec_less, Clgg_calc, 'm+')
+	#plt.ylim(10**(-12), 10**(-2))
+	#plt.savefig('./plots/Clgg_test.pdf')
+	#plt.close()
+	
+	return  Clgg_calc
 	
 def get_Pgk():
 	""" This function computes P_{gk}(l, chi_L, chi_S) """
@@ -230,7 +289,7 @@ def doints_Pgg(Clgg):
 
 	# Now load Clgg
 	#Clgg=np.loadtxt(folderpath+outputfolder+'/Clgg_'+endfilename+'.txt')	
-	np.savetxt('./txtfiles/Pggterm_gammat_'+endfilename+'_method='+METHOD+'.txt', barchiS_int**2 * Clgg )
+	np.savetxt('./txtfiles/Pggterm_gammat_1h2h_lpts=1e6_'+endfilename+'_method='+METHOD+'.txt', barchiS_int**2 * Clgg )
 		
 	return barchiS_int**2 * Clgg
 	
@@ -349,7 +408,7 @@ def doconstint():
 	save=[0]
 	save[0]=chiSans ** 2 * gam ** 2 / ns / nl
 	
-	np.savetxt('./txtfiles/const_gammat_'+endfilename+'_method='+METHOD+'.txt', save)
+	np.savetxt('./txtfiles/const_gammat_1h2h_lpts=1e6_'+endfilename+'_method='+METHOD+'.txt', save)
 	
 	return chiSans ** 2 * gam ** 2 / ns / nl
 
@@ -359,8 +418,8 @@ def get_lint():
 	#Pgkterm		=	np.loadtxt('./txtfiles/Pgkterm_gammat_'+endfilename+'.txt')
 	#PggPkkterm	=	np.loadtxt('./txtfiles/PggPkkterm_gammat_'+endfilename+'.txt')
 	#Pkkterm		= 	np.loadtxt('./txtfiles/Pkkterm_gammat_'+endfilename+'.txt')
-	Pggterm		=	np.loadtxt('./txtfiles/Pggterm_gammat_'+endfilename+'_method='+METHOD+'.txt')
-	constterm	=	np.loadtxt('./txtfiles/const_gammat_'+endfilename+'_method='+METHOD+'.txt')
+	Pggterm		=	np.loadtxt('./txtfiles/Pggterm_gammat_1h2h_lpts=1e6_'+endfilename+'_method='+METHOD+'.txt')
+	constterm	=	np.loadtxt('./txtfiles/const_gammat_1h2h_lpts=1e6_'+endfilename+'_method='+METHOD+'.txt')
 	
 	# plot each thing to see what is dominating:
 	plt.figure()
@@ -374,7 +433,7 @@ def get_lint():
 	plt.xlabel('$l$')
 	plt.title('Survey='+SURVEY)
 	plt.legend()
-	plt.savefig('./plots/compareterms_gammatcov_survey='+SURVEY+'_method='+METHOD+'.pdf')
+	plt.savefig('./plots/compareterms_gammatcov_1h2h_survey='+SURVEY+'_method='+METHOD+'.pdf')
 	plt.close()
 	
 	# Interpolate these things to get the result in terms of the more highly sampled lvec
@@ -495,7 +554,7 @@ src_ph_pts		=	100
 Rpts			=	200
 Rmin			=	pa.rp_min
 Rmax			=	pa.rp_max
-lpts			=	10000
+lpts			=	100000
 lpts_less		=	500
 lmin			=	3
 lmax			=	10**6

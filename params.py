@@ -28,15 +28,6 @@ boost_assoc = 0.2
 boost_far = 0.03
 boost_close = 0.1
 
-# Files to import statistical error on the boost. 
-# THESE DEPEND ON THE SAMPLE: 
-# ON LARGE SCALES, COSMIC VARIANCE DOMINATED AND DEPEND ON BOOST PROP FACTS AND THEREFORE P(Z_S, Z_P).
-# ON SMALL SCALES, SHOT NOICE DOMINATED AND DEPEND ON NUMBER OF LENS / SOURCE PAIRS
-# CURRENTLY SET FOR SDSS LRGS / SHAPES.
-
-#sigBF_a = './txtfiles/boost_error_from_rachel_assoc.txt' # File containing two columns: rp (kpc/h), sigma(Boost-1) for sample a
-#sigBF_b ='./txtfiles/boost_error_from_rachel_background.txt' # Same for b
-
 # Parameters associated with the projected radial bins
 rp_max 	=	20.0 # The maximum projected radius (Mpc/h)
 rp_min	=	0.05 # The minimum projected radius (Mpc/h)
@@ -47,26 +38,11 @@ dNdztype	=	'Nakajima'
 alpha_fid 	= 	2.338
 zs_fid 		=	0.303
 dNdzpar_fid	=	[alpha_fid, zs_fid] #Put these in a list to facilitate passing around
-
-num_sys		=	1 # number of different systematic scenarios we want to do right now
-dNdzpar_sys = [0]*num_sys
-#perc_sys	=	[0.1, 0.2, 0.3]
-perc_sys = [0.2]
-for i in range(0, num_sys):
-	dNdzpar_sys[i] = [ dNdzpar_fid[0]* (1. - perc_sys[i]), dNdzpar_fid[1]* (1. - perc_sys[i])]	
-#alpha_sys 	=	alpha_fid * (1. - np.asarray([0.1, 0.2, 0.3])) # Derived from Nakajima et al 2011 on April 4 2017
-#zs_sys		= 	zs_fid * ( 1. - np.asarray([0.1, 0.2, 0.3])) # Derived from Nakajima et al 2011 on April 4 2017
-#dNdzpar_sys	= 	[alpha_sys, zs_sys] # A 2d list, for passing this around.
 zpts		=	1000  # Number of points in the z vector at which we are evaluating dNdz
 
 pztype		=	'Gaussian'
 sigz_fid	=	0.11  # The photometric redshift error given a Gaussian photo_z model
 pzpar_fid 	=	[sigz_fid] # Make this a list to make it more generic to pass around
-#sigz_sys 	= 	sigz_fid * (1. - np.asarray([0.1, 0.2, 0.3]))  #Derived from Nakajima et al 2011 on April 4 2017
-pzpar_sys = [0]*num_sys
-for i in range(0, num_sys):
-	pzpar_sys[i] = [ pzpar_fid[0]* (1. - perc_sys[i]) ]
-
 boost_sys	=	1.03 # Multiplier for the boost systematic error. This value is given in Blazek et al. 2012.
 
 # Parameters related to the spec and photo z's of the source sample and other redshift cuts.
@@ -118,22 +94,20 @@ H0	=	10**(5)/c
 # Parameters for getting the fiducial gamma_IA
 # 2 halo term parmaeters
 sigz_gwin = 0.0001 
-kpts_wgg = 5000 #10000
+kpts_wgg = 10000
 kpts_wgp = 2000
 bs_Bl = 1. # SDSS shape sample - "garden variety" galaxies.
 bs_shapes = 1. # SDSS shape sample - "garden variety" galaxies.
-bd_Bl = 2.07 #1.77
+bd_Bl = 2.07 #1.77 # 
 bd_shapes = 2.07 #1.77
-Ai_Bl = 0.25 # SDSS shape sample has luminosity ~ SDSS L4 aka M_r ~ [-20 -> -19], aka much fainter than LOWZ. This Ai computed by using this M_r in eqn 34 of Singh 2014 (pwr law A_i(L_r)).
-Ai_shapes = 0.25  # Is this power law still valid for such dimmer galaxies? Not entirely sure.
+Ai_Bl = 0.47 # assumes SDSS shapes have mean abs mag -19.5
+Ai_shapes = 0.47
+#Ai_Bl = 0.25 # SDSS shape sample has luminosity ~ SDSS L4 aka M_r ~ [-20 -> -19], aka much fainter than LOWZ. This Ai computed by using this M_r in eqn 34 of Singh 2014 (pwr law A_i(L_r)).
+#Ai_shapes = 0.25  # Is this power law still valid for such dimmer galaxies? Not entirely sure.
 C1rho = 0.0134
 
 # 1 halo gal-gal term parameters
-Mvir = 4.5 * 10**13 #heavily estimated SDSS LRG value from Reid & Spergel 2009. #10**(13.18) BOSS LOWZ value
 ng_Bl =  10**(-4) # SDSS LRG value #3. * 10**(-4) # volume density of galaxies for BOSS, in h^3 / Mpc^3.
-#Mstar_src_low = 8.*10**9 * (HH0/100.) # Lower edge of stellar mass range in units of Msol / h^2
-#Mstar_src_high = 1.2*10**10 * (HH0/100.) # Upper edge of stellar mass range in units of Msol / h^2
-Mstar_src_thresh = 10** (9.95) * (HH0/100.)**2 # Lower threshold of galaxy stellar mass sample in units of Msol / h^2, from BOSS 2012
 fsat_LRG = 0.0636 # Satelite fraction from Reid & Spergel 2008 # 0.14 approximate boss lowz val .
 
 ##### Parameters of the HOD model, taken from Zu & Mandelbaum 2015, 1505.02781.  #####
@@ -155,10 +129,18 @@ gamma= 1.21
 Mso = 10**(10.31)
 beta = 0.33
 
+# Here are the parameters from the HOD from Reid and Spergel 2008. It's less complex but it's specifically for the SDSS LRGs
+Mcut_reid = 5.0 * 10**13 # Msol
+M1_reid = 4.95 * 10**14 # Msol
+alpha_reid = 1.035
+Mmin_reid = 8.05*10**13 # Msol
+sigLogM_reid = 0.7 
+
 # 1-halo IA term parameters.
 # These are for the model given by Schneider & Bridle 2010, 0903.3870, but for the parameters given in Table 1 of Singh et al. 2014.
 # The q_ij parameters are taken directly from this table. a_h is computed by taking the power law of a_h as a function of luminosity a_h(L) from Singh et al. 2014 and integrating it over the Schechter luminosity function from Krause et al. 2015 for the limiting magnitude of SDSS shapes, r<21.8, and the Nakajima redshift distribution. (see ./secondary_scripts/ah_calculation.ipynb)
-ah_Bl  =  0.01 
+#ah_Bl  =  0.01 
+ah_Bl = 6.4*10**(-4) # Stopgap, assumes M abs avg = -19.5
 q11_Bl = 0.005    
 q12_Bl  = 5.909
 q13_Bl  = 0.3798

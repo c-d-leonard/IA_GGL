@@ -1,6 +1,6 @@
 # This is a script which forecasts constraints on IA using multiple shape measurement methods.
 
-SURVEY = 'SDSS'  # Set the survey here; this tells everything which parameter file to import.
+SURVEY = 'LSST_DESI'  # Set the survey here; this tells everything which parameter file to import.
 print "SURVEY=", SURVEY
 
 import numpy as np
@@ -38,10 +38,20 @@ def get_ns_partial():
 def gamma_fid(rp):
 	""" Returns the fiducial gamma_IA from a combination of terms from different models which are valid at different scales """
 	
-	wgg_rp = ws.wgg_full(rp, pa.fsat_LRG, pa.fsky, pa.bd_shapes, pa.bs_shapes, './txtfiles/wgg_1h_survey='+pa.survey+'.txt', './txtfiles/wgg_2h_survey='+pa.survey+'_kpts='+str(pa.kpts_wgg)+'.txt', './plots/wgg_full_shapes_survey='+pa.survey+'.pdf', SURVEY)
-	wgp_rp = ws.wgp_full(rp, pa.bd_shapes, pa.Ai_shapes, pa.ah_shapes, pa.q11_shapes, pa.q12_shapes, pa.q13_shapes, pa.q21_shapes, pa.q22_shapes, pa.q23_shapes, pa.q31_shapes, pa.q32_shapes, pa.q33_shapes, './txtfiles/wgp_1h_survey='+pa.survey+'.txt','./txtfiles/wgp_2h_survey='+pa.survey+'.txt', './plots/wgp_full_survey='+pa.survey+'.pdf', SURVEY)
+	wgg_rp = ws.wgg_full(rp, pa.fsat_LRG, pa.fsky, pa.bd_shapes, pa.bs_shapes, './txtfiles/wgg_1h_survey='+pa.survey+'_withHMF.txt', './txtfiles/wgg_2h_survey='+pa.survey+'_kpts='+str(pa.kpts_wgg)+'_update.txt', './plots/wgg_full_survey='+pa.survey+'.pdf', SURVEY)
+	wgp_rp = ws.wgp_full(rp, pa.bd_shapes, pa.Ai_shapes, pa.ah_shapes, pa.q11_shapes, pa.q12_shapes, pa.q13_shapes, pa.q21_shapes, pa.q22_shapes, pa.q23_shapes, pa.q31_shapes, pa.q32_shapes, pa.q33_shapes, './txtfiles/wgp_1h_ahStopgap_survey='+pa.survey+'.txt','./txtfiles/wgp_2h_AiStopgap_survey='+pa.survey+'.txt', './plots/wgp_full_survey='+pa.survey+'.pdf', SURVEY)
 	
 	gammaIA = wgp_rp / (wgg_rp + 2. * pa.close_cut) 
+	
+	plt.figure()
+	plt.loglog(rp, gammaIA, 'go')
+	plt.xlim(0.05,30)
+	plt.ylabel('$\gamma_{IA}$')
+	plt.xlabel('$r_p$')
+	plt.title('Fiducial values of $\gamma_{IA}$')
+	plt.savefig('./plots/gammaIA_shapes_survey='+pa.survey+'.pdf')
+	plt.close()
+	
 	
 	return gammaIA
 
@@ -174,8 +184,19 @@ def get_gammaIA_cov(rp_cents_, rp_bins_, gIA_fid, covperc, a_con):
 	""" Takes the covariance matrices of the constituent elements of gamma_{IA} and combines them to get the covariance matrix of gamma_{IA} in projected radial bins."""
 	
 	# Import Clgg-related covariance terms from separate Fourier-space script
-	Clggterm_1 = np.loadtxt('./txtfiles/cov_gamt_'+SURVEY+'_method=1_rpts2500_lpts100000_Clggterm.txt')
-	Clggterm_2 = np.loadtxt('./txtfiles/cov_gamt_'+SURVEY+'_method=2_rpts2500_lpts100000_Clggterm.txt')
+	Clggterm_1 = np.loadtxt('./txtfiles/cov_gamt_1h2h_'+SURVEY+'_method=1_rpts2500_lpts100000_Clggterm.txt')
+	#Clggterm_2 = np.loadtxt('./txtfiles/cov_gamt_1h2h_'+SURVEY+'_method=2_rpts2500_lpts10000_Clggterm.txt')
+	
+	# factor correcting for galaxies which have higher spec-z than the sample but which end up in the sample.
+	boost_fid = get_boost(rp_cents_, pa.boost_assoc)
+	
+	# This gets the shape-noise from real-space methods for comparison - this matrix is diagonal by definition so it is output only as a vector of the diagonal elements
+	shear_cov_1 = shapenoise_cov(pa.e_rms_a, z_close_low, z_close_high, boost_fid, rp_cents_, rp_bins_, pa.dNdzpar_fid, pa.pzpar_fid) 
+	shear_cov_2 = shapenoise_cov(pa.e_rms_b, z_close_low, z_close_high, boost_fid, rp_cents_, rp_bins_, pa.dNdzpar_fid, pa.pzpar_fid) 
+	shear_covar = get_cov_btw_methods(shear_cov_1, shear_cov_2, covperc)
+	cov_old=np.zeros((pa.N_bins, pa.N_bins))
+	for i in range(0, pa.N_bins):
+		cov_old[i,i] = subtract_var(shear_cov_1[i], shear_cov_2[i], shear_covar[i]) 
 	
 	"""# Plot real space vs fourier space answer to compare.
 	plt.figure()
@@ -208,31 +229,23 @@ def get_gammaIA_cov(rp_cents_, rp_bins_, gIA_fid, covperc, a_con):
 	plt.savefig('./plots/check_gammat_var_'+SURVEY+'_method=2.pdf')
 	plt.close()"""
 	
-	
-	# This gets the shape-noise from real-space methods for comparison - this matrix is diagonal by definition so it is output only as a vector of the diagonal elements
-	#shear_cov_1 = shapenoise_cov(pa.e_rms_a, z_close_low, z_close_high, boost_fid, rp_cents_, rp_bins_, pa.dNdzpar_fid, pa.pzpar_fid) 
-	#shear_cov_2 = shapenoise_cov(pa.e_rms_b, z_close_low, z_close_high, boost_fid, rp_cents_, rp_bins_, pa.dNdzpar_fid, pa.pzpar_fid) 
-	#shear_covar = get_cov_btw_methods(shear_cov_1, shear_cov_2, covperc)
-	#cov_old=np.zeros((pa.N_bins, pa.N_bins))
-	#for i in range(0, pa.N_bins):
-	#	cov_old[i,i] = subtract_var(shear_cov_1[i], shear_cov_2[i], shear_covar[i]) 
-	
 	# Get the combined covariance Cov(gammat(r) - gammat'(r), gamma(r') - gammat'(r')):
 	cov_gam_diff = get_combined_covariance(Clggterm_1, covperc)
 	
 	# Compare real-space shape noise only answer with fourier space answer (including CV)
-	#plt.figure()
-	#plt.loglog(rp_cents_, np.diag(cov_old), 'mo', label='real, combined')
-	#plt.hold(True)
-	#plt.loglog(rp_cents_, np.diag(cov_gam_diff), 'go', label='fourier, combined (with CV)')
-	#plt.xlabel('r_p')
-	#plt.ylabel('Variance')
-	#plt.legend()
-	#plt.savefig('./plots/check_gammat_SNsep_'+SURVEY+'.pdf')
-	#plt.close()
+	plt.figure()
+	plt.loglog(rp_cents_, np.diag(cov_old), 'mo', label='real, combined')
+	plt.hold(True)
+	plt.loglog(rp_cents_, np.diag(cov_gam_diff), 'go', label='fourier, combined (with CV)')
+	plt.xlabel('r_p')
+	plt.ylabel('Variance')
+	plt.legend()
+	plt.savefig('./plots/check_gammat_1h2h_SNsep_'+SURVEY+'.pdf')
+	plt.close()
 	
-	# factor correcting for galaxies which have higher spec-z than the sample but which end up in the sample.
-	boost_fid = get_boost(rp_cents_, pa.boost_assoc)
+	exit()
+	
+	
 	Ncorr_fid = N_corr(rp_cents_, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdzpar_fid, pa.pzpar_fid, boost_fid) 
 	
 	# systematic error due to effect on the boost - this is assumed diagonal
@@ -281,12 +294,23 @@ def get_gammaIA_cov(rp_cents_, rp_bins_, gIA_fid, covperc, a_con):
 def check_convergence():
 	""" This short function checks the convergence of the Clggterm as calculated in Fourier space (by another script) wrt the number of rp points."""
 	
-	rpts_1 = '2500'; rpts_2 = '3000'; 
-	Clggterm_rpts1 = np.loadtxt('./txtfiles/cov_gamt_'+SURVEY+'_method=1_rpts'+rpts_1+'_lpts100000_Clggterm.txt')
-	Clggterm_rpts2 = np.loadtxt('./txtfiles/cov_gamt_'+SURVEY+'_method=1_rpts'+rpts_2+'_lpts100000_Clggterm.txt')
+	#rpts_1 = '2000'; rpts_2 = '2500'; 
+	#Clggterm_rpts1 = np.loadtxt('./txtfiles/cov_gamt_1h2h_'+SURVEY+'_method=1_rpts'+rpts_1+'_lpts100000_Clggterm.txt')
+	#Clggterm_rpts2 = np.loadtxt('./txtfiles/cov_gamt_1h2h_'+SURVEY+'_method=1_rpts'+rpts_2+'_lpts100000_Clggterm.txt')
 	
-	fracdiff = np.abs(Clggterm_rpts2 - Clggterm_rpts1) / np.abs(Clggterm_rpts1)*100
+	#fracdiff = np.abs(Clggterm_rpts2 - Clggterm_rpts1) / np.abs(Clggterm_rpts1)*100
+	#print "max percentage difference=", np.amax(fracdiff), "%"
+	
+	#exit()
+	
+	lpts_1 = '10000'; lpts_2 = '100000'; 
+	Clggterm_lpts1 = np.loadtxt('./txtfiles/cov_gamt_1h2h_'+SURVEY+'_method=1_rpts2500_lpts'+lpts_1+'_Clggterm.txt')
+	Clggterm_lpts2 = np.loadtxt('./txtfiles/cov_gamt_1h2h_'+SURVEY+'_method=1_rpts2500_lpts'+lpts_2+'_Clggterm.txt')
+	
+	fracdiff = np.abs(Clggterm_lpts2 - Clggterm_lpts1) / np.abs(Clggterm_lpts1)*100
 	print "max percentage difference=", np.amax(fracdiff), "%"
+	
+	exit()
 	
 	return
 	
@@ -456,7 +480,7 @@ for i in range(0,len(pa.a_con)):
 	# Output a plot showing the 1-sigma error bars on gamma_IA in projected radial bins
 	#plot_variance(Cov_tot, fid_gIA, rp_cents, pa.cov_perc[j], pa.a_con)
 	
-np.savetxt('./txtfiles/StoNsq_shapes_withCV_survey='+SURVEY+'_rpts=2500_SNseparated.txt', StoNsquared_stat)
+np.savetxt('./txtfiles/StoNsq_shapes_withCV_survey='+SURVEY+'_rpts=2500_Ai_ah_stopgap.txt', StoNsquared_stat)
 
 np.savetxt('./txtfiles/a_StoNstat_survey='+SURVEY+'.txt', pa.a_con)	
 np.savetxt('./txtfiles/cov_perc_StoNstat_survey='+SURVEY+'.txt', pa.cov_perc)	
