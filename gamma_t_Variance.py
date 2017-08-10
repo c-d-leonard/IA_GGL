@@ -19,12 +19,12 @@ import pyccl as ccl
 def setup_vectors():
 	""" This function sets up all the vectors of points we will need """
 	
-	lvec			=		scipy.logspace(np.log10(lmin), np.log10(lmax), lpts)
+	lvec				=		scipy.logspace(np.log10(lmin), np.log10(lmax), lpts)
 	lvec_less_1			= 		scipy.linspace(lmin, lpts_less, lpts_less-lmin+1)
 	lvec_less_2			= 		scipy.logspace(np.log10(lpts_less), np.log10(lmax), lpts_less)
-	lvec_less = np.append(lvec_less_1, lvec_less_2)
-	Rvec			=		scipy.logspace(np.log10(Rmin), np.log10(Rmax), Rpts)
-	Redges			=		scipy.logspace(np.log10(Rmin), np.log10(Rmax), numRbins+1)
+	lvec_less 			= 		np.append(lvec_less_1, lvec_less_2)
+	Rvec				=		scipy.logspace(np.log10(Rmin), np.log10(Rmax), Rpts)
+	Redges				=		scipy.logspace(np.log10(Rmin), np.log10(Rmax), numRbins+1)
 	
 	# Want to get the centres of the bins as well so we know where to plot. But, we need to get the centres in log space.
 	logRedges=np.log10(Redges)
@@ -54,7 +54,9 @@ def N_of_zph(z_a_def_s, z_b_def_s, z_a_norm_s, z_b_norm_s, z_a_def_ph, z_b_def_p
 	norm = scipy.integrate.simps(int_dzs_norm, z_ph_vec_norm)
 	
 	return (z_ph_vec, int_dzs / norm)
-
+	
+# TO INCLUDE AN EXTENDED REDSHIFT THIS FUNCTION MUST BE MODIFIED TO TAKE 'CUT' OR 'FULL' AS AN ARGUMENT INDICATING THE SAMPLE AND TO INTEGRATE OVER A LENS Z DIST.
+# ADDITIONALLY, THERE SHOULD BE AN ARGUMENT WHICH INDICATES 'CLOSE' OR 'ALL' FOR SPEC-Z, SEE NOTES JULY 31 / 26; August 10.
 def sum_weights(z_a_def_s, z_b_def_s, z_a_norm_s, z_b_norm_s, z_a_def_ph, z_b_def_ph, z_a_norm_ph, z_b_norm_ph, erms, rp_bin_c_, dNdz_par, pz_par):
 	""" Returns the sum over rand-source pairs of the estimated weights, in each projected radial bin. Pass different z_min_s and z_max_s to get rand-close, rand-far, and all-rand cases."""
 	
@@ -210,7 +212,8 @@ def PofkGR_chimean(xi):
 			Poflandx[li]=0.0
 
 	return Poflandx
-	
+
+# TO INCLUDE AN EXTENDED REDSHIFT DISTRIBUTION, WE WILL MERGE THE FUNCATIONALITY OF THIS FUNCTION INTO DOINTS_PGG TO ENSURE ALL INTEGRALS OVER Z_L ARE DONE CONSISTENTLY; SEE NOTES AUGUST 10TH. 
 def get_Pgg():
 	""" This function computes P_{gg}(l, chiLmean) """
 	
@@ -220,9 +223,9 @@ def get_Pgg():
 	
 	# We are going to get Cl_{gg} using CCL. For this, we need to define a N(z) for the lenses, even though we are using an effective redshifts. We're going to use a narrow Gaussian.
 	
-	sig_fudge = 0.05
+	sig_fudge = 0.05  # CHANGE THIS TO THE APPROPRIATE PARAMETER FOR THE GIVEN EXTENDED REDSHIFT DISTRIBUTION. 
 	z = np.linspace(zval - 5. * sig_fudge, zval + 5. * sig_fudge, 1000)
-	N_of_z = 1. / np.sqrt(2. * np.pi) / sig_fudge * np.exp( - (z-zval)**2 / (2. *sig_fudge**2))
+	N_of_z = 1. / np.sqrt(2. * np.pi) / sig_fudge * np.exp( - (z-zval)**2 / (2. *sig_fudge**2))  # CHANGE THIS TO THE APPROPRIATE EXTENDED REDSHIFT DISTRIBUTION FOR LENSES. 
 	b_of_z = bias * np.ones(len(z))
 	
 	#gtracer = ccl.cls.ClTracerNumberCounts(cosmo = cosmo, has_rsd = False, has_magnification = False, n = N_of_z, bias = b_of_z, z = z)
@@ -251,7 +254,10 @@ def get_Pgg():
 	#plt.close()
 	
 	return  Clgg_calc
-	
+
+# TO INCLUDE AN EXTENDED LENS REDSHIFT DISTRIBUTION: MAKE THE SAME MODIFICATIONS AS HAVE BEEN MADE TO THE SAME FUNCTION IN DELTASIGMA_VARIANCE.PY
+# ALSO, THIS HAS NOT YET BEEN MODIFIED TO ACCOUNT FOR THE THE ISSUE WHERE g(chi) IS ZERO FOR LOW VALUES OF CHISVEC - INCORPORATE THESE CHANGES FROM DELTASIGMA_VARIANCE.PY AS WELL. 
+# THIS WILL ACTUALLY GET MERGED INTO DOINTS_PGK IN THE SAME WAY IT SHOULD IN DELTASIGMA_VARIANCE.PY - SEE NOTES AUGUST 10TH. 	
 def get_Pgk():
 	""" This function computes P_{gk}(l, chi_L, chi_S) """
 	H=getHconf(chiLmean)
@@ -266,6 +272,7 @@ def get_Pgk():
 	
 	return  Clgk
 
+# TO INCLUDE AN EXTENDED REDSHIFT DISTRIBUTION FOR LENSES: THE ARGUMENTS OF SUM_WEIGHTS IN THIS FUNCTION WILL CHANGE TO INDICATE HOW TO CUT ON PHOTO-Z AND SPEC-Z. OTHERWISE IT WILL BE THE SAME. 
 def get_ns_partial():
 	""" Gets the fractional value of ns appropriate for this subsample."""
 	
@@ -277,11 +284,12 @@ def get_ns_partial():
 	return frac * ns_tot
 	
 ############################# FUNCTIONS FOR DOING THE INTEGRALS #######################
-	
+
+# TO INCORPORATE AN EXTENDED LENS DISTRIBUTION, WE WILL MERGE  THE FUNCTIONALITY OF GET_PGG INTO THIS FUNCTION, SEE NOTES AUGUST 10TH.	
 def doints_Pgg(Clgg):
 	""" This function does the integrals in dchiL, dbarchiL, dchiS, dbarchiS on the P_{gg} * gamma^2 / ns term"""
 	
-	# Get dNdzph:
+	# Get dNdzph: 
 	(z_ph, Nofzph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, minz_src_p, maxz_src_p, minz_src_p, maxz_src_p, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
 	
 	# Do the integral in photo-z
@@ -292,7 +300,8 @@ def doints_Pgg(Clgg):
 	np.savetxt('./txtfiles/Pggterm_gammat_1h2h_lpts=1e6_'+endfilename+'_method='+METHOD+'.txt', barchiS_int**2 * Clgg )
 		
 	return barchiS_int**2 * Clgg
-	
+
+# THIS WILL HAVE SIGNIFICANT MODIFICATIONS TO INCORPORATE AN EXTENDED LENS DISTRIBUTION, INCLUDING MERGING IN THE FUNCTIONALITY OF GET_PGG. SEE NOTES AUGUST 10TH. 	
 def doints_Pgk(Clgk):
 	""" This function does the integrals in dchiL, dbarchiL, dchiS, dbarchiS on the P_{gk} term"""
 
@@ -322,7 +331,8 @@ def doints_Pgk(Clgk):
 	np.savetxt('./txtfiles/Pgkterm_gammat_'+endfilename+'_method='+METHOD+'.txt', chiL_intans**2 )
 		
 	return chiL_intans**2
-	
+
+# FOR AN EXTENDED REDSHIFT DISTRIBUTION IN LENSES; MAKE THE SAME MODIFICATIONS AS IN DELTASIGMA_VARIANCE, JUST WITHOUT FACTORS OF SIGMA_C^-1. 	
 def doints_Pkk():
 	""" This function does the integrals in dchiL, dbarchiL, dchiS, dbarchiS on the P_{kk} / nl term. For this one, we haven't precomputed Cl_kk because it's more efficient to do the integrals in a less pedogogical order. We do them all in this function."""
 	 
@@ -377,7 +387,9 @@ def doints_Pkk():
 	np.savetxt('./txtfiles/Pkkterm_gammat_'+endfilename+'_method='+METHOD+'.txt', bchiS_intans )
 	
 	return bchiS_intans
-	
+
+# TO INCORPORATE AN EXTENDED REDSHIFT DISTRIBUTION FOR LENSES, THIS FUNCTION WILL BECOME ALMOST THE SAME AS DOINTS_PKK, BUT WEHN INTEGRATING OF DNDZL, INTEGRATE ALSO OVER PGG(L, ZL).
+# SEE NOTES, AUGUST 10, FOR DETAILS.	
 def doints_PggPkk(Pkkterm, Clgg):
 	""" This function constructs the Pgg*Pkk term from Pkk and Clgg"""
 	
@@ -393,7 +405,8 @@ def doints_PggPkk(Pkkterm, Clgg):
 	np.savetxt('./txtfiles/PggPkkterm_gammat_'+endfilename+'_method='+METHOD+'.txt', PggPkk)
 	
 	return PggPkk
-	
+
+# TO INCORPORATE AN EXTENDED REDSHIFT DISTRIBUTION FOR LENSES, MAKE THE SAME CHANGES HERE AS TO THE EQUIVALENT FUNCTION IN DELTASIGMA_VARIANCE.PY. 	
 def doconstint():
 	""" This function does the integrals in chiS, bchiS, chiL and bchiL for the constant term """
 	
@@ -577,15 +590,15 @@ z_ofchi, com_of_z								=		setup.z_interpof_com(SURVEY)
 ns = get_ns_partial()
 
 # Get power spectra
-Clgg 	= 	get_Pgg()
+Clgg 	= 	get_Pgg()  # THIS FUNCTION HAS SOME SMALL INTERNAL CHANGES TO INCLUDE AN EXTENDED REDSHIFT DISTRIBUTION FOR LENSES. 
 print "get Pgg done"
-Clgk	=	get_Pgk()
+Clgk	=	get_Pgk() # THIS FUNCTION WILL BE MERGED INTO DOINTS_PGK TO INCORPORATE AND EXTENDED REDSHIFT DISTRIBUTION FOR LENSES; SEE NOTES AUGUST 10TH. 
 print "get Pgk done"
 
 # Do the integrals on each term up to the l integral (so chiS, bchiS, chiL, bchiL)
-Pggints = doints_Pgg(Clgg)
+Pggints = doints_Pgg(Clgg) 
 print "Done with Pgg integrals. Now do Pgk:"
-Pgkints = doints_Pgk(Clgk)
+Pgkints = doints_Pgk(Clgk)  # THIS FUNCTION HAS INTERNAL CHANGES TO INCLUDE AN EXTENDED REDSHIFT DISTRIBUTION FOR LENSES, INCLUDING MERGING IN THE FUNCTIONALITY OF GET_PGK.
 print "Done with Pgk integrals. Now do Pkk:"
 Pkkints = doints_Pkk()
 print "Done with Pkk integrals. Now do constant:"

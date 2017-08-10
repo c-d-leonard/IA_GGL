@@ -73,6 +73,8 @@ def get_z_close(z_l, cut_MPc_h, survey):
 
 def com(z_, survey):
 	""" Gets the comoving distance in units of Mpc/h at a given redshift, z_ (assuming the cosmology defined in the params file). """
+	
+	# NO DEPENDENCE ON Z_L
 
 	if (survey == 'SDSS'):
 		import params as pa
@@ -98,6 +100,8 @@ def com(z_, survey):
 
 def z_interpof_com(survey):
 	""" Returns an interpolating function which can give z as a function of comoving distance. """
+
+	# NO DEPENDENCE ON Z_L
 
 	z_vec = scipy.linspace(0., 10., 10000) # This hardcodes that we don't care about anything over z=2100
 

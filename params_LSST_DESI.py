@@ -6,9 +6,9 @@ run_quants		=	False
 survey 			=	'LSST_DESI'
 
 # Parameters associated with the sample / shape noise calcuation 
-e_rms_Bl_a 		= 	0.18 # rms ellipticity of sample a, Blazek method. 1/sqrt(2) * percomponent value (=0.26) given on confluence page for LSST forecasts.
-e_rms_Bl_b		=	0.18 # rms ellipticity of sample b, Blazek method. Source, same as previous line.
-e_rms_a 		= 	0.175 # rms ellipticity of sample measured with method a, shapes method
+e_rms_Bl_a 		= 	0.18 # rms ellipticity of sample a, Blazek method. 1/sqrt(2) * percomponent value (=0.26) given on confluence page for LSST forecasts.  # MAYBE THIS SHOULD BE 0.26??
+e_rms_Bl_b		=	0.18 # rms ellipticity of sample b, Blazek method. Source, same as previous line. # MAYBE THIS SHOULD BE 0.26??
+e_rms_a 		= 	0.175 # rms ellipticity of sample measured with method a, shapes method  # I THINK I SHOULD ACTUALLY BE RUNNING WITH THESE THE SAME FOR BOTH METHODS?
 e_rms_b 		= 	0.185 # rms ellipticity of sample measured with method b, shapes method
 n_l 			= 	300. # The number of lenses in the lens sample per square DEGREE. DESI Final Design Report, top of page 52. 
 Area_l 			=	3000. # Area associated with the lens sample in square DEGREES. Overlap with LSST given in "Spectroscopic Needs for Calibration of LSST Photometric Redshifts" whitepaper.
@@ -18,7 +18,7 @@ a_con			=	[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]	# Fiducial constant offs
 cov_perc 		= 	[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9] #percentage covariance between methods, shape measurement method
 e_rms_mean 		=	np.abs((e_rms_b+e_rms_a)/2.) # This is the e_rms used in computing the shared weight for shapes methods
 N_shapes		= 	Area_l * 3600. * n_s# Number of galaxies in the shape sample.
-N_LRG			=	Area_l * n_l # Number of galaxies in the LRG sample.
+#N_LRG			=	Area_l * n_l # Number of galaxies in the LRG sample.
 
 # Parameters for getting sigma_e, measurements error. From Chang et al. 2013
 a_sm 			=	1.58
@@ -133,8 +133,8 @@ C1rho = 0.0134
 # 1 halo gal-gal term parameters
 #Mvir = 7.2*10**12 # Msol / h. Value found by averaging halos masses with at least a central galaxy, Zu&Mandelbaum HOD, see Get_Mh_avg.ipynb 
 #Mvir = 1.6 * 10**(14) # I have estimated this from extending the Mavg line in Figure 3.4 of the DESI design book to z=0.8. This is for the BGS sample in the first place so I'm not sure it makes sense. 
-ng_Bl = 3. * 10**(-4)
-fsat_LRG = 0.14 # The DESI volume density is roughly the same as that of BOSS LOWZ, so I am using the value for BOSS LOWZ that Sukhdeep told me. But I'm not sure sure about this, because it assumes the DESI LRG sample is volume-limited and there is no effect from going to higher redshift.
+#ng_Bl = 3. * 10**(-4)
+#fsat_LRG = 0.14 # The DESI volume density is roughly the same as that of BOSS LOWZ, so I am using the value for BOSS LOWZ that Sukhdeep told me. But I'm not sure sure about this, because it assumes the DESI LRG sample is volume-limited and there is no effect from going to higher redshift.
 
 ##### Parameters of the HOD model, taken from Zu & Mandelbaum 2015, 1505.02781.  #####
 #######  THESE ARE PARAMETERS DESCRIBING THE HALO OCCUPATION FOR SDSS MGS SPEC-Z GALAXIES IN HALOS ASSOCIATED TO THE SAME SAMPLE. HAVE NOT YET CHANGED TO DESI + LSST #######

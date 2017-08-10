@@ -6,9 +6,9 @@ run_quants 		=	False # For the Blazek case, whether you want to recompute F, cz,
 survey			=	'SDSS'
 
 # Parameters associated with the sample / shape noise calcuation 
-e_rms_Bl_a 		= 	0.3 # rms ellipticity of sample a, Blazek method
+e_rms_Bl_a 		= 	0.3 # rms ellipticity of sample a, Blazek method  # I JUST MADE THIS UP AT SOME POINT, NEED TO RE-RUN WITH THE PROPER VALUE! 
 e_rms_Bl_b		=	0.3 # rms ellipticity of sample b, Blazek method
-e_rms_a 		= 	0.29 # rms ellipticity of sample measured with method a, shapes method
+e_rms_a 		= 	0.29 # rms ellipticity of sample measured with method a, shapes method  # I THINK I SHOULD ACTUALLY BE RUNNING WITH THESE THE SAME FOR BOTH METHODS?
 e_rms_b 		= 	0.31 # rms ellipticity of sample measured with method b, shapes method
 n_l 			= 	8.7 # The number of lenses in the lens sample per square DEGREE
 Area_l 			=	7131 # Area associated with the lens sample in square DEGREES
@@ -18,8 +18,8 @@ S_to_N 			= 	15. # The signal to noise of the lensing measurement (?) - necessar
 a_con			=	[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9] #[1./1.25, 1./1.5, 1./1.75]	# Fiducial constant offset, approximated from Singh 2016 assuming unprimed method isophotal and primed ReGaussianisation
 cov_perc 		= 	[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9] #percentage covariance between methods, shape measurement method
 e_rms_mean 		=	np.abs((e_rms_b+e_rms_a)/2.) # This is the e_rms used in computing the shared weight for shapes methods
-N_shapes		= 	3.0*10**7 # Number of galaxies in the shape sample.
-N_LRG			=	62081 # Numbr of galaxies in the LRG sample.
+N_shapes		= 	Area_l * n_s * 3600 # Number of galaxies in the shape sample.
+#N_LRG			=	62081 # Numbr of galaxies in the LRG sample.
  
 # The factor by which the (boost-1) is proportional to the projected correlation function at 1 Mpc/h, for different source samples.
 # THESE DEPEND ON THE SAMPLE VIA THE P(Z_S, Z_P) PROPERTIES.
@@ -108,7 +108,7 @@ C1rho = 0.0134
 
 # 1 halo gal-gal term parameters
 ng_Bl =  10**(-4) # SDSS LRG value #3. * 10**(-4) # volume density of galaxies for BOSS, in h^3 / Mpc^3.
-fsat_LRG = 0.0636 # Satelite fraction from Reid & Spergel 2008 # 0.14 approximate boss lowz val .
+fsat_LRG = 0.0636 # Satelite fraction from Reid & Spergel 2008 # 0.14 approximate boss lowz val . # WE DON'T USE THIS ANYMORE SHOULD REMOVE PROBABLY. 
 
 ##### Parameters of the HOD model, taken from Zu & Mandelbaum 2015, 1505.02781.  #####
 # Ncen params: these refer to the central galaxies for SDSS MGS, which I think is close enough to SDSS LRGs to be okay to map to our case:

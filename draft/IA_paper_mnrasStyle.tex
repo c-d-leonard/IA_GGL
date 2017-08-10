@@ -1,0 +1,523 @@
+% mnras_template.tex
+%
+% LaTeX template for creating an MNRAS paper
+%
+% v3.0 released 14 May 2015
+% (version numbers match those of mnras.cls)
+%
+% Copyright (C) Royal Astronomical Society 2015
+% Authors:
+% Keith T. Smith (Royal Astronomical Society)
+
+% Change log
+%
+% v3.0 May 2015
+%    Renamed to match the new package name
+%    Version number matches mnras.cls
+%    A few minor tweaks to wording
+% v1.0 September 2013
+%    Beta testing only - never publicly released
+%    First version: a simple (ish) template for creating an MNRAS paper
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Basic setup. Most papers should leave these options alone.
+\documentclass[a4paper,fleqn,usenatbib]{mnras}
+
+% MNRAS is set in Times font. If you don't have this installed (most LaTeX
+% installations will be fine) or prefer the old Computer Modern fonts, comment
+% out the following line
+\usepackage{newtxtext,newtxmath}
+% Depending on your LaTeX fonts installation, you might get better results with one of these:
+%\usepackage{mathptmx}
+%\usepackage{txfonts}
+
+% Use vector fonts, so it zooms properly in on-screen viewing software
+% Don't change these lines unless you know what you are doing
+\usepackage[T1]{fontenc}
+\usepackage{ae,aecompl}
+
+
+%%%%% AUTHORS - PLACE YOUR OWN PACKAGES HERE %%%%%
+
+% Only include extra packages if you really need them. Common packages are:
+\usepackage{graphicx}	% Including figure files
+\usepackage{amsmath}	% Advanced maths commands
+\usepackage{amssymb}	% Extra maths symbols
+\usepackage{subfigure}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%% AUTHORS - PLACE YOUR OWN COMMANDS HERE %%%%%
+
+% Please keep new commands to a minimum, and use \newcommand not \def to avoid
+% overwriting existing commands. Example:
+%\newcommand{\pcm}{\,cm$^{-2}$}	% per cm-squared
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%% TITLE PAGE %%%%%%%%%%%%%%%%%%%
+
+% Title of the paper, and the short title which is used in the headers.
+% Keep the title short and informative.
+\title[]{Understanding intrinsic alignments with multiple shape-measurement methods}
+
+% The list of authors, and the short list which is used in the headers.
+% If you need two or more lines of authors, add an extra line using \newauthor
+\author[C. D. Leonard et al.]{
+C. Danielle Leonard,$^{1}$\thanks{E-mail: danielll@andrew.cmu.edu}
+Rachel Mandelbaum,$^{1}$
+\\
+% List of institutions
+$^{1}$McWilliams Center for Cosmology, Carnegie Mellon University, Pittsburgh, PA 15217, USA
+}
+
+% These dates will be filled out by the publisher
+\date{Accepted XXX. Received YYY; in original form ZZZ}
+
+% Enter the current year, for the copyright statements etc.
+\pubyear{2017}
+
+% Don't change these lines
+\begin{document}
+\label{firstpage}
+\pagerange{\pageref{firstpage}--\pageref{lastpage}}
+\maketitle
+
+% Abstract of the paper
+\begin{abstract}
+Intrinsic alignments are a key contaminant to weak lensing observables, which must be understood and mitigated to a high level to take full advantage of weak lensing measurements in upcoming surveys. We propose a new method of constraining the scale-dependence of the intrinsic alignment signal, which takes advantage of multiple weak-lensing shape-measurement methods acting on the same lens and source data sets. We show that by exploiting the correlated noise properties of the observables, our method provides a reduction in statistical error as compared to existing methods of constraining intrinsic alignments. Additionally, we demonstrate that by generalizing an existing method to account for the fact that all physically-associated galaxies may be subject to intrinsic alignment (rather than just excess galaxies), constraints from this method itself are dramatically improved.
+\end{abstract}
+
+% Select between one and six entries from the list of approved keywords.
+% Don't make up new ones.
+\begin{keywords}
+keyword1 -- keyword2 -- keyword3
+\end{keywords}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%% BODY OF PAPER %%%%%%%%%%%%%%%%%%
+
+\section{Introduction}
+\label{sec:introduction}
+\noindent
+Weak gravitational lensing is a key observable of several large-scale upcoming cosmological surveys, including, for example, LSST, Euclid, and WFIRST. Cosmological constraints from the weak lensing observations of these surveys, in combination with other probes, are expected to shed light on many fundamental questions of our Universe, including the evolution of the dark energy equation of state and the behaviour of gravity on the largest scales. As such, it is crucially important that we understand and mitigate all systematic effects which may contaminate or lead to errors in the lensing observables to an extremely high level.
+
+One crucial such effect is the intrinsic alignment of galaxies. Weak gravitational lensing cosmological observables measure the correlations between shapes of source galaxies, or between shapes of source galaxies and positions of other foreground galaxies. The ability to translate these measurements to cosmological constraints based on the assumption that correlations are due to gravitational lensing relies on accounting for the low levels of correlation that may be induced via local, tidal gravitational effects. Constraining and subtracting or marginalizing over the contribution of such effects to the lensing correlation signal requires understanding both the amplitude and scale-dependence of this contribution to the signal.
+
+Recently, it was shown in \cite{Singh2016} that the use of different shape measurement methods in inferring galaxy ellipticities results in the measured amplitude of the intrinsic alignment contribution to the galaxy-galaxy lensing signal being modified by a constant factor. Here, we take advantage of this finding to propose a new method of constraining the scale-dependence of the intrinsic alignments signal. Although this method is by construction minimally sensitive to the amplitude of the intrinsic alignments signal, producing tighter constraints on the scale-dependence of this contribution to the lensing signal is useful for improvement of empirical models of intrinsic alignments.
+
+This paper is organized as follows. In Section \ref{sec:newmethod} we provide some theoretical background and introduce the proposed method. In Section \ref{sec:existing} we discuss the existing method to which we will compare our method, and demonstrate that making more physical assumptions as to which galaxies are subject to intrinsic alignments improves the performance of this method. In Section \ref{sec:results}, we provide the results of our comparisons and discuss in which scenarios the proposed method may outperform existing methods. Finally, we conclude in Section \ref{sec:conclusions}. 
+
+%-------------------------------------------------------------------------------
+\section{Galaxy-Galaxy Lensing and Intrinsic Alignments: Theory}
+\label{sec:theory}
+\noindent
+In this section, we briefly review the theoretical expressions for several important galaxy-galaxy lensing quantities, and we discuss how the intrinsic alignment contribution to the galaxy-galaxy lensing signal is computed from theory. We then describe existing methods for measuring this contribution, including one which will be used in this work as a benchmark against which to measure the performance of the new method proposed herein.
+
+\subsection{Galaxy-galaxy lensing}
+\label{subsec:ggl_theory}
+\noindent
+Galaxy-galaxy lensing studies are concerned with the measurement of cross-correlation between lensing of background source galaxies and positions of foreground lens galaxies. Typically the measured quantity is either $\gamma_t(r_p)$, the tangential shear of source galaxies, or $\Delta \Sigma(r_p)$, the differential projected surface mass density (where $r_p$ is the projected radial distance from a lens galaxy center). $\gamma_t(r_p)$ and $\Delta \Sigma(r_p)$ are related via:
+\begin{equation}
+\gamma_t(r_p) = \frac{\Delta \Sigma(r_p)}{\langle \Sigma_c \rangle}
+\label{gam_DS}
+\end{equation}
+where $\Sigma_c$ is the critical surface density, which depends on the separation of lens and source galaxies. It is given by:
+\begin{equation}
+\Sigma_c = \frac{c^2}{4\pi G}\frac{D_s}{D_l D_{ls}}
+\label{SigmaC}
+\end{equation}
+where $D_s$, $D_l$, and $D_{ls}$ are the angular diameter distances from observer to source, from observer to lens, and from lens to source, respectively. 
+
+$\Delta \Sigma(r_p)$ is defined as:
+\begin{equation}
+\Delta \Sigma(r_p) = \frac{2}{R^2} \int_0^{r_p} dr_p' R' \Sigma(r_p') - \Sigma(r_p)
+\label{DelSigDef}
+\end{equation}
+where $\Sigma(r_p)$ is the projected surface density of matter about a lens galaxy. $\Sigma(r_p)$ can be computed via
+\begin{equation}
+\Sigma(r_p) = \rho_{\rm m} \int_{-\Pi_{\rm max}}^{\Pi_{\rm max}} d\Pi^\prime \xi_{gm}\left(r=\sqrt{r_p^2 + (\Pi^\prime)^2}\right)
+\label{Sigma}
+\end{equation}
+where $\rho_{\rm m}$ is the matter density in comoving units, and $\xi_{gm}$ is the correlation function of matter with lens galaxies. 
+
+In this work, we use {\tt CLASS} (\cite{Lesgourges2011}) to compute the 2-halo contribution to $\xi_{gm}(r)$. In computing the 1-halo contribution, we assume an NFW profile (\cite{Navarro1997}), where we take the concentraction to be:
+\begin{equation}
+c_{\rm vir}(M) = 5\left(\frac{M}{10^{14}h^{-1}M_{\odot}}\right)^{-0.1}
+\label{cvir}
+\end{equation} 
+and the virial radius to be defined by 
+\begin{equation}
+R_{\rm vir} = \left(\frac{3 M_{\rm vir}}{4 \pi 180 \rho_{\rm M}} \right)^{\frac{1}{3}}.
+\label{Rvir}
+\end{equation}
+Together with an appropriate halo occupation distribution model, equations \ref{DelSigDef}-\ref{Rvir} allow for the theoretical computation of $\Delta \Sigma(r_p)$ and hence via equation \ref{gam_DS} also $\gamma_t(r_p)$.
+
+\subsection{Galaxy-galaxy lensing and intrinsic alignments}
+\label{subsec:ggl_and_ia}
+\noindent
+Intrinsic alignment contributions to lensing signals arise due to correlations between shapes of source galaxies (for cosmic shear) or between shapes of source galaxies and positions of lens galaxies (for cosmic shear and galaxy-galaxy lensing) which are due not to lensing but to tidal gravitational effects. In this work we are concerned with measuring the intrinsic alignment contribution to galaxy-galaxy lensing signals, so we focus upon correlations between shapes of source galaxies and positions of lens galaxies. 
+
+Consider a generic cross-correlation of shapes of source-sample galaxies with positions of lens-sample galaxies: $\langle \gamma \delta_g \rangle$, where we have used $\gamma$ to represent shape and $\delta_g$ to represent galaxy overdensity. The intrinsic alignment contamination to this cross-correlation can be expressed as:
+\begin{equation}
+\langle \gamma \delta_g \rangle = \langle \gamma_{\rm L} \delta_g \rangle + \langle \gamma_{\rm IA} \delta_g \rangle
+\label{GGL_IA}
+\end{equation}
+where we use $\gamma_{\rm L}$ to represent the contribution to the galaxy shape due to lensing, and $\gamma_{\rm IA}$ as the contribution due to intrinsic alignments.
+
+The term $\langle \gamma_{\rm IA} \delta_g \rangle$ is non-zero due to galaxies from the source sample which are in physical proximity to lens galaxies and therefore have shapes which are correlated with the positions of lens galaxies via tidal gravitational effects. One can imagine that, given perfect redshift measurements for both source and lens galaxies, it would be possible to eliminate this effect entirely by down-weighting or cutting pairs of lens-source galaxy which are close in redshift space. However, due to the large number of source galaxies employed in weak lensing measurements, in general source galaxy redshifts are determined via photometry and hence have some non-negligible uncertainty.
+
+The general cross-correlation $\langle \gamma \delta_g \rangle$ above can be taken to represent $\gamma_t(r_p)$ or $\Delta \Sigma(r_p)$, and the contamination to either of these signals can be quantified via $\bar{\gamma}_{\rm IA}(r_p)$: the contribution to the tangential shear from intrinsic alignments per contributing galaxy. Thoeretically, this is given by (see, for example, \cite{Blazek2012}):
+\begin{align}
+\bar{\gamma}_{\rm IA}(r_p) &\approx \frac{w_{l+}(r_p)}{w_{ls}(r_p)+ 2 \Pi_{\rm close}}.
+\label{gammaIA_the}
+\end{align} 
+where $\Pi_{\rm close}$ is the comoving radial distance within which source galaxies are sufficiently close in redshift space to a lens galaxy to be subject to intrinsic alignments. $w_{ls}(r_p)$ is the projected correlation function of the positions of lens galaxies with those of source galaxies, while $w_{\rm l+}(r_p)$ is the projected cross-correlation function between lens galaxy positions and source galaxy shapes. 
+
+The 2-halo contributions to these projected correlation functions are given by (see, for example, \cite{Singh2014}, adjusted to neglect redshift-space distortions):
+\begin{align}
+w_{ls}^{2h}(r_p) &= \frac{b_s b_l}{\pi^2} \int dz W(z) \int dk_z  \int dk_\perp  \frac{k_\perp}{k_z} P_{\delta}(\sqrt{k_\perp^2 + k_z^2}, z) \nonumber \\ &\times \sin(k_z \Pi_{\rm max}) J_0(r_p k_\perp) \label{wls_2h}  \\
+w_{l+}^{2h}(r_p) &= \frac{A_I b_l C_1 \rho_c \Omega_M}{\pi^2} \int dz \frac{W(z)}{D(z)}\int dk_z  \int dk_\perp  \frac{k_\perp^3 }{(k_z^2 + k_\perp^2)k_z} \nonumber \\ &\times P_{\delta}(\sqrt{k_\perp^2 + k_z^2}, z) \sin(k_z \Pi_{\rm max}) J_2(r_p k_\perp)
+\label{wlp_2h}
+\end{align}
+where $b_s$ is the bias of the source galaxies, $b_l$ is the bias of the lenses relative to dark matter, and $P_\delta$ is the nonlinear matter power spectrum, computed again via {\tt CLASS}. 
+
+In equation \ref{wlp_2h}, we have assumed the nonlinear alignment model for intrinsic alignments. This is an extension of the classic linear alignment model, which assumes that galaxy alignments are determined as a result of tidal forces at the time of galaxy formation ({\bf see, for example, \cite{xxx}}). The nonlinear alignment model simply extends the linear alignment model by replacing the linear matter power spectrum with the nonlinear equivalent, as suggested in \cite{Bridle2007}. In this model, $A_I$ controls the amplitude of intrinsic alignments on scales where the 2-halo term dominates, and $C_1$ is a normalization constant; we take $C_1 \rho_c = 0.0134$ throughout this work. $W(z)$ is the combined window function of source and lens galaxies, given by (see for example \cite{Singh2014}):
+\begin{equation}
+W(z) = \frac{dN}{dz_l}\frac{dN}{dz_s}\chi(z)^{-2} \left( \frac{d\chi}{dz}\right)^{-1} \left(\int \, dz \frac{dN}{dz_l}\frac{dN}{dz_s}\chi(z)^{-2} \left( \frac{d\chi}{dz}\right)^{-1}\right)^{-1}
+\label{window}
+\end{equation}
+where $\frac{dN}{dz_l}$ and $\frac{dN}{dz_s}$ are the redshift distributions of the lens and source galaxies respectively.
+
+The 1-halo terms of $w_{ls}(r_p)$ and $w_{\rm l+}(r_p)$ must also be computed. $w_{ls}^{1h}(r_p)$ is found using the standard halo model in combination with an appropriately chosen halo occupation distribution (HOD) for lens and source galaxies (the HOD chosen for each scenario in this work is discussed in Section \ref{subsec:obsscen}). Again, the NFW profile is assumed, and concentration and virial radius are given by equation \ref{cvir} and \ref{Rvir} respectively. 
+
+$w_{\rm l+}^{1h}(r_p)$ is calculated using the halo model for intrinsic alignments as introduced in \cite{Schneider2010}. The relevant 1-halo power spectrum is:
+\begin{equation}
+P^{1h}_{l+}(k,z) = a_h \frac{(k/p_1)^2}{1+ (k/p_2)^{p_3}}
+\label{P1hIA}
+\end{equation}
+where
+\begin{equation}
+p_i = q_{i1} {\rm exp}(q_{i2} z^{q_{i3}}).
+\label{pi}
+\end{equation}
+The parameters $q_{ij}$ are fit in \cite{Schneider2010}. In \cite{Singh2014}, the $q_{i1}$ parameters are adjusted to better fit the BOSS LOWZ galaxy sample; here we use the $q_{i1}$ parameters of \cite{Singh2014} and all other $q_{ij}$ parameters from \cite{Schneider2010}. $w_{l+}^{1h}(r_p)$ can then be found via
+\begin{equation}
+w_{g+}^{1h}(r_p) = \int \frac{dk_\perp}{k_\perp}{2\pi} P^{1h}_{l+}(k_\perp,z) J_0(r_p k_\perp).
+\label{wg1h}
+\end{equation}
+Given then the capability of theoretically calculating the 1- and 2-halo terms of both $w_{ls}(r_p)$ and $w_{l+}(r_p)$, $\bar{\gamma}_{\rm IA}(r_p)$ can be computed using equation \ref{gammaIA_the}.
+
+\subsection{Existing methods of constraining intrinsic alignments}
+\label{subsec:existing_methods}
+\noindent
+Several methods exist in the literature to measure or constrain the intrinsic alignment contribution to the galaxy-galaxy lensing signal. {\bf These include ... }
+
+In order to evaluate the utility of the method proposed in this work, we will compare its constraining power against one such existing IA measurement method. For this existing method we choose that put forth in \cite{Blazek2012}. 
+
+In this methodology, it assumed that source galaxy redshifts are known from photometry while lens galaxy redshifts are known spectroscopically. Two measurements of the galaxy-galaxy lensing quantity $\Delta \Sigma$ are then considered. The first, $a$, is for a source sample defined by the requirement that for a given lens redshift, the source (photometric) redshift satisfied $z_l < z_s < z_l + \delta z$, where $\delta z$ is chosen to jointly optimize signal to noise of the lensing measurements and intrinsic alignment constraints on a per-survey basis. The second sample, $b$, is similarly chosen such that $z_s > z_l + \delta z$. Given then two measurements of $\Delta \Sigma$, one for each source sample, and each of which incorporate both a true lensing contribution and an intrinsic alignment contribution, it is posible to solve both for the true lensing contribution and for the contribution to the tangential shear duee to intrinsic alignments per galaxy subject to intrinsic alignments. The equation for the latter is given by \cite{Blazek2012}:
+\begin{equation}
+\bar{\gamma}^{\rm IA} = \frac{c_z^a \widetilde{\Delta\Sigma}^a - c_z^b \widetilde{\Delta\Sigma}^b}{(B^a-1)c_z^a \langle \tilde{\Sigma_c}\rangle_{\rm ex}^a -(B^b-1)c_z^b \langle \tilde{\Sigma_c}\rangle_{\rm ex}^b}
+\label{gammaIA_Blazek}
+\end{equation}
+where $\bar{\gamma}^{\rm IA}$ is the contribution to the tangential shear due to intrinsic alignment per galaxy assumed to contribute to be subject to intrinsic alignments (i.e., here, per excess galaxy). $c_z^i$ is related to the photo-z bias, $B^i$ is the boost factor, $\langle \tilde{\Sigma_c}\rangle_{\rm ex}^i$ is the average critical surface density per excess galaxy, and dependence on $r_p$, the projected radial separation, has been omitted here for clarity. For completeness, these quantities are explicitly given by:
+\begin{align}
+&B(r_p) = \frac{\sum\limits_{j}^{\rm lens}\tilde{w}_j}{\sum\limits_{j}^{\rm rand} \tilde{w}_j} \label{boost} \\
+&c_z^{-1} = b_z+1 = \frac{B(r_p) \sum\limits^{\rm lens}_{j} \tilde{w}_j \tilde{\Sigma}_{c,j} \Sigma_{c,j}^{-1}}{\sum\limits^{\rm lens}_{j} \tilde{w}_j} = \frac{\sum\limits^{\rm rand}_{j} \tilde{w}_j \tilde{\Sigma}_{c,j} \Sigma_{c,j}^{-1}}{\sum\limits^{\rm rand}_{j} \tilde{w}_j} \label{photozbias} \\
+&\langle \tilde{\Sigma}_c\rangle_{\rm ex} (r_p) =  \frac{\sum\limits_{j}^{\rm excess} \tilde{w}_j \tilde{\Sigma}_{c,j}}{\sum\limits_{j}^{\rm excess} \tilde{w}_j} = \frac{\sum\limits_{j}^{\rm lens} \tilde{w}_j \tilde{\Sigma}_{c,j}- \sum\limits_{j}^{\rm rand} \tilde{w}_j \tilde{\Sigma}_{c,j}}{\sum\limits_{j}^{\rm all} \tilde{w}_j - \sum\limits_{j}^{\rm rand} \tilde{w}_j}\label{Sigmaex}
+\end{align}
+Because in this method the objective is to solve simultaneously for both $\bar{\gamma}^{\rm IA}$ and $\Delta \Sigma$, the weights $\tilde{w}$ used here are not the same as the weights given in equation \ref{weights} above. Here, weights are given by
+\begin{equation}
+\tilde{w}_k = \frac{1}{\tilde{\Sigma}_{c,k}^2 (e_{\rm rms}^2 + (\sigma_e^k)^2)}.
+\label{weights_Blazek}
+\end{equation}
+
+This method is based upon the idea that source sample $a$, nearer to the lenses by photometric redshift, and source sample $b$, further from the lens by photometric redshift, will both contain galaxies which are subject to intrinsic alignment (due to scatter and failures in photometric redshift estimation) but will contain such galaxies in different abundances. Therefore, a difference in the $\Delta \Sigma$ estimated using these source samples can be attributed to intrinsic alignments and sovled for.
+
+As is hinted at in the above equations, the version of this method proposed in \cite{Blazek2012} assumes that only excess galaxies are subject to intrinsic alignment effects. Alternatively, the method we propose in this work assumes that all galaxies in physical proximity, i.e. all physically associated galaxies, are subject to intrinsic alignments whether or not they form part of a statistically excess due to clustering. For a fair comparison of these two methods, we must slightly modify the method of \cite{Blazek2012} in order to incorporate these non-excess yet still physically associated galaxies.
+
+
+
+%-------------------------------------------------------------------------------
+\section{Constraining intrisnic alignments with multiple shape-measurement methods}
+\label{sec:newmethod}
+Intrinsic alignment contributions to galaxy-galaxy lensing signals are sourced by physical correlations of source galaxy shapes with lens galaxy positions. This is most usually due to the case in which source galaxy photometric redshifts are not accurately estimated. If a galaxy in the source sample is truly located close in redshift to a lens galaxy, but its redshift is incorrectly measured as higher, this source may be contribute significant spurious radial-alignment signal to the lensing measurement, biasing the true tangential shear measurement low if this effect is not accounted for.
+
+
+In \cite{Singh2016}, intrinsic alignments of BOSS LOWZ galaxies were examined using shape mesaurements from three different methods: isophotal, re-Gaussinization, and de Vaucouleurs shapes. The amplitude of the intrinsic alignment signal was fit in these three cases, and it was found that regardless of the overall strength of any one method, the value in the other methods at this amplitude could be given by a single constant multiplier. This simple relationship is investigated in that work to determine if it may be result of unresolved systematics or unaccounted for biases. The resulting conclusion is negative, and the conjectured explanation is hence a physical one. Different shape-measurement methods are sensitive to different parts of the radial light profile. Since the isophotal twisting and tidal effects characteristic of intrinsic alignments are stronger at large galaxy radii and weaker near the galaxy center, it is reasonable that the intrinsic alignment signal would depend on the shape-measurement method chosen after calibration. The method we proposed is based around exploiting this finding.
+
+We consider two estimated tangential shear measurements using different methods, which we will call $\tilde{\gamma}_t(r_p)$ and $\tilde{\gamma}_t^\prime(r_p)$. Assuming for the moment a perfect correction for multiplicative bias (an assumption that we will consider more thorouhgly below), we can write these two estimated quantities as follows:
+\begin{align}
+\tilde{\gamma}_t(r_p) &= \frac{\sum\limits_{k}^{\rm lens} \tilde{w}_k \tilde{\gamma}_k}{\sum\limits_{k}^{\rm lens} \tilde{w}_k} = \frac{\sum\limits_{k}^{\rm lens} \tilde{w}_k \gamma_{\rm L}^k}{\sum\limits_{k}^{\rm lens} \tilde{w}_k}+\frac{\sum\limits_{k}^{\rm lens} \tilde{w}_k \gamma_{\rm IA}^k}{\sum\limits_{k}^{\rm lens} \tilde{w}_k} \nonumber \\ 
+\tilde{\gamma}_t^\prime (r_p) &= \frac{\sum\limits_{k}^{\rm lens} \tilde{w}_k \tilde{\gamma}_k}{\sum\limits_{k}^{\rm lens} \tilde{w}_k} = \frac{\sum\limits_{k}^{\rm lens} \tilde{w}_k \gamma_{\rm L}^k}{\sum\limits_{k}^{\rm lens} \tilde{w}_k}+\frac{a \sum\limits_{k}^{\rm lens} \tilde{w}_k \gamma_{\rm IA}^k}{\sum\limits_{k}^{\rm lens} \tilde{w}_k} 
+\label{full_both}
+\end{align}
+where all sums are over lens-source pairs, $\gamma_L^k$ is the tangential shear due to lensing for a given lens-source pair, and $\gamma_{\rm IA}$ is the contribution of to the shear signal due to intrinsic alignments (which is, of course, not true lensing shear but rather physical ellipticity due to tidal gravitational forces). `$a$' is the constant by which the intrinsic alignments amplitudes are offset one from the other. We assume that weights are given by:
+\begin{equation}
+\tilde{w}_k = \frac{1}{e_{\rm rms}^2 + (\sigma_e^k)^2}
+\label{weights}
+\end{equation}
+where we note that $e_{\rm rms}$ is the average root-mean-squared ellipticity of the shapes due to the two methods.
+
+We subtract the estimated tangential shear quantities, to find:
+\begin{align}
+\tilde{\gamma}(r_p) - \tilde{\gamma}^\prime(r_p) &= (1-a) \frac{\sum\limits_{k}^{\rm lens} \tilde{w}_k \gamma_{\rm IA}^k}{\sum\limits_{k}^{\rm lens} \tilde{w}_k} 
+\label{subtract_gammat}
+\end{align}
+
+The quantity we aim to constrain is average contribution to tangential shear per galaxy {\it which is subject to intrinsic alignments}. We will call this quantity $\bar{\gamma}_{\rm IA}$. Consider then a measurement of this quantity conducted on a source sample which is cut on photometric redshift such that for any one lens only sources within a photometric redshift separation such that they would be expected to be physically associated - say, the redshift equivalent of $100$ Mpc/h - be included in the source sample. If all our redshifts were true, we would be done, as the fractional quantity on the right hand side of equation \ref{subtract_gammat} would be the average contribution to tangential shear per galaxy contributing to intrinsic alignment. However, because we wish to apply this method to samples with photometric redshifts for sources, we expect that a certain percentage of the galaxies inside such a sample will truly reside at redshifts which are not nearby the lens, and therefore in reality these galaxies are not subject to intrinsic alignments. Therefore, to avoid inadvertantly diluting the sample, we define a correction factor, $N_{\rm corr}$, which is defined as:
+\begin{equation}
+N_{\rm corr} = \frac{\sum\limits_{k}^{\rm phys. assoc.} \tilde{w}_k}{\sum\limits_{k}^{\rm lens} \tilde{w}_k}.
+\label{Ncorr1}
+\end{equation}
+$N_{\rm corr}$ is more usefully computed via the following expression:
+\begin{equation}
+N_{\rm corr}(r_p) = 1 - \frac{1}{B(r_p)}\left(1 - \frac{\int_{z_{\rm cut_l}}^{z_{\rm cut_h}} dz_p \tilde{w}(z_p) \int_{z_{\rm cut_l}}^{z_{\rm cut_h}} dz_s\frac{dN}{dz_s} p(z_s, z_p)}{\int_{z_{\rm cut_l}}^{z_{\rm cut_h}} dz_p  \tilde{w}(z_p) \int_{z_{\rm min}}^{z_{\rm max}} dz_s\frac{dN}{dz_s} p(z_s, z_p)} \right)
+\label{ncorr_2}
+\end{equation}
+where $B(r_p)$ is the boost factor, .... 
+
+We then arrive at an expression for the quantity which we seek multiplied by a poorly-constrained factor:
+\begin{equation}
+\bar{\gamma}_{\rm IA}(r_p)(1-a) = \left(\tilde{\gamma}(r_p) - \tilde{\gamma}^\prime(r_p)\right)\left(\frac{1}{N_{\rm corr}(r_p)}\right).
+\label{IAsol1}
+\end{equation}
+which will allow us to constrain the scale-dependence of intrinsic alignments.
+
+
+
+
+\section{Performing a comparison between proposed and existing methods}
+\label{sec:compare}
+\subsection{Observational scenarios}
+\label{subsec:obsscen}
+\noindent
+To compare our proposed method with an existing method for measuring or constraining $\bar{\gamma}_{\rm IA}$, we select two observational scenarios in which to forecast expected performance. One of these assumes lens and source galaxies both drawn from currently publically available Sloan Digital Sky Survey data (SDSS). For the other, we consider a scenario which combines data from two upcoming surveys, with sources from the Large Synpotic Survey Telescope (LSST) and lenses from the Dark Energy Spectroscopic Instrument Luminous Red Galaxy sample (DESI LRGs). This choice of observational scenarios ensures that we can both validate our results by comparing with constraints on $\bar{\gamma}_{\rm IA}$ from an existing method in the SDSS setup ,and explore how our proposed method may perform for a next-generation measurement. 
+
+In the first observational scenario, lens galaxies are assumes to be from the SDSS LRG sample \cite{Kazin2010}, with a volume density of $\bar{n}_l = 1.0 \times 10^{-4} \, {\rm h}^3 / {\rm Mpc}^3$, a surface density of $8.7/{\rm deg}^2$, and a scale-independent galaxy bias value of $b_l=2.07$, while source galaxies are assumed to be from the sample described in \cite{Reyes2012}, with an effective surface density of $1/{\rm arcmin}^2$, an { \bf rms ellipticity of $\epsilon_{\rm rms} = 0.3??? 0.36?$}, and bias $b_s=1$. The overlapping sky area of these lens and source samples is taken as 7131 ${\rm deg}^2$. 
+
+The more futuristic observational scenario is characterized by lens galaxies assumed to be from the anticipated DESI sample of LRGs, which are expected to have a volume density of $\bar{n}_l = 3.0 \times 10^{-4} \, {\rm h}^3 / {\rm Mpc}^3$ {\bf where did this come from? cite}, a surface density of $300/{\rm deg}^2$ \cite{DESIExperiment}, and a scale-independent galaxy bias value of $b_l=3.57$, obtained by assuming $b(z)= 1.7 / D(z)$ where the effective redshift of the sample is taken as $z=0.77$ (estimated from information in \cite{DESIExperiment}). Source galaxies in this scenario are taken to be from the final LSST lensing sample, with an expected effective surface density of $26/{\rm arcmin}^2$, and an { \bf rms ellipticity of $\epsilon_{\rm rms} = 0.18? 0.26?$ Per component?} \cite{Chang2013}. Source galaxy bias is once again taken as $b_s=1$. These source and lens samples would be expected to have an overlapping sky area of 3000 ${\rm deg}^2$ \cite{Schmidt2014}. 
+
+Other assumptions and parameters associated with these observational scenarios which require slightly more explanation are as follows:
+\paragraph*{$\frac{dN}{dz}$ of sources:}The redshift distribution (in terms of spectroscopic redshifts $z_{\rm s}$) of source galaxies is given for the SDSS shape sample as:
+\begin{equation}
+\frac{dN}{dz_{\rm s}} \propto \left(\frac{z_{\rm s}}{z_*}\right)^{\alpha-1} {\rm exp}\left(-\frac{1}{2}\left(\frac{z_{\rm s}}{z_*}\right)^2\right)
+\label{dndz_sdss_source}
+\end{equation}
+where $\alpha=2.338$ and $z_*=0.303$ (\cite{Nakajima2011}). For the LSST lensing sample, the distribution is given by:
+\begin{equation}
+\frac{dN}{dz_{\rm s}} \propto z_{\rm s}^{\tilde{\alpha}} {\rm exp}\left(-\left(\frac{z_{\rm s}}{z_*}\right)^\beta\right)
+\label{dndz_lsst_sources}
+\end{equation}
+where $\tilde{\alpha}=1.24$, $z_0=0.51$ and $\beta=1.01$ (\cite{Chang2013}). In both cases, $\frac{dN}{dz_{\rm s}}$ should be appropriately normalized over the redshift range.
+\paragraph*{$\frac{dN}{dz_{\rm s}}$ of lenses:} {\bf Add description here once incorporated.}
+\paragraph*{Model for photometric redshifts:} In both observational scenarios under consideration, source galaxy redshifts are photometric. The source galaxy redshift distribution in terms of photometric redshift $z_{\rm ph}$ is given by:
+\begin{equation}
+\frac{dN}{dz_{\rm ph}} = \frac{\int dz_{\rm s} p(z_{\rm s}, z_{\rm ph}) \frac{dN}{dz_s}}{\int dz_{\rm ph} \int dz_{\rm s} p(z_{\rm s}, z_{\rm ph}) \frac{dN}{dz_s}},
+\label{photoz_dndz}
+\end{equation}
+where $p(z_{\rm s}, z_{\rm ph})$ denotes the probability of measuring a the photometric redshift of a galaxy to be $z_{\rm ph}$ given its true redshift is $z_{\rm s}$ (or equivalently vice-versa). We choose a simple Gaussian model for $p(z_{\rm s}, z_{\rm ph})$ in both obsevational scenarios:
+\begin{equation}
+p(z_{\rm s}, z_{\rm ph}) = \frac{1}{\sqrt{2\pi}\sigma_z(z_{\rm ph})} {\rm exp}\left(-\frac{z_{\rm ph} - z_{\rm s}}{2 \sigma_z(z_{\rm ph})^2} \right)
+\label{pzph}
+\end{equation}
+where $\sigma_z(z_{\rm ph})$ is taken to be $0.11(1+z_{\rm ph})$ (\cite{Blazek2012}) for the SDSS source sample and $0.05(1+z_{\rm ph})$ (\cite{Chang2013}) for the LSST source sample.
+\paragraph*{$a_h$ and $A_I$:} $a_h$ and $A_I$ are the amplitudes of the 1-halo and 2-halo components of $w_{l+}(r_p)$, respectively. They are necessary to calculate the fiducial value of $\gamma_{\rm IA}(r_p)$ in each scenario. \cite{Singh2014} provides a scaling relation of each of these quantities as a power law in luminosity; these are given by:
+\begin{align}
+A_I(L) &= \alpha \left( \frac{L}{L_p}\right)^\beta \label{Aipowerlaw} \\
+a_h(L) &= \alpha_h \left( \frac{L}{L_p}\right)^\beta_h \label{ahpowerlaw} 
+\end{align}
+where $L$ is the r-band luminosity, $L_p$ is the pivot luminosity corresponding to an absolute r-band magntidue of $-22$, and the parameters are fit in \cite{Singh2014} using data from the SDSS Barayon Oscillation Spectroscopic Survey LOWZ sample to be $alpha=4.9 \pm 0.6$, $\beta=1.30\pm0.27$, $\alpha_h=0.081 \pm 0.012$, and $\beta_h = 2.1 \pm 0.4$. We take the best-fit values of these parameters as their fixed values for our purposes here.
+
+In order to then determine the appropriate values of $a_h$ and $A_I$ for the scenarios under consideration, we employ the Schecter luminosity function fit parameters of \cite{Loveday2012}, using the same formalism as \cite{Krause2015} to integrate equations \ref{Aipowerlaw} and \ref{ahpowerlaw} over luminosity. As input to the Schecter function fits, we assume the limiting $r$-band apparent magnitude of the SDSS shape sample to be $21.8$ ({\bf where does this come from? cite}), and the same quantity for the LSST lensing sample to be $27$. As a result, we find $a_h= X$ and $A_I= Y$ for the SDSS scenario, and $a_h=Z$, $A_I=Q$ for the scenario involving LSST sources and DESI LRG lenses.
+
+This result may at first glance appear counter-intuitive: we have found that the amplitude of the intrinsic alignment signal is higher for the LSST and DESI scenario that for the SDSS scenario. Because the LSST lensing sample has a significantly fainter limiting $r$-band magnitude, it would be expected to have many more faint galaxies, and therefore to be less subject to intrinsic alignments, which tend to be strongest for brighter galaxies (\cite{xx}). Our result is indeed due to the fact that the luminosity function fits of \cite{Loveday2012}, which are used in \cite{Krause2015} to forecast intrinsic alignment quantities for LSST, imply that the average luminosity of the LSST source sample at the redshift of DESI LRGs is higher than the average luminosity of SDSS sources at the redshift of SDSS LRGs. This may be due at least in part to the fact that the effective lens redshift of the DESI LRG sample, $z_{\rm eff}=0.77$, is around where data on the faint end of the luminosity function becomes limited. \cite{Loveday2012} fit a fixed value of the faint-end slope of the luminosity function across redshift bins, however, limited data in this regime at redshifts around $z_{\rm eff}=0.77$ mean that it is possible the faint-end slope of the luminosity function has in reality a significantly different value at these higher redshifts, and that the fit of the characteristic luminosity parameter $L_*$ would consequently also be changed in this regime. Nevertheless, we are limited by the data at this stage and therefore take these somewhat counter-intertuitive values of $a_h$ and $A_i$ when computing fiducial values of $\gamma_{\rm IA}$. We have checked and found similar results using the Schecter function fits of \cite{Faber2007}.
+
+\paragraph*{Halo occupation distributions:} When computing the fiducial value of $\gamma_{\rm IA}(r_p)$ as well as the cosmic variance terms of the covariance matrix (see Appendix \ref{app:covariance}) in each of the above observational scenarios, we must specify a halo occupation distribution (HOD) for both the lens sample and the source sample. For the SDSS LRGs, we use the HOD fit specifically to this sample in \cite{Reid2009}. For the SDSS source sample, we use the HOD developed in \cite{Zu2015} for a similar sample of SDSS galaxies. For both DESI LRGs and the LSST lensing sample, we use the HOD fit to the SDSS BOSS CMASS sample \cite{More2015}. In the absence of an abundance of HOD fits to high-redshift samples, we use this HOD for both DESI and LSST because it is fit to a sample with $z_{\rm eff}=0.57$, one of the highest-redshift appropriate HOD fits available.
+
+
+\paragraph*{Measurement noise, $\sigma_e$:} The measurement noise, $\sigma_e$, required to computed the weight of each lens source pair as in equation \ref{weights}, is calculated in the case of the SDSS sample by the simple equation:
+\begin{equation}
+\sigma_e = \frac{2}{S/N}
+\label{sigeSDSS}
+\end{equation}
+where $S/N$ is the signal to noise of the lensing measurement, not of the intrinsic alignment measurement, and is assumed to be $15$ for the SDSS scenario.
+
+In the case of LSST and DESI, $\sigma_e$ is parameterized by the form (\cite{Chang2013}):
+\begin{equation}
+\sigma_e = \frac{a}{\nu}\left[1 + \left(\frac{b}{R}\right)^c\right]
+\label{sigeLSST}
+\end{equation}
+where $a$, $b$, and $c$ are parameters fit in \cite{Chang2013} to be $a=1.58$, $b=5.03$, and $c=0.39$; we adopt these values. $\nu$ is the per-galaxy signal-to-noise ratio and $R$ is the per-galaxy relative radial size of galaxy to PSF. {\bf we pick single values for these at the moment but that doesn't actually make sense because they are per-galaxy - need to sort this out}
+\paragraph*{Boost factors:} The boost factor, defined in equation \ref{boost}, is ratio of the sum of weights of over all lens source pairs in a given sample to the sum of weights of the same source sample for randomly distributed lenses. In other words, it quantifies the decree to which correlation augments the number of galaxies in the sample relative to random. To compute the boost for the various samples required for our analysis, we assume the following power law will hold \cite{xx}:
+\begin{equation}
+B(r_p) - 1 \propto r^{-0.8}.
+\label{boostform}
+\end{equation}
+We then determine this proportionality factor for each relevant source sample (defined by both the survey characteristics and the photometric redshift cuts on each sample). We do this by evaluating the expression (see for example \cite{Blazek2012})
+\begin{equation}
+B(r_p) = \frac{\int dz_{\rm L} \frac{dN}{dz_{\rm L}} \int dz_{\rm ph} \tilde{w}(z_{\rm ph}, z_{\rm L}) \int dz_s \frac{dN}{dz_{\rm s}} \xi_{ls}(r_p, \Pi(z_{\rm s}); z_{\rm L}) p(z_{\rm s}, z_{\rm ph})}{\int dz_{\rm L} \frac{dN}{dz_{\rm L}} \int dz_{\rm ph} \tilde{w}(z_{\rm ph}, z_{\rm L}) \int dz_{\rm s} \frac{dN}{dz_{\rm s}}p(z_{\rm s}, z_{\rm ph})}
+\label{boost}
+\end{equation} 
+with $r_p=1 {\rm Mpc}/{\rm h}$. Evidently we could compute the boost at all $r_p$ using this method, but we choose to use the well-known power lawer form of equation \ref{boostform} for simplicity.
+
+\paragraph*{$\Delta z$:} For the existing method of measuring intrinsic alignments of \cite{Blazek2012}, described in section \ref{subsec:existing}, we require a choice of $\Delta z$, which defines the redshift range of each source sample. For the SDSS scenario, we follow \cite{Blazek2012} itself and choose $\Delta z = 0.17$. In the case of LSST and DESI, we wish to choose $\Delta z$ to optimize the constraining power of the existing method. We attempt a range of $\Delta z$ values for this method and find that the optimal signal to noise is achieve with $\Delta z =$ {\bf xx input when I get the final value for this}.
+
+\subsection{Incorporating all physically associated galaxies in the existing method}
+\label{subsec:notjustexcess}
+\noindent
+In order to make a fair comparison between the existing method described in this section and the method proposed in this work, we revisit the derivation of equation \ref{gammaIA_Blazek} as described in \cite{Blazek2012} under the assumption that all physically associated galaxies may be subject to intrinsic alignments. We find that equation \ref{gammaIA_Blazek} becomes:
+\begin{equation}
+\bar{\gamma}^{\rm IA} = \frac{c_z^a \widetilde{\Delta\Sigma}^a - c_z^b \widetilde{\Delta\Sigma}^b}{(B^a-1+F^a)c_z^a \langle \tilde{\Sigma_c}\rangle_{\rm IA}^a -(B^b-1+F^b)c_z^b \langle \tilde{\Sigma_c}\rangle_{\rm IA}^b}.
+\label{gammaIA_allphys}
+\end{equation}
+This result bears considerable similarity to equation \ref{gammaIA_Blazek}, contains the new terms $F^i$, which represents the weighted fraction of non-excess galaxies which are in sufficient physical proximity to the lens to contribute to intrinsic alignments, and $\langle \tilde{\Sigma_c}\rangle_{\rm IA}^a$, which is the average critical density over all pairs including physically associated sources, not just excess sources. These are given by:
+\begin{align}
+&F(r_p)= \frac{\sum\limits_{j}^{\rm rand-close}\tilde{w}_j}{\sum\limits_{j}^{\rm rand} \tilde{w}_j}  \label{F} \\
+&\langle \tilde{\Sigma}_c\rangle_{\rm IA} (r_p) =  \frac{\sum\limits_{j}^{\rm lens} \tilde{w}_j \tilde{\Sigma}_{c,j}- \sum\limits_{j}^{\rm rand-far} \tilde{w}_j \tilde{\Sigma}_{c,j}}{\sum\limits_{j}^{\rm lens} \tilde{w}_j - \sum\limits_{j}^{\rm rand-far} \tilde{w}_j}\label{SigIA}
+\end{align}
+where `rand-close' indicates non-excess galaxies which are in sufficient proximity to be physically assocaited and `rand-far' is the complement of non-excess galaxies which are not, for the given sample. Note that $F^i$ and $\langle \tilde{\Sigma}_c\rangle_{\rm IA}^i$ depend on sums over pairs for which the {\it true} (rather than photometric) redshift of the source galaxy is sufficiently close to that of the lens that the pair is considered physically associated. This indicated that under this modification to the \cite{Blazek2012} method, both $F^i$ and $\langle \tilde{\Sigma}_c\rangle_{\rm IA}^i$ must be computed via integration over the source redshift distribution as computed from a spectroscopic such sample, and hence both of these quantities (in addition to $c_z^i$) are subject to any systematic error associated with a poor estimation of this source redshift distrbution. We will address this issue in section \ref{subsec:sysresults}.
+
+Considering for the moment a scenario in which this type of systematic error is negligible, we can compare the expected constraints on $\bar{\gamma_{\rm IA}}$ from the original version of the method (i.e. that encapsulated in equation \ref{gammaIA_Blazek}) and this modified version (described in equation \ref{gammaIA_allphys}. The constraints from these two scenarios are displayed in figure \ref{fig:Fzerocomparison}, for both the SDSS set-up and the anticipated LSST / DESI measurement described in section ?????. We see that extending the method to assume that all physically-associated galaxies are subject to intrinsic alignments dramatically improves constraints on larger scales in projected radius. This can be understood when we consider that the boost, $B(r_p)^i$, is subject to a non-negligible systematic error due to effects such as variation of the density of lenses as a result of observational conditions and fluctuations in large scale clustering effects. The boost, representing as it does the weigted ratio of all pairs to non-excess pairs, goes to unity on large scales, and so the fractional error associated with the boost increases arbitrarily on these scales as discussed in \cite{Blazek2012}. The addition of $F$, which is constant with projected radial separation, ensures that the equivalent term in equation \ref{gammaIA_allphys} never goes to zero, controlling this error and resulting in the larger-separation improvement seen in figure \ref{fig:Fzerocomparison}). When comparing our proposed method to this existing method for the remainder of this work, we will refer to the method as described by equation \ref{gammaIA_allphys}.
+
+\begin{figure*}
+\centering
+\subfigure{\includegraphics[width=0.45\textwidth]{InclAllPhysicallyAssociated_SDSS.png}}
+\subfigure{\includegraphics[width=0.45\textwidth]{InclAllPhysicallyAssociated_LSST.png}}
+\caption{Forecast constrains on intrinsic alignments using the method described in Section \ref{sec:existing}, including both the original version of the method and a modified version, described in the text, which assumes that all physically-associated galaxies are subject to intrinsic alignments. Left, SDSS. Right, LSST sources with DESI LRG lenses.}
+\label{fig:Fzerocomparison}
+\end{figure*}
+
+
+
+\section{Results}
+\label{sec:results}
+\noindent
+We now describe the results of comparing our proposed method of measuring intrinsic alignments with the existing method of \cite{Blazek2012}. We first discuss the comparitive impact of systematic uncertainties on both methods, then move on to describe the level of constraint that may be possible in a scenario in which statistical uncertainties are dominant.
+\subsection{Systematic uncertainties}
+\label{subsec:sysresults}
+\noindent
+We first consider whether our proposed method may improve upon existing methods via being less sensitive to certain sources of systematic error. For future lensing surveys such as LSST, it is unclear whether it will be possible to obtain a sufficiently representative spectroscopic subsample of source galaxies to constrain both $\frac{dN}{dz_{\rm s}}$ and $p(z_{\rm s}, z_{\rm ph})$ such that associated systematic errors are subdominant. These types of redshift-related systematic errors may potentially have a much smaller impact on our proposed method than on existing methods. These redshift-based terms the expression for $(1-a)\bar{\gamma}_{\rm IA}$ (equation \ref{IAsol1}) only via $N_{\rm corr}$. The expression for $\bar{\gamma}_{\rm IA}$ within the modified method of \cite{Blazek2012} (equation \ref{gammaIA_allphys}), on the other hand, depends on several quantities which are sensitive to these redshift-related issues: $c_z^i$, $\langle \Sigma_{\rm IA} \rangle^i$, and $F^i$. 
+
+We first investigate to what extent redshift-related systematic uncertainties affecting each of $N_{\rm corr}$, $c_z^i$, $\langle \Sigma_{\rm IA} \rangle^i$, and $F^i$ translates to these systematic effects dominating (or not) the total noise on the relevant signal ($\bar{\gamma}_{\rm IA}$ or $(1-a)\bar{\gamma}_{\rm IA}$). We do so by introducing a range of fractional systematic uncertainty levels on each of these quantities in turn (in each case holding the equivalent systematic uncertainty on the remaining quantities fixed at zero). Figure \ref{fig:StoNsysvstat} shows the result of this exercise, for both the SDSS and the LSST + DESI observational scenarios. The quantity plotted is the ratio of signal-to-noise on the relevant signal under the assumption of statistical error only vs the signal-to-noise assuming redshift-related systematic uncertainty only. A value of unity therefore indicates that statistical and systematic errors are of equal importance; the greater the value, the more dominant redshift-related systematic error is over statistical error. In the case of $N_{\rm corr}$, the plotted result depends on $a$, the ratio of intrinsic alignment amplitudes between shape-measurement methods; we select $a=0.7$ for plotting, in agreement with the ratio found for isophotal vs re-Gaussianization shapes found in \cite{Singh2016}.
+
+We first note that for a given level of redshift-related systematic uncertainty, the terms to which applying this uncertainty contributes the most to the the overall importance of systematic error are clearly $c_z^a$ and $c_z^b$. Fractional uncertainty on these photo-z bias terms are shown to matter more to the importance of systematic vs statistical error than $F^a$, $\langle \Sigma_{\rm IA} \rangle^a$, and $N_{\rm corr}$ by close to an order of magnitude for most fractional systematic error levels of relevance for both observational scenarios; for $F^b$, $\langle \Sigma_{\rm IA} \rangle^b$ this expands to three orders of magnitude. At first glance, we can concludes that our proposed method does indeed appear to be less sensitive than the existing method of \cite{Blazek2012} to redshift-related systematic errors.
+
+However, there is a further relevant implication of the fact that for a given level of fractional error, applying this uncertainty to $c_z^a$ and $c_z^b$ translates to the greatest level of systematic noise dominating over statistica error. $c_z^i$ is the photometric redshift bias to $\widetilde{\Delta \Sigma}^i$. Since $\widetilde{\Delta \Sigma}^i$ is itself the standard estimator used in computing the galaxy-galaxy lensing signal $\Delta \Sigma$, $c_z^i$ is a direct multiplier of the estimator when computing the lensing signal as well. Therefore, when systematic uncertainty to $c_z^i$ is high, it is in fact not possible to meaningfully measure $\tilde{\Delta \Sigma}$ for the purposes of lensing, which effectively renders the question of which method better mitigates the intrinsic alignment contribution moot. Therefore, we must assuming that systematic error on $c_z^i$ is well-controlled.
+ 
+The next logical question is whether there is a scenario in which the fractional systematic uncertainty on either $\langle \Sigma_{\rm IA} \rangle^i$, $F^i$, or $N_{\rm corr}$ is set independently of $c_z$. Must the fractional error on all these quantities be the same or related to each other in a particular way? Looking at Figure \ref{fig:StoNsysvstat}, we see that if we are free to pick different points along the horizontal axis for the fractional error on each component, the contributions to the dominance of systematic error over statistical error may take different relative values. However, recall that $\langle \Sigma_{\rm IA} \rangle^i$, $F^i$, and $N_{\rm corr}$ are by definition sensitive to source galaxies which are subject to intrinsic alignment  - that is, they are at or around the redshift of the lens distribution. $c_z^i$, on the other hand, is sensitive to all source galaxies in the given photometric redshift source bin. It is unlikely that our photo-z calibration would ever be worse near to the lens population than at higher redshifts, especially as we assume here a lens sample with spectroscopic redshift information. This implies that we would expect $\langle \Sigma_{\rm IA} \rangle^i$, $F^i$, and $N_{\rm corr}$ to be subject to similar levels of systematic uncertainty, and that this level would be equal to or less than that to which $c_z^i$ is subject. 
+
+We therefore conclude that there is unlikely to be any scenario of relevance in which the proposed method can improve upon the method of \cite{Blazek2012} via its reduced dependence on redshift-related systematic errors. Although the proposed method is in fact less considerably less sensitive to redshift-related systematic errors than the existing method, the manner in which these uncertainties affect the existing method implies that in order to make a meaningful galaxy-galayx lensing measurement in the first place, all redshift-related systematic uncertainties affecting both the proposed and existing method must be controlled.
+
+\begin{figure*}
+\centering
+\includegraphics[width=0.45\textwidth]{NoiseSysToNoiseStat_SDSS.png}
+\includegraphics[width=0.45\textwidth]{NoiseSysToNoiseStat_LSST.png}
+\caption{Signal-to-noise assuming statistical error only, divided by signal-to-noise assuming redshift-related systematic error only. Redshift-related systematic error is introduced as a fractional error on the given quantity (as indicated by different colours and shapes of markers) at the level denoted on the horizontal axis. Signal-to-noise is reported for signal of $\bar{\gamma}_{\rm IA}$ or $(1-a)\bar{\gamma}_{\rm IA}$ as appropriate, and redshift-related systematic errors are dominant for values of unity of greater. Left, SDSS. Right, LSST sources with DESI LRG lenses}
+\label{fig:StoNsysvstat}
+\end{figure*}
+
+
+\subsection{Statistical errors}
+\label{subsec:statresults}
+\noindent
+As we have just seen, the requirement that the photometric bias to the lensing signal, $c_z$, be well-constrained effectively mandates that we are in a regime in which intrinsic alignment measurements in both the proposed method and the existing method of \cite{Blazek2012} are dominated by statistical errors over redshift-related systematic uncertainties. With this in mind, we now investigate whether the proposed method may offer improvement over the method of \cite{Blazek2012} in in the regime in which statistical error dominates over systematic. 
+
+We computing the signal-to-noise of the intrinsic alignment measurement for each method assuming statistical errors only (see appendix \ref{app:cov} for how the required covariance matrices are calculated in each scenario). Note that for both methods we assume that statistical uncertainty on the boost terms is negligible; we have tested this assumption and found that including this source of error yields less than a $1\%$ change in the statistical uncertainty. For our proposed method, we compute the signal-to-noise as a function of $a$, the ratio of intrinsic alignment amplitudes between the two shape measurement methods, and of the correlation between the shape-noise the shape-measurement methods which we will call $\rho$. 
+
+The result is shown in Figure \ref{fig:StoNstat} as a function of $a$ and $\rho$, for the case of both the SDSS observational scenario and the LSST and DESI scenario. A value of greater than unity indicates that for the given set of $a$ and $\rho$, the proposed method has a higher signal-to-noise than the existing method. We see that for both methods, there is a non-negligible segment of the $a$, $\rho$ parameter space for which this is the case. The proposed method is seen to do better for lower values of $a$ and higher values of $\rho$. This can be understood by considering that lower values of $a$ correspond to shape-measurment methods which produce more divergent intrinsic alignment amplitudes and therefore increases the signal $(1-a)\gamma_{\rm IA}$. The dependence on $\rho$ is due to the fact that more correlation between the shape-noise in the two shape-measurement methods results in a greater reduction of noise when the two tangential shear terms are subtracted; hence for higher values of $\rho$ the noise is reduced. 
+
+We see also that in the case of LSST sources and DESI lenses, a larger portion of the parameter space takes values greater than unity, and in some places the ratio is considerably greater. This indicates that this method has the potential to perform much better than existing methods for this future scenario. {\bf Why does this occur? Need to work on understanding this better.}
+
+%The fact that the proposed method gains more in statistical-only signal-to-noise than does the Blazek et al. 2012 method is a result of the expected improvement in photometric redshift uncertainty for LSST + DESI. Both methods of measuring $\gamma_{\rm IA}$ see their signal-to-noise scaling in the same way with the reduced shape noise that is due to improved surface density of sources, number of lenses, etc. However, the methods behave differently as a function of improved photometric redshifts. The statistical-only signal-to-noise of the proposed method is improved by improved photometric redshifts, due to the fact that less galaxies that are not affected by intrinsic alignment will scatter into the sample, therefore $N_{\rm corr}$ is closer to $1$. However, this improved photometric redshift uncertainty does not benefit the Blazek et al. method in the same way. {\bf still need to understand this better}.
+
+\begin{figure*}
+\centering
+\subfigure{\includegraphics[width=0.45\textwidth]{StoN_2d_stat_SDSS.pdf}}
+\subfigure{\includegraphics[width=0.45\textwidth]{StoN_2d_stat_LSST_DESI.pdf}}
+\caption{Ratio of statistical-only signal-to-noise for the proposed method vs the method of. Left, SDSS. Right, LSST sources with DESI LRG lenses.}
+\label{fig:StoNstat}
+\end{figure*}
+
+%-------------------------------------------------------------------------------
+\section{Discussion and Conclusions}
+\label{sec:conclusions}
+In this work, we have proposed a new method of measuring the scale-dependence of the intrinsic alignment contribution to the galaxy-galaxy lensing signal. Our method takes advantage of a recent result which found that different shape-measurement methods produce intrinsic alignments signal with amplitudes which differ by a constant ratio (due, it seems, to isophotal twisting and increased tidal effects at larger galactic radii). By construction a difference of tangential-shear estimators using different shape-measurement methods, we develop a formalism which is promising for its minimal dependence on redshift-related systematic uncertainty and its incorporation of a difference of terms with correlated shape noise.
+
+Comparing our method to an existing method by \cite{Blazek2012}, we have found that for considerable ranges of the parameter space composed of $a$, the ratio of the amplitude of intrinsic alignments in each method, and $\rho$, the correlation of the shape-noise in each shape-measurement method, the proposed method is forecast to outperform the existing method when statistical uncertainty dominates. This is true in both observational scenarios we consider, but the improvement of signal-to-noise versus the existing method is greatest for the next-generation scenario of a galaxy-galaxy lensing measurement using LSST sources and DESI LRG lenses. This is a promising insofar as using this method to mitigate intrinsic alignment effects in future surveys. 
+
+Despite the fact that our method is manifestly less dependent on systematic uncertainties related to redshift-related issues than the existing method to which we compare, we in fact find that the structural manner in which these systematic errors enter both the proposed method and the existing method precludes the existence of a scenario in which a galaxy-galaxy lensing measurement can be performed while redshift-related systematic errors dominate over statistical uncertainty for either method of measuring intrinsic alignments. Thus, it is more sensible to focus on the performance of our proposed method in the regime in which statistical uncertainty dominates.
+
+The signal-to-noise of the intrinsic alignment measurement forecast by our proposed method in this regime depends, as stated above, on $a$ and $\rho$. Given that it is possible to predict for which segments of this parameter space the method's signal-to-noise is best (as in Figure \ref{fig:StoNstat}), this suggests the possibility of constructing bespoke pairs of shape-measurement methods for which $a$ and $\rho$ are optimal. This could be accomplished through reweighting ... {\bf need to know more about how this would work}.
+
+In order to make a fair comparison between our proposed method and the existing method of \cite{Blazek2012}, we introduced a modification to the latter such that we assume that all physically-associated source galaxies are subject to intrinsic alignments, rather than only excess galaxies. We find that this modification greatly improves constraints on $\bar{\gamma}_{\rm IA}$ from this method, especially above scales of $r_p = 1 {\rm Mpc/h}$. Although this modification may appear at first glance to introduce new sources of redshift-related systematic uncertainties, we have shown that these types of systematic uncertainties are always subdominant to statistical errors in regimes of interest, as discussed above. Thus, we would advocate that if using the method of \cite{Blazek2012} to consider using this modified version, particularly for intrinsic alignment constraints on larger projected radial scales.
+
+Several upcoming surveys, including LSST and DESI as discussed in this work but also Euclid, WFIRST, and others, will soon result in a radical decrease in the statistical uncertainties on the lensing measurements we make. Understanding the intrinsic alignment contribution to our lensing signals and mitigating its effect thus becomes critically important, as percent-level effect such as this will be comparable with statistical errors on the lensing signal. The new method of measuring intrinsic alignments which we propose here may provide a step towards this goal, as it is predicted to perform significantly better than the existing method to which we compare for the future LSST + DESI measurement which we consider.
+
+\section*{Acknowledgements}
+The authors thank Joe Zuntz, Fran\c{c}ois Lanusse, Sukhdeep Singh ... for helpful discussions. CDL is supported by a McWilliams Postdoctoral Fellowship. ....
+Numpy, scipy were used in this work ...
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%% REFERENCES %%%%%%%%%%%%%%%%%%
+
+\bibliographystyle{mnras}
+\bibliography{refs} % if your bibtex file is called example.bib
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%% APPENDICES %%%%%%%%%%%%%%%%%%%%%
+
+\appendix
+
+\section{Covariance matrices of $\tilde{\gamma}_t$ and $\widetilde{\Delta \Sigma}$}
+\label{app:cov}
+In this appendix we provide the required theory to compute the covariance matrices for the statistical-error-only results of Section \ref{subsec:statresults}.
+
+\subsection{$\widetilde{\Delta \Sigma}$}
+In the case of $\widetilde{\Delta \Sigma}(r_p)$, the standard equation for the covariance matrix between bins of projected radius is given by (see, for example, \cite{Singh2016b}):
+\begin{align}
+{\rm Cov}&\left[\widetilde{\Delta \Sigma}\left(r_p^i\right),\widetilde{\Delta \Sigma}\left(r_p^j\right) \right] \nonumber \\ &= \frac{1}{4\pi \bar{w}^2f_{ \rm sky}\left(r_p^{i+1}-r_p^i \right)\left(r_p^{j+1}-r_p^j\right) } \nonumber \\ & \times \int_{r_p^i}^{r_p^{i+1}} dr_p \int_{r_p^j}^{r_p^{j+1}} dr_p^\prime \int \frac{l dl}{2\pi} J_2\left(l\frac{r_p}{\chi\left(z_{{\rm L}}^{\rm eff}\right)}\right) J_2\left(l\frac{r_p^\prime}{\chi\left(z_{{\rm L}}^{\rm eff}\right)}\right)   \nonumber \\ &\times \int d z_{\rm L} \frac{dN}{dz_{\rm L}} \int d z_{\rm L}^\prime \frac{dN}{dz_{\rm L}^\prime} \int d z_{\rm ph} \int d z_{\rm ph}^\prime \Sigma_c^{-1}(z_{\rm L}, z_{\rm ph}) \Sigma_c^{-1}(z_{\rm L}^\prime, z_{\rm ph}^\prime) \nonumber \\ & \times \int dz_{\rm s} \int dz_{\rm s}^\prime p(z_{\rm s}, z_{\rm ph}) p(z_{\rm s}^\prime, z_{\rm ph}^\prime)\frac{dN}{dz_{\rm s}} \frac{dN}{dz_{\rm s}^\prime} \Bigg[P_{g\kappa}(l,z_{\rm L} ,z_{\rm s} )P_{g\kappa}(l, z_{\rm L}^\prime ,z_{\rm s}^\prime) \nonumber \\ &+ \left(P_{gg}(l, z_{\rm L}, z_{\rm L}^\prime)+\frac{1}{\bar{n}_{\rm L}}\right)\Bigg( P_{\kappa\kappa}(l, z_{\rm s}, z_{\rm s}^\prime) + \frac{\epsilon_{\rm rms}^2}{n_s} \Bigg)\Bigg],
+\label{DeltaSigmaCov}
+\end{align}
+where $\bar{n}_{\rm L}$ is the volume density of lenses, $n_s$ is the effective surface density of sources (in galaxies per steradian), and $\bar{w}$ is a normalization factor given by:
+\begin{equation}
+\bar{w} = \int dz_{\rm L} \frac{dN}{dz_{\rm L}} \int dz_{\rm ph} \frac{dN}{dz_{\rm ph}} \Sigma_c^{-2}(z_{\rm L}, z_{\rm ph}). 
+\label{wbar}
+\end{equation}
+Note that we integrate over the full lens redshift distribution everywhere except in the argument of the Bessel functions. In this case, we use the comoving distance corresponding to the effective lens population redshift as a means of reducing computational time. We do not expect this to affect the covariance significantly. 
+
+We use equation \ref{DeltaSigmaCov} in calculating the statistical uncertainty and covariance between $r_p$ bins on $\bar{\gamma}_{\rm IA}(r_p)$ for the existing method of \cite{Blazek2012}. Practically, note that we take advantage of the orthogonality of the Bessel functions to separate out of the constant shape-noise term and thereby improve numerical convergence. A covariance matrix of this form is computed independently for each source sample, $a$ and $b$, and for each of the two observational scenarios. Because source samples $a$ and $b$ do not have signficiant overlap, the covariance matrices for $\widetilde{\Delta \Sigma}^a(r_p)$ and $\widetilde{\Delta \Sigma}^b(r_p)$ are considered independent and are combined under the assumption that there is no correlation between them. 
+
+Note that we include 1-halo terms in the calcuation of the power spectra in equation \ref{DeltaSigmaCov}; this is necessary particularly in the case of the observational scenario concerning LSST sources and DESI LRG lenses, as for this case shape noise is sufficiently low that cosmic variance dominates on some scales below 1 Mpc/h.
+
+\subsection{$\tilde{\gamma}_T$}
+
+The covariance matrix for $\tilde{\gamma}_T$, as required for the computation of the statistical contribution to the covariance matrix for the new method proposed in this work, is given by an expression similar to equation \ref{DeltaSigmaCov}:
+\begin{align}
+{\rm Cov}&\left[\tilde{\gamma}_T\left(r_p^i\right),\tilde{\gamma}_T \left(r_p^j\right) \right] = \frac{1}{4\pi f_{ \rm sky}\left(r_p^{i+1}-r_p^i \right)\left(r_p^{j+1}-r_p^j\right) } \nonumber \\ & \times \int_{r_p^i}^{r_p^{i+1}} dr_p \int_{r_p^j}^{r_p^{j+1}} dr_p^\prime \int \frac{l dl}{2\pi} J_2\left(l\frac{r_p}{\chi\left(z_{{\rm L}}^{\rm eff}\right)}\right) J_2\left(l\frac{r_p^\prime}{\chi\left(z_{{\rm L}}^{\rm eff}\right)}\right)   \nonumber \\ &\times \int d z_{\rm L} \frac{dN}{dz_{\rm L}} \int d z_{\rm L}^\prime \frac{dN}{dz_{\rm L}^\prime} \int d z_{\rm ph} \int d z_{\rm ph}^\prime  \int dz_{\rm s} \int dz_{\rm s}^\prime \nonumber \\ & \times p(z_{\rm s}, z_{\rm ph}) p(z_{\rm s}^\prime, z_{\rm ph}^\prime)\frac{dN}{dz_{\rm s}} \frac{dN}{dz_{\rm s}^\prime} \Bigg[P_{g\kappa}(l,z_{\rm L} ,z_{\rm s} )P_{g\kappa}(l, z_{\rm L}^\prime ,z_{\rm s}^\prime) \nonumber \\ &+ \left(P_{gg}(l, z_{\rm L}, z_{\rm L}^\prime)+\frac{1}{\bar{n}_{\rm L}}\right)\Bigg( P_{\kappa\kappa}(l, z_{\rm s}, z_{\rm s}^\prime) + \frac{\epsilon_{\rm rms}^2}{n_s} \Bigg)\Bigg].
+\label{GammaCov}
+\end{align}
+
+However, in this case, we in fact require the covariance matrix of $\tilde{\gamma}_T - \tilde{\gamma}_T^\prime$. Because $\tilde{\gamma}_T$ and $\tilde{\gamma}_T^\prime$ are measured are the same set of lens-source pairs in the proposed method, terms in the above expression which are related only to signal (or which are related only to signal and shot noise of the lenses, i.e. the term propotional to $P_{\kappa\kappa}\ \bar{n}_{\rm L}$), are fully correlated. These terms therefore subtract off perfectly when computing the covariance of $\tilde{\gamma}_T - \tilde{\gamma}_T^\prime$. Terms which are related to the shape noise (i.e. the terms proportional to $P_{gg} \epsilon_{\rm rms} / n_s$ and $\epsilon_{\rm rms} / (n_s \bar{n}_{\rm L})$), are partially correlated, where the degree of correlation of these terms depends on the shape-measurement methods in question and is parameterized by $\rho$ as described in Section \ref{subsec:statresults}. The result is that the statistical contribution to the required covariance matrix (prior to accounting for the factor of $N_{\rm corr}$) is given by:
+\begin{align}
+{\rm Cov}&\left[\tilde{\gamma}_T\left(r_p^i\right) - \tilde{\gamma}_T^\prime\left(r_p^i\right),\tilde{\gamma}_T\left(r_p^j\right) - \tilde{\gamma}_T^\prime\left(r_p^j\right) \right] \nonumber \\ &= \frac{1}{4\pi f_{ \rm sky}\left(r_p^{i+1}-r_p^i \right)\left(r_p^{j+1}-r_p^j\right) } \int_{r_p^i}^{r_p^{i+1}} dr_p \int_{r_p^j}^{r_p^{j+1}} dr_p^\prime  \nonumber \\ & \times\int \frac{l dl}{2\pi} J_2\left(l\frac{r_p}{\chi\left(z_{{\rm L}}^{\rm eff}\right)}\right) J_2\left(l\frac{r_p^\prime}{\chi\left(z_{{\rm L}}^{\rm eff}\right)}\right) \int d z_{\rm L} \frac{dN}{dz_{\rm L}} \int d z_{\rm L}^\prime \frac{dN}{dz_{\rm L}^\prime} \nonumber \\ &\times\int d z_{\rm ph} \int d z_{\rm ph}^\prime  \int dz_{\rm s} \int dz_{\rm s}^\prime p(z_{\rm s}, z_{\rm ph}) p(z_{\rm s}^\prime, z_{\rm ph}^\prime)\frac{dN}{dz_{\rm s}} \frac{dN}{dz_{\rm s}^\prime} \nonumber \\ & \times  \frac{P_{gg}(l, z_{\rm L}, z_{\rm L}^\prime)}{n_s} \left(\epsilon_{\rm rms}^2 + \left(\epsilon_{\rm rms}^\prime\right)^2 - 2 \rho \epsilon_{\rm rms} \epsilon_{\rm rms}^\prime \right) \nonumber \\ &+ \delta_{ij} \frac{\chi\left(z_{{\rm L}}^{\rm eff}\right)^2 \left(\epsilon_{\rm rms}^2 +\left(\epsilon_{\rm rms}^\prime\right)^2 - 2 \rho \epsilon_{\rm rms} \epsilon_{\rm rms}^\prime \right)}{4 \pi^2 f_{\rm sky} \left[\left(r_p^{i+1}\right)^2-\left(r_p^i\right)^2\right]n_s \bar{n}_{\rm L}}
+\label{GammaCov_diff}
+\end{align}
+where we have this time explicitly separated off the shape-noise term by taking advantage the orthogonality of the Bessel functions. We have allowed in this expression for the two shape-measurement methods to yield different rms ellipticities, however it is of course straightforward to simplify this expression further in the case that $\epsilon_{\rm rms} = \epsilon_{\rm rms}^\prime$.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+% Don't change these lines
+\bsp	% typesetting comment
+\label{lastpage}
+\end{document}
+
+% End of mnras_template.tex

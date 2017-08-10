@@ -13,7 +13,7 @@ import pyccl as ccl
 # Functions shared between w_{l+} and w_{ls}
 
 def window(survey):
-	""" Get window function for w_{l+} and w_{ls} 2-halo terms."""
+	""" Get window function for w_{l+} and w_{ls} 2-halo terms. In both cases, deals with the window functions for LENSES x SOURCES. """
 	
 	if (survey == 'SDSS'):
 		import params as pa
@@ -23,6 +23,7 @@ def window(survey):
 		print "We don't have support for that survey yet; exiting."
 		exit()
 	
+	# FOR INCLUDING AN EXTENDED LENS DISTRIBUTION - IF THE DISTRIBUTION WE WANT TO INCLUDE IS NOT A GAUSSIAN, WE WOULD NEED TO CHANGE THESE NEXT FEW LINES. 
 	sigz = pa.sigz_gwin  # This is a very small value to basically set the lenses to a delta function.
 	z = scipy.linspace(pa.zeff-5.*sigz, pa.zeff+5.*sigz, 50)
 	dNdz_1 = 1. / np.sqrt(2. * np.pi) / sigz * np.exp(-(z-pa.zeff)**2 / (2. *sigz**2)) # Lens distribution - a very narrow Gaussian about the effective redshift.
@@ -223,6 +224,7 @@ def wgp_2halo(rp_cents_, bd, Ai, savefile, survey):
 	# Get the redshift window function
 	z_gp, win_gp = window(survey)
 	
+	# REPLACE THIS WILL A CALL TO CCL. 
 	# Get the required matter power spectrum from camb 
 	(k_gp, P_gp) = get_Pk(z_gp, survey)
 	
@@ -402,6 +404,8 @@ def rho_NFW(r_, M_insol, survey):
 def wgg_1halo_Four(rp_cents_, fsat, fsky, savefile, survey):
 	""" Gets the 1halo term of wgg via Fourier space, to account for central-satelite pairs and satelite-satelite pairs. """
 	
+	# THIS DOESN'T CURRENTLY HAVE SUPPORT FOR AN EXTENDED LENS DISTRIBUTION. 
+	
 	if (survey == 'SDSS'):
 		import params as pa
 	elif (survey == 'LSST_DESI'):
@@ -421,6 +425,7 @@ def wgg_1halo_Four(rp_cents_, fsat, fsky, savefile, survey):
 	#exit()
 	
 	# This function loads the xi_{gg}1h function computed from FFTlog externally
+	# TO INCLUDE AN EXTENDED LENS REDSHIFT DISTRIBUTION WE WILL REMOVE THE ZEFF ARGUMENT HERE - THE PKGG WILL ALREADY BE INTEGRATED OVER LENS WHEN IMPORTED HERE.
 	(rvec_xi, xi_gg_1h) = get_xi_1h(pa.zeff)
 	
 	#plt.figure()
@@ -465,6 +470,7 @@ def wgg_1halo_Four(rp_cents_, fsat, fsky, savefile, survey):
 	
 def get_xi_1h(z):
 	""" Returns the 1 halo galaxy correlation function including cen-sat and sat-sat terms, from the power spectrum via Fourier transform."""
+	# THIS FUNCTION WILL NEED TO BE MODIFIED TO INCLUDE AN EXTENDED LENS DISTRIBUTION SUCH THAT A) THE LENS REDSHIFT IS NOT AN ARGUMENT AND B) THE FILE NAME REFLECTS THE CORR FUNCTION COMPUTED FROM THE ALREADY-INTEGRATED-OVER-W(Z) POWER SPECTRUM. 
 	
 	(r, xi) = np.loadtxt('./txtfiles/xi_z='+str(z)+'.txt', unpack=True)
 	
@@ -475,7 +481,8 @@ def get_xi_1h(z):
 	return (r, xi)
 	
 def get_Pkgg_1halo(kvec_ft, fsat, fsky, Mmax, survey):
-	""" Returns the 1halo galaxy power spectrum with c-s and s-s terms."""
+	""" Returns the 1halo galaxy power spectrum with c-s and s-s terms"""
+	# TO INCORPORATE AN EXTENDED LENS REDSHIFT DISTRIBUTION, NEED TO CHANGE THIS FUNCTION TO AVERAGE IN Z OVER THE WINDOW FUNCTION.
 	
 	if (survey == 'SDSS'):
 		import params as pa
@@ -484,6 +491,8 @@ def get_Pkgg_1halo(kvec_ft, fsat, fsky, Mmax, survey):
 	else:
 		print "We don't have support for that survey yet; exiting."
 		exit()
+		
+	# TO INCLUDE EXTENDED LENS DISTRIBUTION: NEED TO CALL 'WINDOW' HERE AND USING THE RESULTING Z-VEC BELOW
 	
 	Mhalo = np.logspace(9., Mmax, 30)
 	# Get the lower stellar mass cutoff for source satelites corresponding to the total empirical volume density of the source sample:
@@ -492,6 +501,7 @@ def get_Pkgg_1halo(kvec_ft, fsat, fsky, Mmax, survey):
 	
 	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = 2.1*10**(-9), n_s=0.96)
 	cosmo = ccl.Cosmology(p)
+	# TO INCLUDE EXTENDED REDSHIFT DISTRIBUTION FOR LENSES: THIS WILL NEED TO BE A FUNCTION OF Z
 	HMF = ccl.massfunction.massfunc(cosmo, Mhalo / (pa.HH0/100.), 1./ (1. + pa.zeff), odelta=200.)
 	
 	# We're going to use, for the centrals and satelite lenses, either the Reid & Spergel 2008 HOD (SDSS LRGs) or the CMASS More et al. 2014 HOD (DESI LRGS).
@@ -509,7 +519,7 @@ def get_Pkgg_1halo(kvec_ft, fsat, fsky, Mmax, survey):
 	
 	
 	# Get the number density predicted by the halo model (not the one for the actual survey)
-	#tot_nsrc =  scipy.integrate.simps( (Nsat_src) * HMF, np.log10(Mhalo / (pa.HH0/100.) ) ) / (pa.HH0 / 100.)**3
+	# TO INCLUDE AND EXTENDED REDSHIFT DISTRIBUTION, NEED TO MAKE THESE BOTH FUNCTIONS OF Z (VIA HMF)
 	tot_ng = scipy.integrate.simps( ( Ncen_lens + Nsat_lens) * HMF, np.log10(Mhalo / (pa.HH0/100.) ) ) / (pa.HH0 / 100.)**3
 	tot_nsrc_sat = scipy.integrate.simps(( Nsat_src ) * HMF, np.log10(Mhalo / (pa.HH0/100.) ) ) / (pa.HH0 / 100.)**3
 	print "nsrc=", tot_nsrc, "nlens=", tot_ng, "tot nsrc check=", tot_nsrc_sat
@@ -530,6 +540,7 @@ def get_Pkgg_1halo(kvec_ft, fsat, fsky, Mmax, survey):
 	# Get ingredients we need here:
 	y = gety(Mhalo, kvec_short, survey) # Mass-averaged Fourier transform of the density profile
 
+	# TO INCLUDE AND EXTENDED REDSHIFT DISTRIBUTION FOR LENSES, THIS WILL BECOME PKGG(K,Z), Z INCLUDED VIA HMF, TOT_NSRC_SAT, TOT_NG
 	Pkgg = np.zeros(len(kvec_short))
 	for ki in range(0,len(kvec_short)):
 		Pkgg[ki] = scipy.integrate.simps( HMF * (NcNs * y[ki, :] + NsNs * y[ki, :]**2), np.log10(Mhalo / (pa.HH0/100.)  )) / (tot_nsrc_sat * tot_ng) / (pa.HH0 / 100.)**3
@@ -543,6 +554,8 @@ def get_Pkgg_1halo(kvec_ft, fsat, fsky, Mmax, survey):
 	plt.xlabel('$k$, h/Mpc, com')
 	plt.savefig('./plots/Pkgg_1halo_HMFint_Mmax15_CMASS.pdf')
 	plt.close()
+	
+	# TO INCLUDE AN EXTENDED REDSHIFT DISTRIBUTION FOR LENSES WE WILL NEED TO INTEGRATE OVER THE FUNCTION OUTPUT BY 'WINDOW' HERE.
 	
 	Pkgg_interp = scipy.interpolate.interp1d(np.log(kvec_short), np.log(Pkgg))
 	logPkgg = Pkgg_interp(np.log(kvec_ft))
@@ -916,7 +929,6 @@ def get_Mhhigh( Mh_low, Mlow_star, ngvol, survey ):
 	
 	return Mhigh
 	
-
 def get_Mstar_low(survey, ngal):
 	""" For a given number density of source galaxies (calculated in the vol_dens function), get the appropriate choice for the lower bound of Mstar """
 	

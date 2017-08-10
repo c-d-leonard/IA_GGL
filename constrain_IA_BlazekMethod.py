@@ -1,6 +1,6 @@
 # This is a script which predicts constraints on intrinsic alignments, using an updated version of the method of Blazek et al 2012 in which it is not assumed that only excess galaxies contribute to IA (rather it is assumed that source galaxies which are close to the lens along the line-of-sight can contribute.)
 
-SURVEY = 'SDSS'
+SURVEY = 'LSST_DESI'
 print "SURVEY=", SURVEY
 
 import numpy as np
@@ -58,11 +58,13 @@ def weights(e_rms, z_, z_l_):
 	
 	""" Returns the inverse variance weights as a function of redshift. """
 	
-	SigC_t_inv = get_SigmaC_inv(z_, z_l_)
+	# TO INCLUDE AN EXTENDED REDSHIFT FOR LENSES, THIS WILL BE A MATRIX
+	SigC_t_inv = get_SigmaC_inv(z_, z_l_) 
 	
+	# THIS WILL BE MODIFIED TO BE AN ARRAY IN ZS, ZL
 	weights = SigC_t_inv**2/(sigma_e(z_)**2 + e_rms**2 * np.ones(len(z_)))
 	
-	return weights
+	return weights # THIS WILL NEED TO RETURN AN ARRAY
 
 #### THESE ARE OLD FUNCTIONS WHICH COMPUTE THE SHAPE-NOISE ONLY COVARIANCE IN REAL SPACE #####
 # I'm just keeping these to be able to compare with their output
@@ -70,16 +72,19 @@ def weights(e_rms, z_, z_l_):
 def shapenoise_cov(e_rms, z_p_l, z_p_h, B_samp, rp_c, rp, dNdzpar, pzpar, dNdztype, pztype):
 	""" Returns a diagonal covariance matrix in bins of projected radius for a measurement dominated by shape noise. Elements are 1 / (sum_{ls} w), carefully normalized, in each bin. """
 	
+	# IF WE WANT TO CONTINUE TO USE THIS FOR A COMPARISON WITH AN EXTENDED LENS DISTRIBUTION, WE NEED TO FIGURE OUT HOW TO GET THESE AREAS - DO WE JUST USE THE MEAN REDSHIFT FOR THIS?
 	# Get the area of each projected radial bin in square arcminutes
 	bin_areas       =       setup.get_areas(rp, pa.zeff, SURVEY)
 	
 	#sum_denom =  pa.n_l * pa.Area_l * bin_areas * pa.n_s * np.asarray(sum_weights(pa.zeff, pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, z_p_l, z_p_h, pa.zphmin, pa.zphmax, e_rms, rp, rp_c, dNdzpar, pzpar, dNdztype, pztype))
 	
+	# IF WE WANT TO CONTINUE TO USE THIS FOR COMPARISON WITH AN EXTENDED LENS DISTRIBUTION, THE ARGUMENTS OF SUM_WEIGHTS WILL NEED TO BE MODIFIED AS INDICATED IN THAT FUNC.
 	weighted_frac_sources = np.asarray(sum_weights(pa.zeff, pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, z_p_l, z_p_h, pa.zphmin, pa.zphmax, e_rms, rp, rp_c, dNdzpar, pzpar, dNdztype, pztype))[0] / np.asarray(sum_weights(pa.zeff, pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, pa.zphmin, pa.zphmax, pa.zphmin, pa.zphmax, e_rms, rp, rp_c, dNdzpar, pzpar, dNdztype, pztype))[0]
 	
 	# Get weighted SigmaC values
 	#(zph, dNdzph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, z_p_l, z_p_h, pa.zphmin, pa.zphmax, dNdzpar, pzpar, dNdztype, pztype)
 	#SigC_inv = get_SigmaC_inv(zph, pa.zeff)
+	# IF WE WANT TO CONTINUE TO USE THIS FOR COMPARISON WITH AN EXTENDED LENS DISTRIBUTION, THE ARGUMENTS OF SUM_WEIGHTS_SIGC WILL NEED TO BE MODIFIED AS INDICATED IN THAT FUNC.
 	SigC_avg = sum_weights_SigC(pa.zeff, pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, z_p_l, z_p_h, pa.zphmin, pa.zphmax, e_rms, rp, rp_c, dNdzpar, pzpar, dNdztype, pztype)[0] / sum_weights(pa.zeff, pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, z_p_l, z_p_h, pa.zphmin, pa.zphmax, e_rms, rp, rp_c, dNdzpar, pzpar, dNdztype, pztype)[0]
 	
 	cov = e_rms**2 * SigC_avg**2 / ( pa.n_l * pa.Area_l * bin_areas * pa.n_s * weighted_frac_sources)
@@ -91,12 +96,16 @@ def shapenoise_cov(e_rms, z_p_l, z_p_h, B_samp, rp_c, rp, dNdzpar, pzpar, dNdzty
 def weights_times_SigC(e_rms, z_, z_l_):
 	""" Returns the inverse variance weights as a function of redshift. """
 	
-	SigC_t_inv = get_SigmaC_inv(z_, z_l_)
+	# TO INCLUDE AN EXTENDED REDSHIFT DISTRIBUTION IN LENSES, THIS WILL BE AN ARRAY IN ZS ZL
+	SigC_t_inv = get_SigmaC_inv(z_, z_l_) 
 	
-	weights = SigC_t_inv/(sigma_e(z_)**2 + e_rms**2 * np.ones(len(z_)))
+	weights = SigC_t_inv/(sigma_e(z_)**2 + e_rms**2 * np.ones(len(z_))) # THIS WILL BE AN ARRAY IN ZS ZL
 	
 	return weights
 
+# TO INCLUDE AN EXTENDED REDSHIFT THIS FUNCTION MUST BE MODIFIED TO TAKE 'A' OR 'B' OR 'FULL' AS AN ARGUMENT INDICATING THE SAMPLE AND TO INTEGRATE OVER A LENS Z DIST.
+# ADDITIONALLY, THERE SHOULD BE AN ARGUMENT WHICH INDICATES 'CLOSE' OR 'ALL' FOR SPEC-Z, SEE NOTES JULY 31 / 26; August 10., SEE NOTES JULY 31 / 26; August 10.
+# SEE NOTEBOOK, JULY 26.
 def sum_weights(z_l, z_a_def_s, z_b_def_s, z_a_norm_s, z_b_norm_s, z_a_def_ph, z_b_def_ph, z_a_norm_ph, z_b_norm_ph, erms, rp_bins_, rp_bin_c_, dNdz_par, pz_par, dNdztype, pztype):
 	""" Returns the sum over rand-source pairs of the estimated weights, in each projected radial bin. Pass different z_min_s and z_max_s to get rand-close, rand-far, and all-rand cases."""
 	
@@ -111,6 +120,9 @@ def sum_weights(z_l, z_a_def_s, z_b_def_s, z_a_norm_s, z_b_norm_s, z_a_def_ph, z
 
 	return sum_ans
 	
+# TO INCLUDE AN EXTENDED REDSHIFT THIS FUNCTION MUST BE MODIFIED TO TAKE 'A' OR 'B' AS AN ARGUMENT INDICATING THE SAMPLE AND TO INTEGRATE OVER A LENS Z DIST.
+# SEE NOTEBOOK, JULY 26.	
+# ADDITIONALLY, THERE SHOULD BE AN ARGUMENT WHICH INDICATES 'CLOSE' OR 'ALL' FOR WHAT WE ARE SUMMING OVER, SEE NOTES JULY 31 / 26; August 10.
 def sum_weights_SigC(z_l, z_a_def_s, z_b_def_s, z_a_norm_s, z_b_norm_s, z_a_def_ph, z_b_def_ph, z_a_norm_ph, z_b_norm_ph, erms, rp_bins_, rp_bin_c_, dNdz_par, pz_par, dNdztype, pztype):
 	""" Returns the sum over rand-source pairs of the estimated weights multiplied by estimated SigC, in each projected radial bin. Pass different z_min_s and z_max_s to get rand-close, rand-far, and all-rand cases."""
 	
@@ -123,8 +135,12 @@ def sum_weights_SigC(z_l, z_a_def_s, z_b_def_s, z_a_norm_s, z_b_norm_s, z_a_def_
 
 	return sum_ans
 
+# TO INCORPORATE EXTENDED REDSHIFT DISTRIBUTION FOR LENSES, THIS FUNCTION WILL TAKE A SAMPLE = A OR B LABEL. 
 def get_bSigW(z_p_min, z_p_max, e_rms, pzpar, pztype):
 	""" Returns an interpolating function for tilde(w)tilde(SigC)SigC^{-1} as a function of source photo-z. Used in computing photo-z bias c_z / 1+b_z."""
+	
+	# TO INCORPORATE EXTENDED LENS REDSHIFT DISTRIBUTION: GET ZPH, DNDZPH IN HERE RATHER THAN IN THE WRAPPING GET CZ.
+	# GET Z_L, DNDZL
 	
 	# Define a vector of photometric redshifts on the range of source redshifts we care about for this sample:
 	z_p_vec = np.logspace(np.log10(z_p_min), np.log10(z_p_max),100)
@@ -133,6 +149,7 @@ def get_bSigW(z_p_min, z_p_max, e_rms, pzpar, pztype):
 	Ds_photo = com_of_z(z_p_vec) / (1. + z_p_vec)
 	Dl = com_of_z(pa.zeff) / (1. + pa.zeff)
 	
+	# TO INCORPORATE EXTENDED LENS REDSHIFT DISTRIBUTION, THIS WILL NEED TO BE LOOPED OVER ZL AND ZPH. THE SAMPLING OF ZS AROUND ZPH CAN BE DONE ONCE FOR EVERY ZPH AND THE SAME FOR EVERY ZL, SO ZPH SHOULD BE THE OUTSIDE LOOP. SEE FURTHER NOTES, NOTEBOOK, JULY 27.
 	bsw = np.zeros(len(z_p_vec))
 	for zi in range(0,len(z_p_vec)):
 		
@@ -143,13 +160,13 @@ def get_bSigW(z_p_min, z_p_max, e_rms, pzpar, pztype):
 			for i in range(0, len(zsvec)):
 				if (zsvec[i]<0.):
 					zsvec[i] = 0.0001
-			#print "WE SHOULD BE USING SIGZ(1+Z) HERE FOR OUR VARIANCE."
+			print "WE SHOULD BE USING SIGZ(1+Z) HERE FOR OUR VARIANCE."
 		else:
 			print "Photo-z type "+str(pztype)+" is not supported. Exiting."
 			exit()
 		# Get the components of the terms we care about which depend on the spec-z's.
 		Ds_spec = com_of_z(zsvec) / (1. + zsvec)
-		Dls = np.zeros(len(zsvec))
+		Dls = np.zeros(len(zsvec))  # TO INCORPORATE EXTENDED LENS DISTRIBUTION, THIS WILL BE TWO-D IN ZS AND ZL.
 		for zsi in range(0,len(zsvec)):
 			if (zsvec[zsi]>pa.zeff):
 				Dls[zsi] = Ds_spec[zsi] - Dl
@@ -157,6 +174,9 @@ def get_bSigW(z_p_min, z_p_max, e_rms, pzpar, pztype):
 				Dls[zsi] = 0.
 		# Find the mean bsigma at this zphoto
 		bsw[zi] = (4. * np.pi * (pa.Gnewt * pa.Msun) * (10**12 / pa.c**2) / pa.mperMpc)**2   / (e_rms**2 + sigma_e(z_p_vec[zi])**2) * (1. +pa.zeff)**4 * Dl**2 * (Ds_photo[zi]-Dl) / Ds_photo[zi] * np.mean(Dls / Ds_spec)
+		
+	# TO INCORPORATE EXTENDED LENS DISTRIBUTION, INCLUDE INTEGRATION OVER ZPH (FOR EACH ZL AS APPROPRIATE) HERE, AND INTEGRATION OVER ZL
+	# SEE NOTES, NOTEBOOK, JULY 27 FOR MORE DETAILS.
 	
 	# Interpolate the mean bsigmas such that we can report at any zspec in the range:
 	bsig_interp = scipy.interpolate.interp1d(z_p_vec, bsw)
@@ -165,6 +185,8 @@ def get_bSigW(z_p_min, z_p_max, e_rms, pzpar, pztype):
 
 def get_SigmaC_inv(z_s_, z_l_):
 	""" Returns the theoretical value of 1/Sigma_c, (Sigma_c = the critcial surface mass density) """
+
+	# TO INCORPORATE AN EXTENDED REDSHIFT DISTRIBUTION, THIS MUST BE MODIFIED TO RETURN AN ARRAY IN ZS, ZL.
 
 	com_s = com_of_z(z_s_) 
 	com_l = com_of_z(z_l_) 
@@ -175,7 +197,7 @@ def get_SigmaC_inv(z_s_, z_l_):
 	
 	D_s = a_s * com_s # Angular diameter source distance.
 	D_l = a_l * com_l # Angular diameter lens distance
-	D_ls = (D_s - D_l) 
+	D_ls = (D_s - D_l) # CAREFUL HERE FOR INCLUDING AN EXTENDED Z_L DIST - THIS WILL BE A MATRIX IN ZS, ZL NOW.
 	
 	# Units are pc^2 / (h Msun), comoving
 	Sigma_c_inv = 4. * np.pi * (pa.Gnewt * pa.Msun) * (10**12 / pa.c**2) / pa.mperMpc *   D_l * D_ls * (1 + z_l_)**2 / D_s
@@ -188,7 +210,7 @@ def get_SigmaC_inv(z_s_, z_l_):
 		if (z_s_<=z_l_):
 			Sigam_c_inv = 0.
 
-	return Sigma_c_inv
+	return Sigma_c_inv # THIS MUST BE RETURNED AS A MATRIX.
 
 def get_boost(rp_cents_, propfact):
 	"""Returns the boost factor in radial bins. propfact is a tunable parameter giving the proportionality constant by which boost goes like projected correlation function (= value at 1 Mpc/h). """
@@ -197,53 +219,66 @@ def get_boost(rp_cents_, propfact):
 
 	return Boost
 
+# CHANGE THE ARGUMENTS OF THIS TO PASS IN A LABLE OF SAMPLE A OR B AND NOT THE ZPH_MIN AND ZPH_MAX STUFF, FOR AN EXTENDED LENS REDSHIFT DISTRIBUTION.
 def get_F(erms, zph_min_samp, zph_max_samp, rp_bins_, rp_bin_c, dNdz_num_par, pz_num_par, dNdz_denom_par, pz_denom_par, dNdztype, pztype):
 	""" Returns F (the weighted fraction of lens-source pairs from the smooth dNdz which are contributing to IA) """
 
 	# Sum over `rand-close'
+	# ARGUMENTS OF SUM_WEIGHTS WILL CHANGE HERE TO TAKE A LABEL OF WHICH SAMPLE, FOR EXTENDED REDSHIFT DIST FOR LENSES.
 	numerator = sum_weights(pa.zeff, z_close_low, z_close_high, pa.zsmin, pa.zsmax, zph_min_samp, zph_max_samp, zph_min_samp, zph_max_samp, erms, rp_bins_, rp_bin_c, dNdz_num_par, pz_num_par, dNdztype, pztype)
 
 	#Sum over all `rand'
+	# ARGUMENTS OF SUM_WEIGHTS WILL CHANGE HERE TO TAKE A LABEL OF WHICH SAMPLE, FOR EXTENDED REDSHIFT DIST FOR LENSES.
 	denominator = sum_weights(pa.zeff, pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, zph_min_samp, zph_max_samp, zph_min_samp, zph_max_samp, erms, rp_bins_, rp_bin_c,  dNdz_denom_par, pz_denom_par, dNdztype, pztype)
 
 	F = np.asarray(numerator) / np.asarray(denominator)
 
 	return F
 
+# CHANGE THE ARGUMENTS OF THIS TO PASS IN A LABLE OF SAMPLE A OR B AND NOT THE ZPH_MIN AND ZPH_MAX STUFF, FOR AN EXTENDED LENS REDSHIFT DISTRIBUTION.
 def get_cz(z_l, z_ph_min, z_ph_max, erms, rp_bins_, rp_bins_c, dNdzpar, pzpar, dNdztype, pztype):
 	""" Returns the value of the photo-z bias parameter c_z"""
 
 	# The denominator (of 1+bz) is just a sum over tilde(weights) of all random-source pairs
 	# (This outputs a bunch of things that are all the same, one for each rp bin, so we just take the first one.)
+	# ARGUMENTS OF SUM_WEIGHTS WILL CHANGE HERE TO TAKE A LABEL OF WHICH SAMPLE, FOR EXTENDED REDSHIFT DIST FOR LENSES.
 	denominator = sum_weights(z_l, pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, z_ph_min, z_ph_max, z_ph_min, z_ph_max, erms, rp_bins_, rp_bins_c, dNdzpar, pzpar, dNdztype, pztype)[0] 
 	
 	# The numerator (of 1+bz) is a sum over tilde(weights) tilde(Sigma_c) Sigma_c^{-1} of all random-source pair.s
 	
 	# Get dNdzph
+	# TO INCORPORATE AN EXTENDED LENS REDSHIFT DIST, INCORPORATE THIS IN GET_BSIGW.
 	(zph, dNdzph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, z_ph_min, z_ph_max, z_ph_min, z_ph_max, dNdzpar, pzpar, dNdztype, pztype)
 	
 	# Now get a function of photo-z which gives the mean of tilde(weight) tilde(Sigma_c) Sigma_c^{-1} as a function of photo-z.
+	# TO INCORPORATE AN EXTENDED LENS REDSHIFT DIST, THIS FUNCTION WILL RETURN A NUMBER RATHER THAN AN INTERPOLATING FUNCTION.
 	bsigW_interp = get_bSigW(z_ph_min, z_ph_max, erms, pzpar, pztype)
-	
 	numerator = scipy.integrate.simps(bsigW_interp(zph) * dNdzph, zph)
 
 	cz = denominator / numerator
 
 	return cz
 
+# FOR INCLUDING AN EXTENDED LENS REDSHIFT DISTRIBUTION: NEED TO INCLUDE A SAMPLE LABEL OF 'A' OR 'B' TO PASS TO SUM WEIGHTS, MAY NOT NEED OTHER Z ARGS.
 def get_Sig_IA(z_l, z_ph_min_samp, z_ph_max_samp, erms, rp_bins_, rp_bin_c_, boost, dNdzpar_1, pzpar_1, dNdzpar_2, pzpar_2, dNdztype, pztype):
 	""" Returns the value of <\Sigma_c>_{IA} in radial bins. Parameters labeled '2' are for the `rand-close' sums and '1' are for the `excess' sums. """
 	
 	# There are four terms here. The two in the denominators are sums over randoms (or sums over lenses that can be written as randoms * boost), and these are already set up to calculate.
+	# THE ARGUMENTS OF SUM_WEIGHTS WILL CHANGE TO INCLUDE AN EXTENDED LENS REDSHIFT DISTRIBUTION. 
 	denom_rand_close = sum_weights(z_l, z_close_low, z_close_high, pa.zsmin, pa.zsmax, z_ph_min_samp, z_ph_max_samp, z_ph_min_samp, z_ph_max_samp, erms, rp_bins_, rp_bin_c_, dNdzpar_2, pzpar_2, dNdztype, pztype)
+	# THE ARGUMENTS OF SUM_WEIGHTS WILL CHANGE TO INCLUDE AN EXTENDED LENS REDSHIFT DISTRIBUTION. 
 	denom_rand = sum_weights(z_l, pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, z_ph_min_samp, z_ph_max_samp, z_ph_min_samp, z_ph_max_samp, erms, rp_bins_, rp_bin_c_, dNdzpar_1, pzpar_1, dNdztype, pztype)
 	denom_excess = (boost - 1.) * denom_rand
 	
 	# The two in the numerator require summing over weights and Sigma_C. 
 	
 	#For the sum over rand-close in the numerator, this follows directly from the same type of expression as when summing weights:
+	# THE ARGUMENTS OF SUM_WEIGHTS_SIGC WILL CHANGE TO INCLUDE AN EXTENDED LENS REDSHIFT DISTRIBUTION. 
 	num_rand_close = sum_weights_SigC(z_l, z_close_low, z_close_high, pa.zsmin, pa.zsmax, z_ph_min_samp, z_ph_max_samp, z_ph_min_samp, z_ph_max_samp, erms, rp_bins_, rp_bin_c_, dNdzpar_2, pzpar_2, dNdztype, pztype)
-			
+	
+	
+	# WHEN INCLUDING AN EXTENDED LENS REDSHIFT DISTRIBUTION THERE ARE A BUNCH OF MODIFICATIONS TO THIS BIT; SEE NOTEBOOK JULY 26.	
+	###############################################	
 	# The other numerator sum is a term which represents the a sum over excess. We have to get the normalization indirectly so there are a bunch of terms here. See notes.
 	# We assume all excess galaxies are at the lens redshift.
 	
@@ -253,10 +288,11 @@ def get_Sig_IA(z_l, z_ph_min_samp, z_ph_max_samp, erms, rp_bins_, rp_bin_c_, boo
 	
 	# We do the same for a sum over excess of just weights with the same arbitrary normalization:
 	exc_w_arbnorm = scipy.integrate.simps(weights(erms, z_ph, z_l) * setup.p_z(z_ph, z_l, pzpar_1, pztype), z_ph)
+	################################################3
+	
 	
 	# We already have an appropriately normalized sum over excess weights, from above (denom_excess), via the relationship with the boost.
 	# Put these components together to get the appropriately normalized sum over excess of weights and SigmaC:
-	
 	num_excess = exc_wSigC_arbnorm / exc_w_arbnorm * np.asarray(denom_excess)
 	
 	# Sigma_C_inv is in units of pc^2 / (h Msol) (comoving), so Sig_IA is in units of h Msol / pc^2 (comoving).
@@ -264,6 +300,7 @@ def get_Sig_IA(z_l, z_ph_min_samp, z_ph_max_samp, erms, rp_bins_, rp_bin_c_, boo
 
 	return Sig_IA  
 
+# TO INCLUDE AN EXTENDED LENS REDSHIFT DISTRIBUTION: WE ACTUALLY DON'T USE ZL HERE ANYMORE, SO JUST REMOVE THE DEPENDENCE ON Z_L
 def get_est_DeltaSig(z_l, rp_bins, rp_bins_c, boost, F, cz, SigIA, g_IA_fid):
 	""" Returns the value of tilde Delta Sigma in bins"""
 	# The first term is (1 + b_z) \Delta \Sigma ^{theory}, need theoretical Delta Sigma	
@@ -371,6 +408,9 @@ def get_DeltaSig_theory(z_l, rp_bins, rp_bins_c):
 	###### First get the term from halofit (valid at larger scales) ######
 	# Import the correlation function as a function of R and Pi, obtained via getting P(k) from CAMB and then using FFT_log, Anze Slozar version. 
 	# Note that since CAMB uses comoving distances, all distances here should be comoving. rpvec and Pivec are in Mpc/h.
+	
+	# IF WE WANT TO INCLUDE AN EXTENDED LENS REDSHIFT DISTRIBUTION IN FIDUCIAL QUANTITIES:
+	# NEED TO IMPORT CORR_2H AT A VECTOR OF LENS REDSHIFTS TO BE INTEGRATED OVER.
 	if (pa.survey == 'SDSS'):
 		corr_2h = np.loadtxt('./txtfiles/corr2d_forDS_z='+str(z_l)+'.txt')
 	elif (pa.survey =='LSST_DESI'):
@@ -391,11 +431,11 @@ def get_DeltaSig_theory(z_l, rp_bins, rp_bins_c):
 		# This will have units Msol h / Mpc^2 in comoving distances.
 		Sigma_HF[ri] = rho_m * scipy.integrate.simps(corr_2h[:, ri], Pivec) 
 		
-	plt.figure()
-	plt.loglog(rpvec, Sigma_HF, 'g+')
+	#plt.figure()
+	#plt.loglog(rpvec, Sigma_HF, 'g+')
 	#plt.ylim(0.0, 10**5)
-	plt.xlim(10**(-2), 100)
-	plt.savefig('./plots/SigHF_z='+str(z_l)+'.pdf')
+	#plt.xlim(10**(-2), 100)
+	#plt.savefig('./plots/SigHF_z='+str(z_l)+'.pdf')
 		
 	# Now average Sigma_HF(R) over R to get the first averaged term in Delta Sigma
 	barSigma_HF = np.zeros(len(rpvec))
@@ -413,6 +453,8 @@ def get_DeltaSig_theory(z_l, rp_bins, rp_bins_c):
 	# Get the max R associated to our max M
 	Rmax = ws.Rhalo(10**16, SURVEY)
 	
+	# IF WE WANT TO INCLUDE AN EXTENDED LENS REDSHIFT DISTRIBUTION IN FIDUCIAL QUANTITIES:
+	# NEED TO IMPORT CORR_1H AT A VECTOR OF LENS REDSHIFTS TO BE INTEGRATED OVER.
 	r_1h, corr_1h = np.loadtxt('./txtfiles/corr_gm_1h_survey='+SURVEY+'.txt', unpack=True)
 	
 	# Set xi_gg_1h to zero above Rmax Mpc/h.
@@ -494,7 +536,10 @@ def get_gammaIA_cov(rp_bins, rp_bins_c, fudgeczA, fudgeczB, fudgeFA, fudgeFB, fu
 	""" We are only interested right now in the diagonal elements of the covariance matrix, so we assume it is diagonal. """ 
 
 	# Get the fiducial quantities required for the statistical error variance terms. #	
-	# Boosts
+	
+	# IF WE WANT TO INCLUDE AN EXTENDED DISTRIBUTION OF LENS REDSHIFTS IN OUR FIDUCIAL VALUE CALCULATIONS:
+	# NEED TO USE PA.BOOST_CLOSE AND PA.BOOST_FAR VALUES OBTAINED FROM A MODIFIED SCRIPT get_boost_amplitudes_zLextended.ipynb ACCORDING TO PLANNED MODS
+	# SEE NOTES JULY 22, NOTEBOOK.
 	Boost_a = get_boost(rp_cent, pa.boost_close)
 	Boost_b = get_boost(rp_cent, pa.boost_far)
 	# Run F, cz, and SigIA, this takes a while so we don't always do it.
@@ -503,6 +548,7 @@ def get_gammaIA_cov(rp_bins, rp_bins_c, fudgeczA, fudgeczB, fudgeFA, fudgeFB, fu
 		################ F's #################
 	
 		# F factors - first, fiducial
+		# TO INCLUDE AN EXTENDED Z DIST FOR LENSES, THE ARGUMENTS OF THIS FUNCTION WILL CHANGE TO PASS A OR B AS THE SAMPLE LABEL, SEE NOTEBOOK JULY 26.
 		F_a_fid = get_F(pa.e_rms_Bl_a, pa.zeff, pa.zeff+pa.delta_z, rp_bins, rp_bins_c,  pa.dNdzpar_fid, pa.pzpar_fid,  pa.dNdzpar_fid, pa.pzpar_fid,  pa.dNdztype, pa.pztype)
 		F_b_fid = get_F(pa.e_rms_Bl_b, pa.zeff+pa.delta_z, pa.zphmax, rp_bins, rp_bins_c,  pa.dNdzpar_fid, pa.pzpar_fid,  pa.dNdzpar_fid, pa.pzpar_fid,  pa.dNdztype, pa.pztype)
 		print "F_a_fid=", F_a_fid[0], "F_b_fid=", F_b_fid[0]
@@ -513,6 +559,7 @@ def get_gammaIA_cov(rp_bins, rp_bins_c, fudgeczA, fudgeczB, fudgeFA, fudgeFB, fu
 		############# Sig_IA's ##############
 	
 		# Sig IA - first, fiducial
+		# TO INCLUDE AN EXTENDED Z DIST FOR LENSES, THE ARGUMENTS OF THIS FUNCTION WILL CHANGE TO PASS A OR B AS THE SAMPLE LABEL, SEE NOTEBOOK JULY 26.
 		Sig_IA_a_fid = get_Sig_IA(pa.zeff, pa.zeff, pa.zeff+pa.delta_z, pa.e_rms_Bl_a, rp_bins, rp_bins_c, Boost_a,   pa.dNdzpar_fid, pa.pzpar_fid,  pa.dNdzpar_fid, pa.pzpar_fid,  pa.dNdztype, pa.pztype)
 		Sig_IA_b_fid = get_Sig_IA(pa.zeff, pa.zeff+pa.delta_z, pa.zphmax, pa.e_rms_Bl_b, rp_bins, rp_bins_c, Boost_b,   pa.dNdzpar_fid, pa.pzpar_fid,  pa.dNdzpar_fid, pa.pzpar_fid,  pa.dNdztype, pa.pztype)
 		print "Sig_IA_a_fid=", Sig_IA_a_fid
@@ -524,9 +571,11 @@ def get_gammaIA_cov(rp_bins, rp_bins_c, fudgeczA, fudgeczB, fudgeFA, fudgeFB, fu
 		############ c_z's ##############
 	
 		# Photometric biases to estimated Delta Sigmas, fiducial
+		# TO INCLUDE AN EXTENDED Z DIST FOR LENSES, THE ARGUMENTS OF THIS FUNCTION WILL CHANGE TO PASS A OR B AS THE SAMPLE LABEL, SEE NOTEBOOK JULY 26.
 		cz_a_fid = get_cz(pa.zeff, pa.zeff, pa.zeff + pa.delta_z, pa.e_rms_Bl_a, rp_bins, rp_bins_c,   pa.dNdzpar_fid, pa.pzpar_fid,  pa.dNdztype, pa.pztype)
 		cz_b_fid = get_cz(pa.zeff, pa.zeff+pa.delta_z, pa.zphmax, pa.e_rms_Bl_b, rp_bins, rp_bins_c,   pa.dNdzpar_fid, pa.pzpar_fid,  pa.dNdztype, pa.pztype)
 		print "cz_a_fid =", cz_a_fid, "cz_b_fid=", cz_b_fid
+		# INCLUDING AN EXTENDED REDSHIFT DISTRIBUTION MAY MAKE THIS CALCULATION OF CZ TOO LONG TO DO ON A LAPTOP - MAY NEED TO DECOUPLE BSIGW AND RUN ON CLUSTER.
 		
 		save_cz = np.column_stack(([cz_a_fid], [cz_b_fid]))
 		np.savetxt('./txtfiles/cz_afid_bfid_atNAM_survey='+pa.survey+'_deltaz='+str(pa.delta_z)+'.txt', save_cz)
@@ -546,14 +595,15 @@ def get_gammaIA_cov(rp_bins, rp_bins_c, fudgeczA, fudgeczB, fudgeFA, fudgeFB, fu
 		(cz_a_fid, cz_b_fid) = np.loadtxt('./txtfiles/cz_afid_bfid_survey='+pa.survey+'_deltaz='+str(pa.delta_z)+'.txt', unpack=True)
 	
 	# Estimated Delta Sigmas
+	#TO INCLUDE AN EXTENDED REDSHIFT DISTRIBUTION FOR LENSES, JUST REMOVE THE DEPENDENCING ON ZEFF HERE (WE DON'T USE IT ANYMORE).
 	DeltaSig_est_a = get_est_DeltaSig(pa.zeff, rp_bins, rp_bins_c, Boost_a, F_a_fid, cz_a_fid, Sig_IA_a_fid, g_IA_fid)
 	DeltaSig_est_b = get_est_DeltaSig(pa.zeff, rp_bins, rp_bins_c, Boost_b, F_b_fid, cz_b_fid, Sig_IA_b_fid, g_IA_fid)
 	
 	############ Get statistical error ############
 	
 	# Get the real-space shape-noise-only covariance matrices for Delta Sigma for each sample if we want to compare against them.
-	DeltaCov_a = shapenoise_cov(pa.e_rms_Bl_a, pa.zeff, pa.zeff+pa.delta_z, Boost_a, rp_bins_c, rp_bins, pa.dNdzpar_fid, pa.pzpar_fid,  pa.dNdztype, pa.pztype)
-	DeltaCov_b = shapenoise_cov(pa.e_rms_Bl_b, pa.zeff+pa.delta_z, pa.zphmax, Boost_b, rp_bins_c, rp_bins, pa.dNdzpar_fid, pa.pzpar_fid,  pa.dNdztype, pa.pztype)
+	#DeltaCov_a = shapenoise_cov(pa.e_rms_Bl_a, pa.zeff, pa.zeff+pa.delta_z, Boost_a, rp_bins_c, rp_bins, pa.dNdzpar_fid, pa.pzpar_fid,  pa.dNdztype, pa.pztype)
+	#DeltaCov_b = shapenoise_cov(pa.e_rms_Bl_b, pa.zeff+pa.delta_z, pa.zphmax, Boost_b, rp_bins_c, rp_bins, pa.dNdzpar_fid, pa.pzpar_fid,  pa.dNdztype, pa.pztype)
 	
 	# Import the covariance matrix of Delta Sigma for each sample as calculated from Fourier space in a different script, w / cosmic variance terms
 	#DeltaCov_a_import_CV = np.loadtxt('./txtfiles/cov_DelSig_withCosmicVar_'+SURVEY+'_sample=A_rpts2000_lpts100000_SNanalytic_deltaz='+str(pa.delta_z)+'.txt')
@@ -564,28 +614,26 @@ def get_gammaIA_cov(rp_bins, rp_bins_c, fudgeczA, fudgeczB, fudgeFA, fudgeFB, fu
 	#DeltaCov_a_import_CV = np.loadtxt('./txtfiles/cov_DelSig_withCosmicVar_'+SURVEY+'_sample=A_rpts2000_lpts100000_SNanalytic.txt')
 	#DeltaCov_b_import_CV = np.loadtxt('./txtfiles/cov_DelSig_withCosmicVar_'+SURVEY+'_sample=B_rpts2000_lpts100000_SNanalytic.txt')
 	
-	plt.figure()
-	plt.loglog(rp_bins_c, DeltaCov_a, 'mo', label='shape noise: real')
-	plt.hold(True)
-	plt.loglog(rp_bins_c, np.diag(DeltaCov_a_import_CV), 'go', label='with CV: Fourier')
-	plt.xlabel('r_p')
-	plt.ylabel('Variance')
-	plt.legend()
-	plt.savefig('./plots/check_DeltaSigma_var_SNanalytic_'+SURVEY+'_A_1h2h.pdf')
-	plt.close()
+	#plt.figure()
+	#plt.loglog(rp_bins_c, DeltaCov_a, 'mo', label='shape noise: real')
+	#plt.hold(True)
+	#plt.loglog(rp_bins_c, np.diag(DeltaCov_a_import_CV), 'go', label='with CV: Fourier')
+	#plt.xlabel('r_p')
+	#plt.ylabel('Variance')
+	#plt.legend()
+	#plt.savefig('./plots/check_DeltaSigma_var_SNanalytic_'+SURVEY+'_A_1h2h.pdf')
+	#plt.close()
 	
-	plt.figure()
-	plt.loglog(rp_bins_c, DeltaCov_b, 'mo', label='shape noise: real')
-	plt.hold(True)
-	plt.loglog(rp_bins_c, np.diag(DeltaCov_b_import_CV), 'bo', label='with CV: Fourier')
-	plt.xlabel('r_p')
-	plt.ylabel('Variance')
-	plt.legend()
-	plt.savefig('./plots/check_DeltaSigma_var_SNanalytic_'+SURVEY+'_B_1h2h.pdf')
-	plt.close()
-	
-	exit()
-	
+	#plt.figure()
+	#plt.loglog(rp_bins_c, DeltaCov_b, 'mo', label='shape noise: real')
+	#plt.hold(True)
+	#plt.loglog(rp_bins_c, np.diag(DeltaCov_b_import_CV), 'bo', label='with CV: Fourier')
+	#plt.xlabel('r_p')
+	#plt.ylabel('Variance')
+	#plt.legend()
+	#plt.savefig('./plots/check_DeltaSigma_var_SNanalytic_'+SURVEY+'_B_1h2h.pdf')
+	#plt.close()
+
 	# Get the systematic error on boost-1. 
 	boosterr_sq_a = ((pa.boost_sys - 1.)*(Boost_a-1.))**2
 	boosterr_sq_b = ((pa.boost_sys - 1.)*(Boost_b-1.))**2
@@ -631,48 +679,48 @@ def get_gammaIA_cov(rp_bins, rp_bins_c, fudgeczA, fudgeczB, fudgeFA, fudgeFB, fu
 	gammaIA_cov_stat_sysB_noF = gammaIA_sysB_cov_noF + gammaIA_stat_cov_noF
 	
 	# Make a plot of the statistical + boost systematic errors with and without F
-	if (SURVEY=='LSST_DESI'):
+	"""if (SURVEY=='LSST_DESI'):
 		fig_sub=plt.subplot(111)
 		plt.rc('font', family='serif', size=14)
-		fig_sub.axhline(y=0, xmax=20., color='k', linewidth=1)
+		#fig_sub.axhline(y=0, xmax=20., color='k', linewidth=1)
+		#fig_sub.hold(True)
+		fig_sub.errorbar(rp_bins_c ,g_IA_fid, yerr = np.sqrt(np.diag(gammaIA_cov_stat_sysB_noF)), fmt='go', linewidth='2', label='Excess only')
 		fig_sub.hold(True)
-		fig_sub.errorbar(rp_bins_c ,g_IA_fid, yerr = np.sqrt(np.diag(gammaIA_cov_stat_sysB_noF)), fmt='go', label='Excess only')
-		fig_sub.hold(True)
-		fig_sub.errorbar(rp_bins_c * 1.05,g_IA_fid, yerr = np.sqrt(np.diag(gammaIA_cov_stat_sysB_withF)), fmt='mo', label='Physically associated')
+		fig_sub.errorbar(rp_bins_c * 1.05,g_IA_fid, yerr = np.sqrt(np.diag(gammaIA_cov_stat_sysB_withF)), fmt='mo', linewidth='2', label='All physically associated')
 		fig_sub.set_xscale("log")
 		#fig_sub.set_yscale("log") #, nonposy='clip')
-		fig_sub.set_xlabel('$r_p$')
-		fig_sub.set_ylabel('$\gamma_{IA}$')
-		fig_sub.set_ylim(-0.002, 0.005)
+		fig_sub.set_xlabel('$r_p$', fontsize=20)
+		fig_sub.set_ylabel('$\gamma_{IA}$', fontsize=20)
+		fig_sub.set_ylim(-0.002, 0.002)
 		#fig_sub.set_ylim(-0.015, 0.015)
 		fig_sub.set_xlim(0.05,20.)
-		fig_sub.tick_params(axis='both', which='major', labelsize=12)
-		fig_sub.tick_params(axis='both', which='minor', labelsize=12)
+		fig_sub.tick_params(axis='both', which='major', labelsize=18)
+		fig_sub.tick_params(axis='both', which='minor', labelsize=18)
 		fig_sub.legend()
 		plt.tight_layout()
-		plt.savefig('./plots/F_vs_noF_stat+sysB_survey='+SURVEY+'_MvirFix_deltaz='+str(pa.delta_z)+'.pdf')
+		plt.savefig('./plots/InclAllPhysicallyAssociated_stat+sysB_survey='+SURVEY+'_deltaz='+str(pa.delta_z)+'_1h2h.png')
 		plt.close()
 	elif (SURVEY=='SDSS'):
 		fig_sub=plt.subplot(111)
 		plt.rc('font', family='serif', size=14)
-		fig_sub.axhline(y=0, xmax=20., color='k', linewidth=1)
+		#fig_sub.axhline(y=0, xmax=20., color='k', linewidth=1)
+		#fig_sub.hold(True)
+		fig_sub.errorbar(rp_bins_c ,g_IA_fid, yerr = np.sqrt(np.diag(gammaIA_cov_stat_sysB_noF)), fmt='go', linewidth='2', label='Excess only')
 		fig_sub.hold(True)
-		fig_sub.errorbar(rp_bins_c ,g_IA_fid, yerr = np.sqrt(np.diag(gammaIA_cov_stat_sysB_noF)), fmt='go', label='Excess only')
-		fig_sub.hold(True)
-		fig_sub.errorbar(rp_bins_c * 1.05,g_IA_fid, yerr = np.sqrt(np.diag(gammaIA_cov_stat_sysB_withF)), fmt='mo', label='Physically associated')
+		fig_sub.errorbar(rp_bins_c * 1.05,g_IA_fid, yerr = np.sqrt(np.diag(gammaIA_cov_stat_sysB_withF)), fmt='mo', linewidth='2',label='All physically associated')
 		fig_sub.set_xscale("log")
 		#fig_sub.set_yscale("log") #, nonposy='clip')
-		fig_sub.set_xlabel('$r_p$')
-		fig_sub.set_ylabel('$\gamma_{IA}$')
+		fig_sub.set_xlabel('$r_p$', fontsize=20)
+		fig_sub.set_ylabel('$\gamma_{IA}$', fontsize=20)
 		#fig_sub.set_ylim(-0.002, 0.005)
 		fig_sub.set_ylim(-0.015, 0.015)
 		fig_sub.set_xlim(0.05,20.)
-		fig_sub.tick_params(axis='both', which='major', labelsize=12)
-		fig_sub.tick_params(axis='both', which='minor', labelsize=12)
+		fig_sub.tick_params(axis='both', which='major', labelsize=18)
+		fig_sub.tick_params(axis='both', which='minor', labelsize=18)
 		fig_sub.legend()
 		plt.tight_layout()
-		plt.savefig('./plots/F_vs_noF_stat+sysB_survey='+SURVEY+'_MvirFix_deltaz='+str(pa.delta_z)+'.pdf')
-		plt.close()
+		plt.savefig('./plots/InclAllPhysicallyAssociated_stat+sysB_survey='+SURVEY+'_deltaz='+str(pa.delta_z)+'_1h2h.png')
+		plt.close()"""
 	
 	# Now get the sysZ + stat covariance matrix assuming all physically associated galaxies can be subject to IA:
 	gamma_IA_cov_tot_withF = gammaIA_stat_cov_withF + gammaIA_sysZ_cov
@@ -709,6 +757,7 @@ def gamma_fid_from_quants(rp_bins_c, Boost_a, Boost_b, F_a, F_b, Sig_IA_a, Sig_I
 	
 def gamma_fid(rp):
 	""" Returns the fiducial gamma_IA from a combination of terms from different models which are valid at different scales """
+	# TO INCLUDE AN EXTENDED REDSHIFT DISTRIBUTION: THESE WILL NEED TO BE RE-RUN USING THE MODS NOTED IN SHARED_FUNCTIONS_WLP_WLS. 
 	wgg_rp = ws.wgg_full(rp, pa.fsat_LRG, pa.fsky, pa.bd_Bl, pa.bs_Bl, './txtfiles/wgg_1h_survey='+pa.survey+'_withHMF.txt', './txtfiles/wgg_2h_survey='+pa.survey+'_kpts='+str(pa.kpts_wgg)+'_update.txt', './plots/wgg_full_Blazek_survey='+pa.survey+'.pdf', SURVEY)
 	wgp_rp = ws.wgp_full(rp, pa.bd_Bl, pa.Ai_Bl, pa.ah_Bl, pa.q11_Bl, pa.q12_Bl, pa.q13_Bl, pa.q21_Bl, pa.q22_Bl, pa.q23_Bl, pa.q31_Bl, pa.q32_Bl, pa.q33_Bl, './txtfiles/wgp_1h_ahStopgap_survey='+pa.survey+'.txt','./txtfiles/wgp_2h_AiStopgap_survey='+pa.survey+'.txt', './plots/wgp_full_Blazek_survey='+pa.survey+'.pdf', SURVEY)
 	
@@ -909,20 +958,21 @@ else:
 #check_covergence()
 #exit()
 
-#get_Pkgm_1halo()
-#exit()
-
 # Set up projected bins
 rp_bins 	= 	setup.setup_rp_bins(pa.rp_min, pa.rp_max, pa.N_bins)
 rp_cent		=	setup.rp_bins_mid(rp_bins)
 
 # Set up a function to get z as a function of comoving distance
-(z_of_com, com_of_z) = setup.z_interpof_com(SURVEY)
+(z_of_com, com_of_z) = setup.z_interpof_com(SURVEY) # NO DEPENDENCE ON Z_L 
 
 # Get the redshift corresponding to the maximum separation from the effective lens redshift at which we assume IA may be present
 # pa.close_cut is the separation in Mpc/h.
+
+# PASS A VECTOR OF Z_LENS POINTS AND GET OUT OF A VECTOR OF Z_CLOSE_HIGH AND Z_CLOSE_LOW CORRESPONDING TO EACH POINT ON THE Z_L DISTRIBUTION.
 (z_close_high, z_close_low)	= 	setup.get_z_close(pa.zeff, pa.close_cut, SURVEY)
 
+# IF WE WANT TO INCLUDE AN EXTENDED LENS REDSHIFT DISTRIBUTION IN FIDUCIAL QUANTITIES:
+# WITHIN DELTASIGMA_THEORETICAL, WE NEED TO IMPORT CORR_1H AND CORR_2H AT A VECTOR OF LENS REDSHIFTS TO BE INTEGRATED OVER.
 DeltaSigma_theoretical = get_DeltaSig_theory(pa.zeff, rp_bins, rp_cent)
 
 #StoNstat = get_gammaIA_cov(rp_bins, rp_cent, 0., 0., 0., 0., 0., 0.)
@@ -959,7 +1009,7 @@ for i in range(0,len(pa.fudge_frac_level)):
 # Save the statistical-only S-to-N
 StoNstat_save = [StoNstat]
 print "StoNstat=", StoNstat
-np.savetxt('./txtfiles/StoNstat_Blazek_withCV_SNanalytic_survey='+SURVEY+'rpts=2000_ahAistopgap_deltaz='+str(pa.delta_z)+'.txt', StoNstat_save)
+np.savetxt('./txtfiles/StoNstat_Blazek_1h2h_survey='+SURVEY+'_ahAistopgap_deltaz='+str(pa.delta_z)+'.txt', StoNstat_save)
 
 # Save the ratios of S/N sys to stat.	
 saveSN_ratios = np.column_stack(( pa.fudge_frac_level, np.sqrt(StoN_cza) / np.sqrt(StoNstat), np.sqrt(StoN_czb) / np.sqrt(StoNstat), np.sqrt(StoN_Fa) / np.sqrt(StoNstat), np.sqrt(StoN_Fb) / np.sqrt(StoNstat), np.sqrt(StoN_Siga) / np.sqrt(StoNstat), np.sqrt(StoN_Sigb) / np.sqrt(StoNstat)))
@@ -989,50 +1039,62 @@ plt.title('Ratio, S/N, sys vs stat')
 plt.savefig('./plots/ratio_StoN.pdf')
 plt.close()"""	
 
+# Load the Ncorr information from the other method to include this in the plot:
+(frac_level, SNsys_squared_ncorr, SNstat_squared_ncorr) = np.loadtxt('./txtfiles/save_Ncorr_StoNsqSys_survey='+SURVEY+'.txt', unpack=True)
+
 # Make plot of (S/N)_sys / (S/N)_stat as a function of fractional z-related systematic error on each relevant parameter.
 if (SURVEY=='SDSS'):
 	plt.figure()
-	plt.loglog(pa.fudge_frac_level,  np.sqrt(StoNstat) / np.sqrt(StoN_cza), 'ks', label='$c_z^a$')
+	plt.loglog(pa.fudge_frac_level,  np.sqrt(StoNstat) / np.sqrt(StoN_cza), 's', color='#006cc0', label='$c_z^a$')
 	plt.hold(True)
-	plt.loglog(pa.fudge_frac_level,  np.sqrt(StoNstat) / np.sqrt(StoN_czb), 'k^', label='$c_z^b$')
+	plt.loglog(pa.fudge_frac_level,  np.sqrt(StoNstat) / np.sqrt(StoN_czb), '^',color='#006cc0', label='$c_z^b$')
 	plt.hold(True)
-	plt.loglog(pa.fudge_frac_level,  np.sqrt(StoNstat) / np.sqrt(StoN_Fa), 'ms', label='$F_a$')
+	plt.loglog(pa.fudge_frac_level, np.sqrt(SNstat_squared_ncorr) / np.sqrt(SNsys_squared_ncorr), 'mo', label='$N_{\\rm corr}$, $a=0.7$')
 	plt.hold(True)
-	plt.loglog(pa.fudge_frac_level, np.sqrt(StoNstat) /  np.sqrt(StoN_Fb) , 'm^', label='$F_b$')
+	plt.loglog(pa.fudge_frac_level,  np.sqrt(StoNstat) / np.sqrt(StoN_Fa), 'gs', linewidth='2', label='$F_a$')
 	plt.hold(True)
-	plt.loglog(pa.fudge_frac_level, np.sqrt(StoNstat) / np.sqrt(StoN_Siga) , 'gs', label='$<\\Sigma_{IA}^a>$')
+	plt.loglog(pa.fudge_frac_level, np.sqrt(StoNstat) /  np.sqrt(StoN_Fb) , 'g^',linewidth='2', label='$F_b$')
 	plt.hold(True)
-	plt.loglog(pa.fudge_frac_level,   np.sqrt(StoNstat) / np.sqrt(StoN_Sigb), 'g^', label='$<\\Sigma_{IA}^b>$')
-	plt.xlabel('Fractional error', fontsize=18)
-	plt.ylabel('$\\frac{S/N_{\\rm stat}}{S/N_{\\rm sys}}$', fontsize=18)
-	plt.tick_params(axis='both', which='major', labelsize=14)
-	plt.tick_params(axis='both', which='minor', labelsize=14)
+	plt.loglog(pa.fudge_frac_level, np.sqrt(StoNstat) / np.sqrt(StoN_Siga) , 's',linewidth='2', color='#FFA500', label='$<\\Sigma_{IA}^a>$')
+	plt.hold(True)
+	plt.loglog(pa.fudge_frac_level,   np.sqrt(StoNstat) / np.sqrt(StoN_Sigb), '^', linewidth='2',color='#FFA500', label='$<\\Sigma_{IA}^b>$')
+	plt.hold(True)
+	plt.axhline(y=1, color='k', linewidth=2, linestyle='--')
+	plt.xlabel('Fractional error', fontsize=25)
+	plt.ylabel('$\\frac{S/N_{\\rm stat}}{S/N_{\\rm sys}}$', fontsize=25)
+	plt.tick_params(axis='both', which='major', labelsize=18)
+	plt.tick_params(axis='both', which='minor', labelsize=18)
 	plt.xlim(0.008, 2.)
 	plt.ylim(0.00005, 500)
-	plt.legend(ncol=3, numpoints=1)
-	plt.savefig('./plots/SysNoiseToStatNoise_Blazek_survey='+SURVEY+'_NAM_deltaz='+str(pa.delta_z)+'.pdf')
+	plt.legend(ncol=3, numpoints=1, fontsize=18)
+	plt.tight_layout()
+	plt.savefig('./plots/SysNoiseToStatNoise_Blazek_survey='+SURVEY+'_NAM_deltaz='+str(pa.delta_z)+'.png')
 	plt.close()
 elif(SURVEY=='LSST_DESI'):
 	plt.figure()
-	plt.loglog(pa.fudge_frac_level, np.sqrt(StoNstat) / np.sqrt(StoN_cza) , 'ks', label='$c_z^a$')
+	plt.loglog(pa.fudge_frac_level, np.sqrt(StoNstat) / np.sqrt(StoN_cza) , 's', color='#006cc0', label='$c_z^a$')
 	plt.hold(True)
-	plt.loglog(pa.fudge_frac_level, np.sqrt(StoNstat) / np.sqrt(StoN_czb) , 'k^', label='$c_z^b$')
+	plt.loglog(pa.fudge_frac_level, np.sqrt(StoNstat) / np.sqrt(StoN_czb) , '^',color='#006cc0', label='$c_z^b$')
 	plt.hold(True)
-	plt.loglog(pa.fudge_frac_level,  np.sqrt(StoNstat) /np.sqrt(StoN_Fa), 'ms', label='$F_a$')
+	plt.loglog(pa.fudge_frac_level,  np.sqrt(StoNstat) /np.sqrt(StoN_Fa), 'gs', label='$F_a$')
 	plt.hold(True)
-	plt.loglog(pa.fudge_frac_level, np.sqrt(StoNstat) / np.sqrt(StoN_Fb), 'm^', label='$F_b$')
+	plt.loglog(pa.fudge_frac_level, np.sqrt(StoNstat) / np.sqrt(StoN_Fb), 'g^', label='$F_b$')
 	plt.hold(True)
-	plt.loglog(pa.fudge_frac_level,  np.sqrt(StoNstat) / np.sqrt(StoN_Siga), 'gs', label='$<\\Sigma_{IA}^a>$')
+	plt.loglog(pa.fudge_frac_level,  np.sqrt(StoNstat) / np.sqrt(StoN_Siga), 's', color='#FFA500', label='$<\\Sigma_{IA}^a>$')
 	plt.hold(True)
-	plt.loglog(pa.fudge_frac_level, np.sqrt(StoNstat) / np.sqrt(StoN_Sigb), 'g^', label='$<\\Sigma_{IA}^b>$')
-	plt.xlabel('Fractional error', fontsize=18)
-	plt.ylabel('$\\frac{S/N_{\\rm stat}}{S/N_{\\rm sys}}$', fontsize=18)
-	plt.tick_params(axis='both', which='major', labelsize=14)
-	plt.tick_params(axis='both', which='minor', labelsize=14)
+	plt.loglog(pa.fudge_frac_level, np.sqrt(StoNstat) / np.sqrt(StoN_Sigb), '^', color='#FFA500', label='$<\\Sigma_{IA}^b>$')
+	plt.hold(True)
+	plt.loglog(pa.fudge_frac_level, np.sqrt(SNstat_squared_ncorr) / np.sqrt(SNsys_squared_ncorr), 'mo', label='$N_{\\rm corr}$, $a=0.7$')
+	plt.axhline(y=1, color='k', linewidth=2, linestyle='--')
+	plt.xlabel('Fractional error', fontsize=25)
+	plt.ylabel('$\\frac{S/N_{\\rm stat}}{S/N_{\\rm sys}}$', fontsize=25)
+	plt.tick_params(axis='both', which='major', labelsize=18)
+	plt.tick_params(axis='both', which='minor', labelsize=18)
 	plt.xlim(0.008, 2.)
+	plt.legend(ncol=3, numpoints=1, fontsize=18)
 	plt.ylim(0.00005, 500)
-	plt.legend(ncol=3, numpoints=1)
-	plt.savefig('./plots/NoiseSysToNoiseStat_Blazek_survey='+SURVEY+'_NAM_deltaz='+str(pa.delta_z)+'.pdf')
+	plt.tight_layout()
+	plt.savefig('./plots/NoiseSysToNoiseStat_Blazek_survey='+SURVEY+'_NAM_deltaz='+str(pa.delta_z)+'.png')
 	plt.close()
 
 exit()
