@@ -6,10 +6,11 @@ run_quants		=	False
 survey 			=	'LSST_DESI'
 
 # Parameters associated with the sample / shape noise calcuation 
-e_rms_Bl_a 		= 	0.18 # rms ellipticity of sample a, Blazek method. 1/sqrt(2) * percomponent value (=0.26) given on confluence page for LSST forecasts.  # MAYBE THIS SHOULD BE 0.26??
-e_rms_Bl_b		=	0.18 # rms ellipticity of sample b, Blazek method. Source, same as previous line. # MAYBE THIS SHOULD BE 0.26??
-e_rms_a 		= 	0.175 # rms ellipticity of sample measured with method a, shapes method  # I THINK I SHOULD ACTUALLY BE RUNNING WITH THESE THE SAME FOR BOTH METHODS?
-e_rms_b 		= 	0.185 # rms ellipticity of sample measured with method b, shapes method
+e_rms_Bl_a 		= 	0.26 # rms ellipticity of sample a, Blazek method.  percomponent value (=0.26) given on confluence page for LSST forecasts, see Chang et al. 2013
+e_rms_Bl_b		=	0.26 # rms ellipticity of sample b, Blazek method. Source, same as previous line. 
+e_rms_Bl_full	= 	0.26
+e_rms_a 		= 	0.26 # rms ellipticity of sample measured with method a, shapes method  # I THINK I SHOULD ACTUALLY BE RUNNING WITH THESE THE SAME FOR BOTH METHODS?
+e_rms_b 		= 	0.26 # rms ellipticity of sample measured with method b, shapes method
 n_l 			= 	300. # The number of lenses in the lens sample per square DEGREE. DESI Final Design Report, top of page 52. 
 Area_l 			=	3000. # Area associated with the lens sample in square DEGREES. Overlap with LSST given in "Spectroscopic Needs for Calibration of LSST Photometric Redshifts" whitepaper.
 fsky			=   Area_l / 41253. # Assumes the lens area is the limiting factor
@@ -58,6 +59,12 @@ boost_assoc = 0.268
 boost_close = 0.118
 boost_far = 0.000866
 
+# With deltaz = 0.17, on August 10, 2017, with extended lens redshift
+# SIGMA E NOT YET FIXED, DO NOT USE THESE VALES. 
+#boost_assoc = 0.71  # 0.709571329575
+#boost_far = 0.002   # 0.0021131836633
+#boost_close = 0.20  # 0.201672364672
+
 # Parameters associated with the projected radial bins
 rp_max 	=	20.0 # The maximum projected radius (Mpc/h)
 rp_min	=	0.05 # The minimum projected radius (Mpc/h)
@@ -80,6 +87,10 @@ boost_sys	=	1.03 # Multiplier for the boost systematic error. This is the value 
 
 # Parameters related to the spec and photo z's of the source sample and other redshift cuts.
 zeff 	= 	0.77  # The effective redshift of the lens sample. Estimated from Figure 3.8 (COSMOS photo-z estimate) of the DESI final design report, see ./plotting_scripts/DESI_zeff.ipynb
+zLmin	=	0.025   # From same figure as above
+zLmax	=	1.175   # From same figure as above. 
+dNdzL_file	=	'DESI_redshifts_2col.txt'
+
 close_cut = 100 # Mpc/h # The maximum separation from a lens to consider part of `rand-close', in Mpc/h.
 #Blazek et al. case
 zsmin 	=	0.0
@@ -105,13 +116,15 @@ c=2.99792458*10**(8)
 
 # Cosmological parameters:
 Nnu	=	3.046    # Massless neutrinos
-HH0 = 	70. #67.26 #72
+HH0 = 67.26 
 OmR	=	2.47*10**(-5)/(HH0/100.)**2
 OmN	=	Nnu*(7./8.)*(4./11.)**(4./3.)*OmR
-OmB	=	0.05 #0.02222/(HH0/100.)**2 #0.046
-OmC	=	0.2 #0.1199/(HH0/100.)**2 #0.236
-OmM=  	OmB+OmC
+OmB	=	0.02222/(HH0/100.)**2 
+OmC	=	0.1199/(HH0/100.)**2 
+OmM=  OmB+OmC
 H0	=	10**(5)/c
+A_s	=	2.2 * 10**(-9)
+n_s	=	0.9652
 
 # Parameters for getting the fiducial gamma_IA
 # 2 halo term parmaeters

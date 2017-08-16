@@ -133,7 +133,8 @@ def get_NofZ_unnormed(dNdzpar, dNdztype, z_min, z_max, zpts):
 		# dNdz takes form like in Nakajima et al. 2011 equation 3
 		a = dNdzpar[0]
 		zs = dNdzpar[1]
-		nofz_ = (z / zs)**(a-1) * np.exp( -0.5 * (z / zs)**2)	
+	
+		nofz_ = (z / zs)**(a-1.) * np.exp( -0.5 * (z / zs)**2)
 	elif (dNdztype == 'Smail'):
 		# dNdz take form like in Smail et al. 1994
 		alpha = dNdzpar[0]
@@ -145,4 +146,50 @@ def get_NofZ_unnormed(dNdzpar, dNdztype, z_min, z_max, zpts):
 		exit()
 
 	return (z, nofz_)
+	
+def get_dNdzL(zvec, survey):
+	""" Imports the lens redshift distribution from file, normalizes, interpolates, and outputs at the z vector that's passed."""
+	
+	if (survey == 'SDSS'):
+		import params as pa
+	elif (survey == 'LSST_DESI'):
+		import params_LSST_DESI as pa
+	else:
+		print "We don't have support for that survey yet; exiting."
+		exit()
+		
+	z, dNdz = np.loadtxt('./txtfiles/'+pa.dNdzL_file, unpack=True)
+	
+	#plt.figure()
+	#plt.plot(z, dNdz, 'mo')
+	#plt.savefig('./plots/dNdzl_load_'+survey+'.pdf')
+	#plt.close()
+	
+	interpolation = scipy.interpolate.interp1d(z, dNdz)
+	
+	# Create a well-sampled redshift vector to make sure we can get the normalization without numerical problems
+	z_highres = np.linspace(z[0], z[-1], 1000)
+	
+	dNdz_getnorm = interpolation(z_highres)
+	
+	#plt.figure()
+	#plt.plot(z_highres, dNdz_getnorm, 'mo')
+	#plt.savefig('./plots/dNdzl_highres_'+survey+'.pdf')
+	#plt.close()
+	
+	norm = scipy.integrate.simps(dNdz_getnorm, z_highres)
+	
+	if ((zvec[0]>=z[0]) and (zvec[-1]<=z[-1])):
+		dNdz_return = interpolation(zvec)
+	else:
+		print "You have asked for dN/dzl at redshifts out of the known range."
+		exit()
+		
+	#plt.figure()
+	#plt.plot(zvec, dNdz_return / norm , 'mo')
+	#plt.savefig('./plots/dNdzl_afterinterp_'+survey+'.pdf')
+	#plt.close()
+	
+	
+	return dNdz_return / norm
 	

@@ -6,10 +6,11 @@ run_quants 		=	False # For the Blazek case, whether you want to recompute F, cz,
 survey			=	'SDSS'
 
 # Parameters associated with the sample / shape noise calcuation 
-e_rms_Bl_a 		= 	0.3 # rms ellipticity of sample a, Blazek method  # I JUST MADE THIS UP AT SOME POINT, NEED TO RE-RUN WITH THE PROPER VALUE! 
-e_rms_Bl_b		=	0.3 # rms ellipticity of sample b, Blazek method
-e_rms_a 		= 	0.29 # rms ellipticity of sample measured with method a, shapes method  # I THINK I SHOULD ACTUALLY BE RUNNING WITH THESE THE SAME FOR BOTH METHODS?
-e_rms_b 		= 	0.31 # rms ellipticity of sample measured with method b, shapes method
+e_rms_Bl_a 		= 	0.21 # rms ellipticity of sample a, Blazek method   # from Reyes et al. 2012 (reports in terms of distortion = 0.36)
+e_rms_Bl_b		=	0.21 # rms ellipticity of sample b, Blazek method
+e_rms_Bl_full	=	0.21 # rms ellipticity of the full sample, Blazek method
+e_rms_a 		= 	0.21 # rms ellipticity of sample measured with method a, shapes method  
+e_rms_b 		= 	0.21 # rms ellipticity of sample measured with method b, shapes method
 n_l 			= 	8.7 # The number of lenses in the lens sample per square DEGREE
 Area_l 			=	7131 # Area associated with the lens sample in square DEGREES
 fsky			=   Area_l / 41253. # Assumes the lens area is the limiting factor
@@ -24,9 +25,14 @@ N_shapes		= 	Area_l * n_s * 3600 # Number of galaxies in the shape sample.
 # The factor by which the (boost-1) is proportional to the projected correlation function at 1 Mpc/h, for different source samples.
 # THESE DEPEND ON THE SAMPLE VIA THE P(Z_S, Z_P) PROPERTIES.
 # Currently set for SDSS LRGS / shapes.
-boost_assoc = 0.2 
-boost_far = 0.03
-boost_close = 0.1
+#boost_assoc = 0.2 
+#boost_far = 0.03
+#boost_close = 0.1
+
+# From get_boost_amplitudes zLextended
+boost_assoc = 0.029
+boost_far = 0.0028
+boost_close = 0.019
 
 # Parameters associated with the projected radial bins
 rp_max 	=	20.0 # The maximum projected radius (Mpc/h)
@@ -46,8 +52,12 @@ pzpar_fid 	=	[sigz_fid] # Make this a list to make it more generic to pass aroun
 boost_sys	=	1.03 # Multiplier for the boost systematic error. This value is given in Blazek et al. 2012.
 
 # Parameters related to the spec and photo z's of the source sample and other redshift cuts.
-zeff 	= 	0.28  # The effective redshift of the lens sample
-close_cut = 100 # Mpc/h # The maximum separation from a lens to consider part of `rand-close', in Mpc/h
+zeff 	= 	0.28  # See table 1, Kazin 2010, 0908.2598, DR7-Dim sample. 
+zLmin	= 	0.16  # See Kazin 2010
+zLmax	=	0.36  # See Kazin 2010. 
+dNdzL_file	=  'SDSS_LRG_DR7dim_nofz.txt'
+
+close_cut = 100. # Mpc/h # The maximum separation from a lens to consider part of `rand-close', in Mpc/h
 #Blazek et al. case
 zsmin 	=	0.0
 zsmax 	= 	3.0
@@ -81,25 +91,25 @@ Msun = 1.989*10**30 # in kg
 Gnewt = 6.67408*10**(-11)
 c=2.99792458*10**(8)
 
-# Cosmological parameters:
+# Cosmological parameters. Planck 2015 results XIII: cosmological parameters. Table 1, column 6.
 Nnu	=	3.046    # Massless neutrinos
-HH0 = 70. #67.26 #72
+HH0 = 67.26 
 OmR	=	2.47*10**(-5)/(HH0/100.)**2
 OmN	=	Nnu*(7./8.)*(4./11.)**(4./3.)*OmR
-OmB	=	0.05 #0.02222/(HH0/100.)**2 #0.046
-OmC	=	0.2 #0.1199/(HH0/100.)**2 #0.236
+OmB	=	0.02222/(HH0/100.)**2 
+OmC	=	0.1199/(HH0/100.)**2 
 OmM=  OmB+OmC
 H0	=	10**(5)/c
+A_s	=	2.2 * 10**(-9)
+n_s	=	0.9652
 
 # Parameters for getting the fiducial gamma_IA
 # 2 halo term parmaeters
 sigz_gwin = 0.0001 
 kpts_wgg = 10000
 kpts_wgp = 2000
-bs_Bl = 1. # SDSS shape sample - "garden variety" galaxies.
-bs_shapes = 1. # SDSS shape sample - "garden variety" galaxies.
-bd_Bl = 2.07 #1.77 # 
-bd_shapes = 2.07 #1.77
+bs = 1. # SDSS shape sample - "garden variety" galaxies.
+bd = 2.07 #1.77 # 
 Ai_Bl = 0.47 # assumes SDSS shapes have mean abs mag -19.5
 Ai_shapes = 0.47
 #Ai_Bl = 0.25 # SDSS shape sample has luminosity ~ SDSS L4 aka M_r ~ [-20 -> -19], aka much fainter than LOWZ. This Ai computed by using this M_r in eqn 34 of Singh 2014 (pwr law A_i(L_r)).
