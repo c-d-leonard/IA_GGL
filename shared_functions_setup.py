@@ -127,7 +127,7 @@ def p_z(z_ph, z_sp, pzpar, pztype):
 def get_NofZ_unnormed(dNdzpar, dNdztype, z_min, z_max, zpts):
 	""" Returns the dNdz of the sources as a function of photometric redshift, as well as the z points at which it is evaluated."""
 
-	z = scipy.linspace(z_min+0.0001, z_max, zpts)
+	z = scipy.linspace(z_min, z_max, zpts)
 	
 	if (dNdztype == 'Nakajima'):
 		# dNdz takes form like in Nakajima et al. 2011 equation 3

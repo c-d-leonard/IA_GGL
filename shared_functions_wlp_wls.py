@@ -1,4 +1,4 @@
-# This file contains functions for getting w_{l+} w_{ls} which are shared between the Blazek et al. 2012 method and the multiple shape measurements method.
+# This file contains functions for getting w_{l+} w_{ls} which are shared between the Blazek et al. 2012 method and the multiple-shape-measurements method.
 
 import scipy.integrate
 import matplotlib.pyplot as plt
@@ -13,7 +13,7 @@ import pyccl as ccl
 # Functions shared between w_{l+} and w_{ls}
 
 def window(survey):
-	""" Get window function for w_{l+} and w_{ls} 2-halo terms. In both cases, deals with the window functions for LENSES x SOURCES. """
+	""" Get window function for w_{l+} and w_{ls} 2-halo terms. In both cases, this is the window functions for LENSES x SOURCES. """
 	
 	if (survey == 'SDSS'):
 		import params as pa
@@ -23,78 +23,20 @@ def window(survey):
 		print "We don't have support for that survey yet; exiting."
 		exit()
 	
-	# FOR INCLUDING AN EXTENDED LENS DISTRIBUTION - IF THE DISTRIBUTION WE WANT TO INCLUDE IS NOT A GAUSSIAN, WE WOULD NEED TO CHANGE THESE NEXT FEW LINES. 
-	sigz = pa.sigz_gwin  # This is a very small value to basically set the lenses to a delta function.
-	z = scipy.linspace(pa.zeff-5.*sigz, pa.zeff+5.*sigz, 50)
-	dNdz_1 = 1. / np.sqrt(2. * np.pi) / sigz * np.exp(-(z-pa.zeff)**2 / (2. *sigz**2)) # Lens distribution - a very narrow Gaussian about the effective redshift.
+	z = np.linspace(pa.zLmin, pa.zLmax, 100)
+	dNdz_1 = setup.get_dNdzL(z, survey)
 	
 	chi = setup.com(z, survey)
 	OmL = 1. - pa.OmC - pa.OmB - pa.OmR - pa.OmN
 	dzdchi = pa.H0 * ( (pa.OmC+pa.OmB)*(1+z)**3 + OmL + (pa.OmR+pa.OmN) * (1+z)**4 )**(0.5)
 	
-	(z, dNdz_2) = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, pa.zeff-5.*sigz, pa.zeff+5.*sigz, 50)  
+	(z, dNdz_2) = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, pa.zLmin, pa.zLmax, 100)  
 		
 	norm = scipy.integrate.simps(dNdz_1*dNdz_2 / chi**2 * dzdchi, z)
 	
 	win = dNdz_1*dNdz_2 / chi**2 * dzdchi / norm
 	
 	return (z, win )
-
-def get_Pk(z_,survey):
-	""" Calls camb and returns the nonlinear halofit power spectrum for the current cosmological parameters and at the redshifts of interest. Returns a 2D array in k and z."""
-	
-	if (survey == 'SDSS'):
-		import params as pa
-	elif (survey == 'LSST_DESI'):
-		import params_LSST_DESI as pa
-	else:
-		print "We don't have support for that survey yet; exiting."
-		exit()
-	
-	# The redshifts have to be in a certain order to make camb happy:
-	z_list = list(z_)
-	z_list.reverse()
-	z_rev = np.asarray(z_list)
-	
-	cambfolderpath = '/home/danielle/Documents/CMU/camb'
-	param_string='output_root=IA_shapes\nombh2='+str(pa.OmB * (pa.HH0/100.)**2)+'\nomch2='+str(pa.OmC* (pa.HH0/100.)**2)+'\nhubble='+str(pa.HH0)+'\ntransfer_num_redshifts='+str(len(z_))
-			
-	for zi in range(0, len(z_rev)):
-		param_string += '\ntransfer_redshift('+str(zi+1)+') = '+str(z_rev[zi])+ '\ntransfer_matterpower('+str(zi+1)+') = matterpower_z='+str(z_rev[zi])+'.dat'	
-		
-	
-	tempfile=open(cambfolderpath+'/params_string.dat','w')
-	tempfile.write(param_string)
-	tempfile.close()
-
-	paramsnewfilename='/params_IA_fid.ini'
-	
-	params_new=open(cambfolderpath+paramsnewfilename, 'w')
-	shutil.copyfileobj(open(cambfolderpath+'/params_base.dat', 'r'), params_new)
-	shutil.copyfileobj(open(cambfolderpath+'/params_string.dat', 'r'), params_new)
-	params_new.close()
-	
-	#Now write the script to run camb for this set of parameters:
-	
-	temp_camb=open('./runcamb_temp.sh', 'w')
-	temp_camb.write('./camb params_IA_fid.ini')
-	temp_camb.close()
-	run_camb_now=open('./runcambnow.sh', 'w')
-	shutil.copyfileobj(open('./runcamb_base.sh', 'r'), run_camb_now)
-	shutil.copyfileobj(open('./runcamb_temp.sh', 'r'), run_camb_now)
-	run_camb_now.close()
-	
-	subprocess.call('./fix_permission.sh')
-	subprocess.call('./runcambnow.sh')
-	
-	# Load one to get the length in k:
-	(k, P) = np.loadtxt(cambfolderpath+'/IA_shapes_matterpower_z='+str(z_[0])+'.dat',unpack=True)
-	
-	Pofkz = np.zeros((len(z_),len(k))) 
-	for zi in range(0,len(z_)):
-		k, Pofkz[zi, :] = np.loadtxt(cambfolderpath+'/IA_shapes_matterpower_z='+str(z_[zi])+'.dat', unpack=True)
-	
-	return (k, Pofkz)
 
 # Functions to get the 1halo term of w_{l+}
 
@@ -177,18 +119,14 @@ def wgp_1halo(rp_c_, bd, Ai, ah, q11, q12, q13, q21, q22, q23, q31, q32, q33, sa
 	for ki in range(0,len(k)):
 		zint[ki] = scipy.integrate.simps(P1h[ki, :] * w , z)
 		
-	#plot_quant_vs_quant(k, zint, './zint.png')
-		
 	# Now do the integral in k
 	ans = np.zeros(len(rp_c_))
 	for rpi in range(0,len(rp_c_)):
 		integrand = k * zint * scipy.special.j0(rp_c_[rpi] * k)
 		ans[rpi] = scipy.integrate.simps(integrand, k)
-		#ans[rpi] = scipy.integrate.simps(k * P1h * scipy.special.j0(rp_c_[rpi] * k), k)
 		
 	# Set this to zero above about 2 * virial radius (I've picked this value somewhat aposteriori, should do better). This is to not include 1halo contributions well outside the halo.
 	Rvir = Rhalo(10**16, survey)
-	print "ASSUMING 10**16 FOR RMAX IN WGP1H"
 
 	for ri in range(0,len(rp_c_)):
 		if (rp_c_[ri]> 2.*Rvir):
@@ -224,9 +162,14 @@ def wgp_2halo(rp_cents_, bd, Ai, savefile, survey):
 	# Get the redshift window function
 	z_gp, win_gp = window(survey)
 	
-	# REPLACE THIS WILL A CALL TO CCL. 
-	# Get the required matter power spectrum from camb 
-	(k_gp, P_gp) = get_Pk(z_gp, survey)
+	# Get the required matter power spectrum from CCL
+	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = pa.A_s, n_s=pa.n_s)
+	cosmo = ccl.Cosmology(p)
+	h = (pa.HH0/100.)
+	k_gp = np.logspace(-5., 7., 100000)
+	P_gp = np.zeros((len(z_gp), len(k_gp)))
+	for zi in range(0,len(z_gp)):
+		P_gp[zi, :] = h**3 * ccl.nonlin_matter_power(cosmo, k_gp * h , 1./(1.+z_gp[zi])) # CCL takes units without little h's, but we use little h units.
 	
 	# Get the growth factor
 	D_gp = growth(z_gp, survey)
@@ -287,34 +230,34 @@ def wgp_full(rp_c, bd, Ai, ah, q11, q12, q13, q21, q22, q23, q31, q32, q33, save
 	
 	wgp_tot = wgp_1h + wgp_2h 
 	
-	#plt.figure()
-	#plt.loglog(rp_c, wgp_1h, 'go')
-	#plt.xlim(0.05, 30.)
-	#plt.ylim(0.01, 30)
-	#plt.title('$w_{gp}$, 1halo')
-	#plt.ylabel('$w_{gp}$, Mpc/h')
-	#plt.xlabel('$r_p$, Mpc/h')
-	#plt.savefig('./plots/wgp_1h_LRG.pdf')
-	#plt.close()
+	plt.figure()
+	plt.loglog(rp_c, wgp_1h, 'go')
+	plt.xlim(0.05, 30.)
+	plt.ylim(0.01, 30)
+	plt.title('$w_{gp}$, 1halo')
+	plt.ylabel('$w_{gp}$, Mpc/h')
+	plt.xlabel('$r_p$, Mpc/h')
+	plt.savefig('./plots/wgp_1h_LRG_extl_survey='+survey+'.pdf')
+	plt.close()
 	
-	#plt.figure()
-	#plt.loglog(rp_c, wgp_2h, 'go')
-	#plt.xlim(0.1, 200.)
-	#plt.ylim(0.01, 30)
-	#plt.ylabel('$w_{gp}$, Mpc/h, com')
-	#plt.xlabel('$r_p$, Mpc/h')
-	#plt.title('$w_{gp}$, 2halo')
-	#plt.savefig('./plots/wgp_2h_LRG.pdf')
-	#plt.close()
+	plt.figure()
+	plt.loglog(rp_c, wgp_2h, 'go')
+	plt.xlim(0.1, 200.)
+	plt.ylim(0.01, 30)
+	plt.ylabel('$w_{gp}$, Mpc/h, com')
+	plt.xlabel('$r_p$, Mpc/h')
+	plt.title('$w_{gp}$, 2halo')
+	plt.savefig('./plots/wgp_2h_LRG_extl_survey='+survey+'.pdf')
+	plt.close()
 	
-	#plt.figure()
-	#plt.loglog(rp_c, wgp_tot, 'go')
-	#plt.xlim(0.05, 30.)
-	#plt.ylabel('$w_{gp}$, Mpc/h')
-	#plt.title('$w_{gp}$, 1halo+2halo')
-	#plt.xlabel('$r_p$, Mpc/h')
-	#plt.savefig(plotfile)
-	#plt.close()
+	plt.figure()
+	plt.loglog(rp_c, wgp_tot, 'go')
+	plt.xlim(0.05, 30.)
+	plt.ylabel('$w_{gp}$, Mpc/h')
+	plt.title('$w_{gp}$, 1halo+2halo')
+	plt.xlabel('$r_p$, Mpc/h')
+	plt.savefig(plotfile)
+	plt.close()
 	
 	return wgp_tot
 
@@ -377,34 +320,10 @@ def rho_NFW(r_, M_insol, survey):
 	
 	rho_nfw = rhos  / ( (cv * r_ / Rv) * (1. + cv * r_ / Rv)**2) 
 	
-	#plt.figure()
-	#plt.loglog(r_ *1000, rho_nfw *  (pa.HH0/100.)**3 / (10**6)**3 )
-	#plt.ylim(10**(-6), 10**4)
-	#plt.xlim(0.01, 2000.)
-	#plt.xlabel('$r$, comoving')
-	#plt.savefig('./plots/nfw_vandeVen_lowmass.png')
-	#plt.close()
-	
-	#plt.figure()
-	#plt.loglog(r_ *1000 / (pa.HH0 /100.), rho_nfw *  (pa.HH0/100.)**3 / (10**6)**3 )
-	#plt.ylim(10**(-6), 10**4)
-	#plt.xlim(0.03, 2000.)
-	#plt.savefig('./plots/nfw_Mandelbaun2006.png')
-	#plt.close()
-	
-	#plt.figure()
-	#plt.loglog(r_ , rho_nfw  )
-	#plt.ylim(10**(11), 2.*10**18)
-	#plt.xlim(0.001, 3)
-	#plt.savefig('./plots/nfw_Singh2014_z=0.28.png')
-	#plt.close()
-	
 	return rho_nfw
 
 def wgg_1halo_Four(rp_cents_, fsat, fsky, savefile, survey):
 	""" Gets the 1halo term of wgg via Fourier space, to account for central-satelite pairs and satelite-satelite pairs. """
-	
-	# THIS DOESN'T CURRENTLY HAVE SUPPORT FOR AN EXTENDED LENS DISTRIBUTION. 
 	
 	if (survey == 'SDSS'):
 		import params as pa
@@ -418,21 +337,18 @@ def wgg_1halo_Four(rp_cents_, fsat, fsky, savefile, survey):
 	# Compute P_{gg}^{1h}(k)
 	kvec_FT = np.logspace(logkmin, logkmax, kpts)
 	
-	#print "Before getting P_{gg}(k)"
+	# If we don't yet have Pk / xi: uncomment these lines.
 	#Pk = get_Pkgg_1halo(kvec_FT, fsat, fsky, Mmax, survey) # Gets the 1halo galaxy power spectrum including c-s and s-s terms. Pass rvec because need to get rho_NFW in here.
-	#(k_dummy, Pk) = np.loadtxt('./txtfiles/Pkgg_1h_dndM.txt', unpack=True)
-	#print "We've now computed Pkgg - exiting now, get the fourier transform via external fft log and load result."
 	#exit()
 	
-	# This function loads the xi_{gg}1h function computed from FFTlog externally
-	# TO INCLUDE AN EXTENDED LENS REDSHIFT DISTRIBUTION WE WILL REMOVE THE ZEFF ARGUMENT HERE - THE PKGG WILL ALREADY BE INTEGRATED OVER LENS WHEN IMPORTED HERE.
-	(rvec_xi, xi_gg_1h) = get_xi_1h(pa.zeff)
+	# This function loads the xi_{gg}1h function computed from FFTlog externallyE.
+	(rvec_xi, xi_gg_1h) = get_xi_1h(survey)
 	
-	#plt.figure()
-	#plt.loglog(rvec_xi, xi_gg_1h, 'm+')
-	#plt.xlim(10**(-4), 10**3)
-	#plt.savefig('./plots/xigg_dndMtest_FFTlog_logkmin='+str(logkmin)+'_logkmax='+str(logkmax)+'_kpts='+str(kpts)+'rpts1e6_loginterp.pdf')
-	#plt.close()
+	plt.figure()
+	plt.loglog(rvec_xi, xi_gg_1h, 'm+')
+	plt.xlim(10**(-4), 10**3)
+	plt.savefig('./plots/xigg_1h_extl_survey='+survey+'.pdf')
+	plt.close()
 	
 	# Get the max R associated to our max M
 	Rmax = Rhalo(10**Mmax, survey)
@@ -468,21 +384,15 @@ def wgg_1halo_Four(rp_cents_, fsat, fsky, savefile, survey):
 	
 	return wgg_1h
 	
-def get_xi_1h(z):
+def get_xi_1h(survey):
 	""" Returns the 1 halo galaxy correlation function including cen-sat and sat-sat terms, from the power spectrum via Fourier transform."""
-	# THIS FUNCTION WILL NEED TO BE MODIFIED TO INCLUDE AN EXTENDED LENS DISTRIBUTION SUCH THAT A) THE LENS REDSHIFT IS NOT AN ARGUMENT AND B) THE FILE NAME REFLECTS THE CORR FUNCTION COMPUTED FROM THE ALREADY-INTEGRATED-OVER-W(Z) POWER SPECTRUM. 
 	
-	(r, xi) = np.loadtxt('./txtfiles/xi_z='+str(z)+'.txt', unpack=True)
-	
-	#xi = np.zeros(len(r))
-	#for ri in range(0,len(r)):
-	#	xi[ri] = scipy.integrate.simps(Pofk * kvec**2 * np.sin(kvec*r[ri]) / (kvec * r[ri]) / 2. / np.pi**2 , kvec)
+	(r, xi) = np.loadtxt('./txtfiles/xi_survey='+survey+'_extl.txt', unpack=True)
 	
 	return (r, xi)
 	
 def get_Pkgg_1halo(kvec_ft, fsat, fsky, Mmax, survey):
 	""" Returns the 1halo galaxy power spectrum with c-s and s-s terms"""
-	# TO INCORPORATE AN EXTENDED LENS REDSHIFT DISTRIBUTION, NEED TO CHANGE THIS FUNCTION TO AVERAGE IN Z OVER THE WINDOW FUNCTION.
 	
 	if (survey == 'SDSS'):
 		import params as pa
@@ -492,17 +402,20 @@ def get_Pkgg_1halo(kvec_ft, fsat, fsky, Mmax, survey):
 		print "We don't have support for that survey yet; exiting."
 		exit()
 		
-	# TO INCLUDE EXTENDED LENS DISTRIBUTION: NEED TO CALL 'WINDOW' HERE AND USING THE RESULTING Z-VEC BELOW
+	# Get the combined redshift window function of lens and source samples.
+	(z, W_z) = window(survey)
 	
 	Mhalo = np.logspace(9., Mmax, 30)
 	# Get the lower stellar mass cutoff for source satelites corresponding to the total empirical volume density of the source sample:
 	tot_nsrc = vol_dens(pa.fsky, pa.N_shapes, survey)
 	Mstarlow = get_Mstar_low(survey, tot_nsrc)
 	
+	# Get the halo mass function from CCL
 	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = 2.1*10**(-9), n_s=0.96)
 	cosmo = ccl.Cosmology(p)
-	# TO INCLUDE EXTENDED REDSHIFT DISTRIBUTION FOR LENSES: THIS WILL NEED TO BE A FUNCTION OF Z
-	HMF = ccl.massfunction.massfunc(cosmo, Mhalo / (pa.HH0/100.), 1./ (1. + pa.zeff), odelta=200.)
+	HMF = np.zeros((len(Mhalo), len(z)))
+	for zi in range(0,len(z)):
+		HMF[:, zi] = ccl.massfunction.massfunc(cosmo, Mhalo / (pa.HH0/100.), 1./ (1. + z[zi]), odelta=200.)
 	
 	# We're going to use, for the centrals and satelite lenses, either the Reid & Spergel 2008 HOD (SDSS LRGs) or the CMASS More et al. 2014 HOD (DESI LRGS).
 	# For the satellite sources, we use either the Zu & Mandelbaum 2015 model (SDSS shape sample) or the CMASS HOD again. We assume none of the sources are centrals in galaxies with satellites from the lenses.
@@ -516,13 +429,11 @@ def get_Pkgg_1halo(kvec_ft, fsat, fsky, Mmax, survey):
 		Nsat_lens = get_Nsat(Mhalo, 'nonsense', survey) # CMASS for both
 		Nsat_src = get_Nsat(Mhalo, 'nonsense', survey)  # CMASS for both
 		
-	
-	
 	# Get the number density predicted by the halo model (not the one for the actual survey)
-	# TO INCLUDE AND EXTENDED REDSHIFT DISTRIBUTION, NEED TO MAKE THESE BOTH FUNCTIONS OF Z (VIA HMF)
-	tot_ng = scipy.integrate.simps( ( Ncen_lens + Nsat_lens) * HMF, np.log10(Mhalo / (pa.HH0/100.) ) ) / (pa.HH0 / 100.)**3
-	tot_nsrc_sat = scipy.integrate.simps(( Nsat_src ) * HMF, np.log10(Mhalo / (pa.HH0/100.) ) ) / (pa.HH0 / 100.)**3
-	print "nsrc=", tot_nsrc, "nlens=", tot_ng, "tot nsrc check=", tot_nsrc_sat
+	tot_ng = np.zeros(len(z)); tot_nsrc_sat=np.zeros(len(z))
+	for zi in range(0, len(z)):
+		tot_ng[zi] = scipy.integrate.simps( ( Ncen_lens + Nsat_lens) * HMF[:, zi], np.log10(Mhalo / (pa.HH0/100.) ) ) / (pa.HH0 / 100.)**3
+		tot_nsrc_sat[zi] = scipy.integrate.simps(( Nsat_src ) * HMF[:, zi], np.log10(Mhalo / (pa.HH0/100.) ) ) / (pa.HH0 / 100.)**3
 	
 	# Get the density of matter in comoving coordinates
 	rho_crit = 3. * 10**10 * pa.mperMpc / (8. * np.pi * pa.Gnewt * pa.Msun)  # Msol h^2 / Mpc^3, for use with M in Msol / h (comoving distances)
@@ -530,7 +441,7 @@ def get_Pkgg_1halo(kvec_ft, fsat, fsky, Mmax, survey):
 	
 	#alpha_sq = get_alpha_sq(Mhalo) # The number which accounts for deviation from Poisson statisticsal
 	alpha_sq = np.ones(len(Mhalo))
-	print "alpha=", alpha_sq
+	print "WE ARE USING ALPHA=1 IN PKGG - IS THIS RIGHT?"
 	NcNs = NcenNsat(alpha_sq, Ncen_lens, Nsat_src) # The average number of central-satelite pairs in a halo of mass M
 	NsNs = NsatNsat(alpha_sq, Nsat_lens, Nsat_src) # The average number of satelite-satelite pairs in a halo of mass M
 	
@@ -540,29 +451,24 @@ def get_Pkgg_1halo(kvec_ft, fsat, fsky, Mmax, survey):
 	# Get ingredients we need here:
 	y = gety(Mhalo, kvec_short, survey) # Mass-averaged Fourier transform of the density profile
 
-	# TO INCLUDE AND EXTENDED REDSHIFT DISTRIBUTION FOR LENSES, THIS WILL BECOME PKGG(K,Z), Z INCLUDED VIA HMF, TOT_NSRC_SAT, TOT_NG
-	Pkgg = np.zeros(len(kvec_short))
+	# Get Pkgg in terms of z and k
+	Pkgg = np.zeros((len(kvec_short), len(z)))
 	for ki in range(0,len(kvec_short)):
-		Pkgg[ki] = scipy.integrate.simps( HMF * (NcNs * y[ki, :] + NsNs * y[ki, :]**2), np.log10(Mhalo / (pa.HH0/100.)  )) / (tot_nsrc_sat * tot_ng) / (pa.HH0 / 100.)**3
-		print "k=", kvec_short[ki], "Pkgg=", Pkgg[ki]
+		for zi in range(0,len(z)):
+			Pkgg[ki, zi] = scipy.integrate.simps( HMF[:, zi] * (NcNs * y[ki, :] + NsNs * y[ki, :]**2), np.log10(Mhalo / (pa.HH0/100.)  )) / (tot_nsrc_sat[zi] * tot_ng[zi]) / (pa.HH0 / 100.)**3
+
+	# Now integrate this over the window function
+	Pkgg_zavg = np.zeros(len(kvec_short))
+	for ki in range(0,len(kvec_short)):
+		Pkgg_zavg[ki] = scipy.integrate.simps(W_z * Pkgg[ki, :], z)
 	
-	plt.figure()
-	plt.loglog(kvec_short, 4* np.pi * kvec_short**3 * Pkgg / (2* np.pi)**3, 'mo')
-	plt.ylim(0.001, 100000)
-	plt.xlim(0.01, 10000)
-	plt.ylabel('$4\pi k^3 P_{gg}^{1h}(k)$, $(Mpc/h)^3$, com')
-	plt.xlabel('$k$, h/Mpc, com')
-	plt.savefig('./plots/Pkgg_1halo_HMFint_Mmax15_CMASS.pdf')
-	plt.close()
-	
-	# TO INCLUDE AN EXTENDED REDSHIFT DISTRIBUTION FOR LENSES WE WILL NEED TO INTEGRATE OVER THE FUNCTION OUTPUT BY 'WINDOW' HERE.
-	
-	Pkgg_interp = scipy.interpolate.interp1d(np.log(kvec_short), np.log(Pkgg))
+	# Get the answer in terms of the full k vector for fourier transforming.
+	Pkgg_interp = scipy.interpolate.interp1d(np.log(kvec_short), np.log(Pkgg_zavg))
 	logPkgg = Pkgg_interp(np.log(kvec_ft))
 	Pkgg = np.exp(logPkgg)
 	
 	Pkgg_save = np.column_stack((kvec_ft, Pkgg))
-	np.savetxt('./txtfiles/Pkgg_1h_dndM_'+survey+'.txt', Pkgg_save)
+	np.savetxt('./txtfiles/Pkgg_1h_dndM_'+survey+'_extl.txt', Pkgg_save)
 	
 	plt.figure()
 	plt.loglog(kvec_ft, 4* np.pi * kvec_ft**3 * Pkgg / (2* np.pi)**3, 'mo')
@@ -777,15 +683,12 @@ def gety(Mvec, kvec_gety, survey):
 	rvec = [0]*len(Mvec)
 	rho = [0]*len(Mvec)
 	for Mi in range(0,len(Mvec)):
-		print "Mi=", Mi
 		Rvir = Rhalo(Mvec[Mi], survey)
-		print "M=", Mvec[Mi], "Rvir=", Rvir
 		rvec[Mi] = np.logspace(-8, np.log10(Rvir), 10**6)
 		rho[Mi] = rho_NFW(rvec[Mi], Mvec[Mi], survey)  # Units Msol h^2 / Mpc^3, comoving. 
 
 	u_ = np.zeros((len(kvec_gety), len(Mvec)))
 	for ki in range(0,len(kvec_gety)):
-		print "k=", kvec_gety[ki]
 		for mi in range(0,len(Mvec)):
 			u_[ki, mi] = 4. * np.pi / Mvec[mi] * scipy.integrate.simps( rvec[mi] * np.sin(kvec_gety[ki]*rvec[mi])/ kvec_gety[ki] * rho[mi], rvec[mi]) # unitless / dimensionless.
 	
@@ -1219,8 +1122,14 @@ def wgg_2halo(rp_cents_, bd, bs, savefile, survey):
 	# Get the redshift window functions
 	z_gg, win_gg = window(survey)
 	
-	# Get the NL DM power spectrum from camb (this is only for the 2-halo term)
-	(k_gg, P_gg) = get_Pk(z_gg, survey)
+	# Get the required matter power spectrum from CCL
+	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = pa.A_s, n_s=pa.n_s)
+	cosmo = ccl.Cosmology(p)
+	h = (pa.HH0/100.)
+	k_gg = np.logspace(-5., 7., 100000)
+	P_gg = np.zeros((len(z_gg), len(k_gg)))
+	for zi in range(0,len(z_gg)):
+		P_gg[zi, :] = h**3 * ccl.nonlin_matter_power(cosmo, k_gg * h , 1./(1.+z_gg[zi])) # CCL takes units without little h's, but we use little h unit
 	
 	# First do the integral over z. Don't yet interpolate in k.
 	zint_gg = np.zeros(len(k_gg))
@@ -1283,33 +1192,33 @@ def wgg_full(rp_c, fsat, fsky, bd, bs, savefile_1h, savefile_2h, plotfile,survey
 	plt.loglog(rp_c, wgg_2h, 'mo')
 	plt.hold(True)
 	plt.loglog(rp_c, wgg_tot, 'ko')
-	plt.xlim(0.01, 200.)
-	#plt.ylim(0., 300.)
+	plt.xlim(0.01, 30.)
+	plt.ylim(0., 10**4.)
 	plt.ylabel('$w_{gg}$, Mpc/h, com')
 	plt.xlabel('$r_p$, Mpc/h, com')
-	plt.savefig('./plots/wgg_tot_mod_dndM_survey='+survey+'.pdf')
+	plt.savefig('./plots/wgg_tot_extl_survey='+survey+'.pdf')
 	plt.close()
 	
 	plt.figure()
 	plt.loglog(rp_c, wgg_1h, 'go')
 	plt.xlim(0.05, 30.)
-	#plt.ylim(0., 300.)
+	plt.ylim(0., 10**4.)
 	plt.ylabel('$w_{gg}$, Mpc/h, com')
 	plt.xlabel('$r_p$, Mpc/h, com')
 	plt.title('$w_{gg}$, 1halo')
-	plt.savefig('./plots/wgg_1h_dndM_survey='+survey+'.pdf')
+	plt.savefig('./plots/wgg_1h_extl_survey='+survey+'.pdf')
 	plt.close()
 	
 	
-	#plt.figure()
-	#plt.loglog(rp_c, wgg_2h, 'go')
-	#plt.xlim(0.05, 30.)
-	#plt.ylim(1, 5000.)
-	#plt.ylabel('$w_{gg}$, Mpc/h, com')
-	#plt.xlabel('$r_p$, Mpc/h, com')
-	#plt.title('$w_{gg}$, 2halo')
-	#plt.savefig('./plots/wgg_2h_LRG.pdf')
-	#plt.close()
+	plt.figure()
+	plt.loglog(rp_c, wgg_2h, 'go')
+	plt.xlim(0.05, 30.)
+	plt.ylim(1, 5000.)
+	plt.ylabel('$w_{gg}$, Mpc/h, com')
+	plt.xlabel('$r_p$, Mpc/h, com')
+	plt.title('$w_{gg}$, 2halo')
+	plt.savefig('./plots/wgg_2h_LRG_extl_survey='+survey+'.pdf')
+	plt.close()
 	
 	#print "wgg=", zip(rp_c, wgg_tot)
 	

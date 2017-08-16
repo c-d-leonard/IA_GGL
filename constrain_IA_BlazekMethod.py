@@ -655,7 +655,7 @@ def get_DeltaSig_theory(rp_bins, rp_bins_c):
 		barSigma_HF[ri] = 2. / rpvec[ri]**2 * scipy.integrate.simps(rpvec[0:ri+1]**2*Sigma_HF[0:ri+1], np.log(rpvec[0:ri+1]))
 	
 	# Units Msol h / Mpc^2 (comoving distances).
-	DeltaSigma_HF = pa.bd_Bl*(barSigma_HF - Sigma_HF)
+	DeltaSigma_HF = pa.bd*(barSigma_HF - Sigma_HF)
 			
 	####### Now get the 1 halo term #######
 
@@ -787,6 +787,8 @@ def get_gammaIA_cov(rp_bins, rp_bins_c, fudgeczA, fudgeczB, fudgeFA, fudgeFB, fu
 	############ gamma_IA ###########
 	# gamma_IA_fiducial, from model
 	g_IA_fid = gamma_fid(rp_bins_c)
+	
+	exit()
 	
 	if pa.run_quants==False :
 		# Load stuff if we haven't computed it this time around:
@@ -939,8 +941,8 @@ def get_gammaIA_cov(rp_bins, rp_bins_c, fudgeczA, fudgeczB, fudgeFA, fudgeFB, fu
 def gamma_fid(rp):
 	""" Returns the fiducial gamma_IA from a combination of terms from different models which are valid at different scales """
 	# TO INCLUDE AN EXTENDED REDSHIFT DISTRIBUTION: THESE WILL NEED TO BE RE-RUN USING THE MODS NOTED IN SHARED_FUNCTIONS_WLP_WLS. 
-	wgg_rp = ws.wgg_full(rp, pa.fsat_LRG, pa.fsky, pa.bd_Bl, pa.bs_Bl, './txtfiles/wgg_1h_survey='+pa.survey+'_withHMF.txt', './txtfiles/wgg_2h_survey='+pa.survey+'_kpts='+str(pa.kpts_wgg)+'_update.txt', './plots/wgg_full_Blazek_survey='+pa.survey+'.pdf', SURVEY)
-	wgp_rp = ws.wgp_full(rp, pa.bd_Bl, pa.Ai_Bl, pa.ah_Bl, pa.q11_Bl, pa.q12_Bl, pa.q13_Bl, pa.q21_Bl, pa.q22_Bl, pa.q23_Bl, pa.q31_Bl, pa.q32_Bl, pa.q33_Bl, './txtfiles/wgp_1h_ahStopgap_survey='+pa.survey+'.txt','./txtfiles/wgp_2h_AiStopgap_survey='+pa.survey+'.txt', './plots/wgp_full_Blazek_survey='+pa.survey+'.pdf', SURVEY)
+	wgg_rp = ws.wgg_full(rp, pa.fsat_LRG, pa.fsky, pa.bd, pa.bs, './txtfiles/wgg_1h_survey='+pa.survey+'_extl.txt', './txtfiles/wgg_2h_survey='+pa.survey+'_kpts='+str(pa.kpts_wgg)+'_extl.txt', './plots/wgg_full_Blazek_survey='+pa.survey+'_extl2h.pdf', SURVEY)
+	wgp_rp = ws.wgp_full(rp, pa.bd, pa.Ai_Bl, pa.ah_Bl, pa.q11_Bl, pa.q12_Bl, pa.q13_Bl, pa.q21_Bl, pa.q22_Bl, pa.q23_Bl, pa.q31_Bl, pa.q32_Bl, pa.q33_Bl, './txtfiles/wgp_1h_survey='+pa.survey+'_extl.txt','./txtfiles/wgp_2hsurvey='+pa.survey+'_extl.txt', './plots/wgp_full_Blazek_survey='+pa.survey+'_extl.pdf', SURVEY)
 	
 	gammaIA = wgp_rp / (wgg_rp + 2. * pa.close_cut) 
 	
