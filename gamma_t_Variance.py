@@ -55,37 +55,64 @@ def N_of_zph(z_a_def_s, z_b_def_s, z_a_norm_s, z_b_norm_s, z_a_def_ph, z_b_def_p
 	
 	return (z_ph_vec, int_dzs / norm)
 	
-# TO INCLUDE AN EXTENDED REDSHIFT THIS FUNCTION MUST BE MODIFIED TO TAKE 'CUT' OR 'FULL' AS AN ARGUMENT INDICATING THE SAMPLE AND TO INTEGRATE OVER A LENS Z DIST.
-# ADDITIONALLY, THERE SHOULD BE AN ARGUMENT WHICH INDICATES 'CLOSE' OR 'ALL' FOR SPEC-Z, SEE NOTES JULY 31 / 26; August 10.
-def sum_weights(z_a_def_s, z_b_def_s, z_a_norm_s, z_b_norm_s, z_a_def_ph, z_b_def_ph, z_a_norm_ph, z_b_norm_ph, erms, rp_bin_c_, dNdz_par, pz_par):
-	""" Returns the sum over rand-source pairs of the estimated weights, in each projected radial bin. Pass different z_min_s and z_max_s to get rand-close, rand-far, and all-rand cases."""
+def sum_weights(photoz_sample, specz_cut, dNdz_par, pz_par):
+	""" Returns the sum over lens-source pairs of the estimated weights."""
 	
-	(z_ph, dNdz_ph) = N_of_zph(z_a_def_s, z_b_def_s, z_a_norm_s, z_b_norm_s, z_a_def_ph, z_b_def_ph, z_a_norm_ph, z_b_norm_ph, dNdz_par, pz_par, pa.dNdztype, pa.pztype)
+	# Get the distribution of lenses
+	zL = scipy.linspace(pa.zLmin, pa.zLmax, 100)
+	dndzl = setup.get_dNdzL(zL, SURVEY)
+	chiL = com_of_z(zL)
+	if (min(chiL)>pa.close_cut):
+		zminclose = z_of_com(chiL - pa.close_cut)
+	else:
+		zminclose = np.zeros(len(chiL))
+		for cli in range(0,len(chiL)):
+			if (chiL[cli]>pa.close_cut):
+				zminclose[cli] = z_of_com(chiL[cli] - pa.close_cut)
+			else:
+				zminclose[cli] = 0.
+	zmaxclose = z_of_com(chiL + pa.close_cut)
 	
-	frac = scipy.integrate.simps(dNdz_ph, z_ph)
+	# Sum in zphoto at each lens redshift value
+	sum_in_zph = np.zeros(len(zL))
+	# Loop over lens redshift values
+	for zi in range(0,len(zL)):
+		
+		if (photoz_sample=='close'):
+			
+			if (specz_cut=='close'):
+				(z_ph, dNdz_ph) = N_of_zph(zminclose[zi], zmaxclose[zi], pa.zsmin, pa.zsmax, zminclose[zi], zmaxclose[zi], pa.zphmin, pa.zphmax, dNdz_par, pz_par, pa.dNdztype, pa.pztype)
+			elif(specz_cut=='nocut'):
+				(z_ph, dNdz_ph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, zminclose[zi], zmaxclose[zi], pa.zphmin, pa.zphmax, dNdz_par, pz_par, pa.dNdztype, pa.pztype)
+			else:
+				print "We do not have support for that spec-z cut. Exiting."
+				exit()
+		elif (photoz_sample=='full'):
+			if (specz_cut=='close'):
+				(z_ph, dNdz_ph) = N_of_zph(zminclose[zi], zmaxclose[zi], pa.zsmin, pa.zsmax, pa.zphmin, pa.zphmax, pa.zphmin, pa.zphmax, dNdz_par, pz_par, pa.dNdztype, pa.pztype)
+			elif(specz_cut=='nocut'):
+				(z_ph, dNdz_ph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, pa.zphmin, pa.zphmax, pa.zphmin, pa.zphmax, dNdz_par, pz_par, pa.dNdztype, pa.pztype)
+			else:
+				print "We do not have support for that spec-z cut. Exiting."
+				exit()
+		else:
+			print "We do not have support for that photo-z sample. Exiting."
+			exit()
+		weight = weights(pa.e_rms_mean, z_ph)
+		sum_in_zph[zi] = scipy.integrate.simps(weight * dNdz_ph, z_ph)
 	
-	sum_ans = [0]*(len(rp_bin_c_))
-	for i in range(0,len(rp_bin_c_)):
-		Integrand = dNdz_ph* weights(erms, z_ph)
-		sum_ans[i] = scipy.integrate.simps(Integrand, z_ph)
-
+	# Now sum over all the lenses
+	sum_ans = scipy.integrate.simps(sum_in_zph * dndzl, zL)
+	
 	return sum_ans
 	
 def sigma_e(z_s_):
 	""" Returns a value for the model for the per-galaxy noise as a function of source redshift"""
-	
-	if (pa.survey=='SDSS'):
-		
-		if hasattr(z_s_, "__len__"):
-			sig_e = 2. / pa.S_to_N * np.ones(len(z_s_))
-		else:
-			sig_e = 2. / pa.S_to_N
-			
-	elif(pa.survey=='LSST_DESI'):
-		if hasattr(z_s_, "__len__"):
-			sig_e = pa.a_sm / pa.SN_med * ( 1. + (pa.b_sm / pa.R_med)**pa.c_sm) * np.ones(len(z_s_))
-		else:
-			sig_e = pa.a_sm / pa.SN_med * ( 1. + (pa.b_sm / pa.R_med)**pa.c_sm) 
+
+	if hasattr(z_s_, "__len__"):
+		sig_e = 2. / pa.S_to_N * np.ones(len(z_s_))
+	else:
+		sig_e = 2. / pa.S_to_N
 
 	return sig_e
 
@@ -102,7 +129,7 @@ def getHconf(xivec):
     """Returns the conformal Hubble constant as a function of zLvec."""
     
     #Get zLvec to correspond with chiLvec
-    zLvec	=	z_ofchi(xivec)
+    zLvec	=	z_of_com(xivec)
     Hconf	=	H0 * ( (OmegaM+OmegaB)*(1+zLvec) + OmegaL / (1+zLvec)**2 + (OmegaR+OmegaN) * (1+zLvec)**2 )**(0.5)
     
     return Hconf
@@ -110,66 +137,33 @@ def getHconf(xivec):
 def getOmMx(xivec):
 	"""Returns OmM(x) where OmM(x)=OmB(x)+OmC(x)"""
 	#Get zLvec to correspond with chiLvec
-	zLvec	=	z_ofchi(xivec)
+	zLvec	=	z_of_com(xivec)
 
 	OmMx= ( OmegaM + OmegaB ) * (1+zLvec)**3 / ((OmegaM+OmegaB)*(1+zLvec)**3 + OmegaL + (OmegaN+OmegaR)*(1+zLvec)**4)
     
 	return OmMx
 
-def PofkGR(xivec):
-	""" Returns the nonlinear (halofit) 2-halo matter power spectrum today as a 2 parameter function of l and chi (xivec)."""
-	
-	zivec = z_ofchi(xivec)
-	aivec = 1./ (1. + zivec)
-	
-	# Compute the power spectrum at a bunch of z's and k's from CCL
-	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = 2.1*10**(-9), n_s=0.96)
-	cosmo = ccl.Cosmology(p)
-  
-	k = scipy.logspace(-4, 2, 1000)
-	Pofkz=np.zeros((len(k), len(aivec)))
-	for ki in range(0, len(k)):
-		for ai in range(0, len(aivec)):
-			Pofkz[ki, ai] = ccl.nonlin_matter_power(cosmo, k[ki], aivec[ai])
-	
-	Pofkint=[0]*len(zivec)	
-	for zi in range(0,len(zivec)):
-		Pofkint[zi]=scipy.interpolate.interp1d(k, Pofkz[:,zi])
-
-	# evaluate at k = l / chi
-	Poflandx=np.zeros((len(lvec_less),len(xivec)))
-	for li in range(0,len(lvec_less)):
-		for xi in range(0,len(xivec)):
-			if (lvec_less[li]/xivec[xi]<k[-1] and lvec_less[li]/xivec[xi]>k[0]):
-				Poflandx[li,xi]=Pofkint[xi](lvec_less[li]/xivec[xi])
-				if (np.abs(Poflandx[li,xi])<10**(-15)): 
-					Poflandx[li,xi]=0.0
-			else:
-				Poflandx[li,xi]=0.0
-
-	return Poflandx
-
 def Pgg_1h2h(xivec):
 	""" Returns 1h+2h galaxy x matter power spectrum as a 2 parameter function of l and chi (xivec)."""
 	
 	# First do 2-halo
-	zivec = z_ofchi(xivec)
+	zivec = z_of_com(xivec)
 	aivec = 1./ (1. + zivec)
 	# Compute the power spectrum at a bunch of z's and k's from CCL
-	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = 2.1*10**(-9), n_s=0.96)
+	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = pa.A_s, n_s= pa.n_s_cosmo)
 	cosmo = ccl.Cosmology(p)
   
 	k = scipy.logspace(-4, 4, 1000)
+	h = (pa.HH0 / 100.)
 	P_2h=np.zeros((len(k), len(aivec)))
 	for ai in range(0, len(aivec)):
-		P_2h[:, ai] = ccl.nonlin_matter_power(cosmo, k, aivec[ai])
+		P_2h[:, ai] = h**3 * ccl.nonlin_matter_power(cosmo, k * h , aivec[ai])
 		
 	# Now do 1-halo (this is done in a separate function
 	P_1h = ws.get_Pkgg_ll_1halo_kz(k, zivec, SURVEY)
 	
 	# Add 
 	Pofkz = P_1h + bias**2 * P_2h
-	#Pofkz = bias**2 * P_2h
 	
 	# Interpolate in k
 	Pofkint=[0]*len(zivec)	
@@ -186,267 +180,97 @@ def Pgg_1h2h(xivec):
 				Poflandx[li,xi]=0.0
 
 	return Poflandx
-	
-def PofkGR_chimean(xi):
-	""" Returns the nonlinear (halofit) 2-halo matter power spectrum today as a function of l at the comoving distance OF THE LENSES."""
-	
-	# Compute the power spectrum at a bunch of k's and at z of the lenses from CCL
-	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = 2.1*10**(-9), n_s=0.96)
-	cosmo = ccl.Cosmology(p)
-    
-	k = scipy.logspace(-4, 2, 1000)
-	#Pofk=np.zeros(len(k))
-	#for ki in range(0, len(k)):
-	Pofk= ccl.nonlin_matter_power(cosmo, k, 1. / (1. + zval))
-	
-	Pofkint=scipy.interpolate.interp1d(k, Pofk)
 
-	#Interpolate such that k = l / chi
-	Poflandx=np.zeros(len(lvec_less))
-	for li in range(0,len(lvec_less)):
-		if (lvec_less[li]/xi<k[-1] and lvec_less[li]/xi>k[0]):
-			Poflandx[li]=Pofkint(lvec_less[li]/xi)
-			if (np.abs(Poflandx[li]))<10**(-15): 
-				Poflandx[li]=0.0
-		else:
-			Poflandx[li]=0.0
 
-	return Poflandx
-
-# TO INCLUDE AN EXTENDED REDSHIFT DISTRIBUTION, WE WILL MERGE THE FUNCATIONALITY OF THIS FUNCTION INTO DOINTS_PGG TO ENSURE ALL INTEGRALS OVER Z_L ARE DONE CONSISTENTLY; SEE NOTES AUGUST 10TH. 
-def get_Pgg():
-	""" This function computes P_{gg}(l, chiLmean) """
-	
-	# Get the nonlinear matter power spectrum:
-	#p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = 2.1*10**(-9), n_s=0.96)
-	#cosmo = ccl.Cosmology(p)
-	
-	# We are going to get Cl_{gg} using CCL. For this, we need to define a N(z) for the lenses, even though we are using an effective redshifts. We're going to use a narrow Gaussian.
-	
-	sig_fudge = 0.05  # CHANGE THIS TO THE APPROPRIATE PARAMETER FOR THE GIVEN EXTENDED REDSHIFT DISTRIBUTION. 
-	z = np.linspace(zval - 5. * sig_fudge, zval + 5. * sig_fudge, 1000)
-	N_of_z = 1. / np.sqrt(2. * np.pi) / sig_fudge * np.exp( - (z-zval)**2 / (2. *sig_fudge**2))  # CHANGE THIS TO THE APPROPRIATE EXTENDED REDSHIFT DISTRIBUTION FOR LENSES. 
-	b_of_z = bias * np.ones(len(z))
-	
-	#gtracer = ccl.cls.ClTracerNumberCounts(cosmo = cosmo, has_rsd = False, has_magnification = False, n = N_of_z, bias = b_of_z, z = z)
-	
-	#Clgg = ccl.cls.angular_cl(cosmo, gtracer, gtracer, lvec_less)
-	
-	# Get things we need 
-	chi = com_of_z(z)
-	
-	#Pdelta = PofkGR(chi)
-	Pdelta = Pgg_1h2h(chi)
-	
-	H = getHconf(chi) * (1. + z)
-	
-	# Test the explicit expression (Limber approximated)
-	Clgg_calc = np.zeros(len(lvec_less))
-	for li in range(0,len(lvec_less)):
-		Clgg_calc[li] = scipy.integrate.simps(N_of_z**2 * (H**2) * Pdelta[li, :] / chi**2, chi)
-	
-	#plt.figure()
-	#plt.loglog(lvec_less, Clgg, 'g+')
-	#plt.hold(True)
-	#plt.loglog(lvec_less, Clgg_calc, 'm+')
-	#plt.ylim(10**(-12), 10**(-2))
-	#plt.savefig('./plots/Clgg_test.pdf')
-	#plt.close()
-	
-	return  Clgg_calc
-
-# TO INCLUDE AN EXTENDED LENS REDSHIFT DISTRIBUTION: MAKE THE SAME MODIFICATIONS AS HAVE BEEN MADE TO THE SAME FUNCTION IN DELTASIGMA_VARIANCE.PY
-# ALSO, THIS HAS NOT YET BEEN MODIFIED TO ACCOUNT FOR THE THE ISSUE WHERE g(chi) IS ZERO FOR LOW VALUES OF CHISVEC - INCORPORATE THESE CHANGES FROM DELTASIGMA_VARIANCE.PY AS WELL. 
-# THIS WILL ACTUALLY GET MERGED INTO DOINTS_PGK IN THE SAME WAY IT SHOULD IN DELTASIGMA_VARIANCE.PY - SEE NOTES AUGUST 10TH. 	
-def get_Pgk():
-	""" This function computes P_{gk}(l, chi_L, chi_S) """
-	H=getHconf(chiLmean)
-	Omz=getOmMx(chiLmean)
-	Pof_lx=PofkGR_chimean(chiLmean)
-	
-	chiSvec = setup.com(z_spec, SURVEY)
-	Clgk=np.zeros((len(lvec_less), len(chiSvec)))
-	for li in range(0, len(lvec_less)):
-		for xiS in range(0, len(chiSvec)):
-			Clgk[li, xiS] = 1.5 * bias * (chiSvec[xiS] - chiLmean) / chiLmean / chiSvec[xiS] * H**2 * Omz * Pof_lx[li] 
-	
-	return  Clgk
-
-# TO INCLUDE AN EXTENDED REDSHIFT DISTRIBUTION FOR LENSES: THE ARGUMENTS OF SUM_WEIGHTS IN THIS FUNCTION WILL CHANGE TO INDICATE HOW TO CUT ON PHOTO-Z AND SPEC-Z. OTHERWISE IT WILL BE THE SAME. 
 def get_ns_partial():
 	""" Gets the fractional value of ns appropriate for this subsample."""
 	
 	# To do this, just get the fraction of dNdzph within the sample:
-	frac = np.asarray(sum_weights(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, minz_src_p, maxz_src_p, pa.zphmin, pa.zphmax, gam, Rcentres, pa.dNdzpar_fid, pa.pzpar_fid))[0] / np.asarray(sum_weights(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, pa.zphmin, pa.zphmax, pa.zphmin, pa.zphmax, gam, Rcentres, pa.dNdzpar_fid, pa.pzpar_fid))[0]
+	frac = sum_weights('close', 'nocut', pa.dNdzpar_fid, pa.pzpar_fid) / sum_weights('full', 'nocut', pa.dNdzpar_fid, pa.pzpar_fid)
 	
 	print "frac=", frac
 	
 	return frac * ns_tot
-	
 ############################# FUNCTIONS FOR DOING THE INTEGRALS #######################
 
-# TO INCORPORATE AN EXTENDED LENS DISTRIBUTION, WE WILL MERGE  THE FUNCTIONALITY OF GET_PGG INTO THIS FUNCTION, SEE NOTES AUGUST 10TH.	
-def doints_Pgg(Clgg):
-	""" This function does the integrals in dchiL, dbarchiL, dchiS, dbarchiS on the P_{gg} * gamma^2 / ns term"""
+def doints_Pgg():
+	""" This function does the integrals on the <gg> term"""
 	
-	# Get dNdzph: 
-	(z_ph, Nofzph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, minz_src_p, maxz_src_p, minz_src_p, maxz_src_p, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
+	# Define a vector of lens redshifts.
+	zL = np.linspace(pa.zLmin, pa.zLmax, 100)
 	
-	# Do the integral in photo-z
-	barchiS_int = scipy.integrate.simps( Nofzph, z_ph )
-
-	# Now load Clgg
-	#Clgg=np.loadtxt(folderpath+outputfolder+'/Clgg_'+endfilename+'.txt')	
-	np.savetxt('./txtfiles/Pggterm_gammat_1h2h_lpts=1e6_'+endfilename+'_method='+METHOD+'.txt', barchiS_int**2 * Clgg )
-		
-	return barchiS_int**2 * Clgg
-
-# THIS WILL HAVE SIGNIFICANT MODIFICATIONS TO INCORPORATE AN EXTENDED LENS DISTRIBUTION, INCLUDING MERGING IN THE FUNCTIONALITY OF GET_PGG. SEE NOTES AUGUST 10TH. 	
-def doints_Pgk(Clgk):
-	""" This function does the integrals in dchiL, dbarchiL, dchiS, dbarchiS on the P_{gk} term"""
-
-	# Define the zph vector
-	z_ph_vec = scipy.linspace(minz_src_p, maxz_src_p, src_ph_pts)
+	# Get the quantities we will need: comoving distance and galaxy power spectrum.
+	chi = com_of_z(zL)
+	Pdelta = Pgg_1h2h(chi)
+	H = getHconf(chi) * (1. + zL)
 	
-	# Do the integral over spectroscopic redshift: dNdz_s * p(zs, zp) * Clgk
-	int_dzs = np.zeros((len(lvec_less),len(z_ph_vec)))
-	for li in range(0,len(lvec_less)):
-		for zi in range(0,len(z_ph_vec)):
-			int_dzs[li, zi] = scipy.integrate.simps(dNdz_spec * setup.p_z(z_ph_vec[zi], z_spec, pa.pzpar_fid, pa.pztype) * Clgk[li,:], z_spec)
-			
-	# Now do the integral in zph
-	int_dzph = np.zeros(len(lvec_less))
-	for li in range(0,len(lvec_less)):
-		int_dzph[li] = scipy.integrate.simps(int_dzs[li,:], z_ph_vec)
+	# Get the lens redshift distribution.	
+	dndzl = setup.get_dNdzL(zL, SURVEY)
 	
-	# Get the factor to normalize this stuff
-	int_dzs_norm = np.zeros(len(z_ph_vec))
-	for i in range(0,len(z_ph_vec)):
-		int_dzs_norm[i] = scipy.integrate.simps(dNdz_spec*setup.p_z(z_ph_vec[i], z_spec, pa.pzpar_fid, pa.pztype), z_spec)
-		
-	norm = scipy.integrate.simps(int_dzs_norm, z_ph_vec)
-	
-	chiL_intans = int_dzph / norm
-	
-	np.savetxt('./txtfiles/Pgkterm_gammat_'+endfilename+'_method='+METHOD+'.txt', chiL_intans**2 )
-		
-	return chiL_intans**2
-
-# FOR AN EXTENDED REDSHIFT DISTRIBUTION IN LENSES; MAKE THE SAME MODIFICATIONS AS IN DELTASIGMA_VARIANCE, JUST WITHOUT FACTORS OF SIGMA_C^-1. 	
-def doints_Pkk():
-	""" This function does the integrals in dchiL, dbarchiL, dchiS, dbarchiS on the P_{kk} / nl term. For this one, we haven't precomputed Cl_kk because it's more efficient to do the integrals in a less pedogogical order. We do them all in this function."""
-	 
-	# Get the chi over which we integrate. It's called chiLext because this is a cosmic shear power spectrum so the lenses are extended in space.
-	chiLext			=		scipy.linspace(chiLext_min, chiLext_max, chiLextpts)	
-	
-	H=getHconf(chiLext)
-	Omz=getOmMx(chiLext)
-	Pof_lx=PofkGR(chiLext)
-	
-	# Define the zph vector
-	z_ph_vec = scipy.linspace(minz_src_p, maxz_src_p, src_ph_pts)
-	chiS = com_of_z(z_spec)
-	
-	# Integral over z_s
-	int_z_s = np.zeros((len(chiLext), len(z_ph_vec)))
-	for xiL in range(0, len(chiLext)):
-		for zpi in range(0, len(z_ph_vec)):
-			int_z_s[xiL, zpi] = scipy.integrate.simps( dNdz_spec * setup.p_z(z_ph_vec[zpi], z_spec, pa.pzpar_fid, pa.pztype) * ( chiS - chiLext[xiL]) / chiS , z_spec )
-			
-	# Integral over corresponding z_ph
-	int_z_p = np.zeros(len(chiLext))
-	for xi in range(0,len(chiLext)):
-		int_z_p[xi] = scipy.integrate.simps( int_z_s[xi, :] , z_ph_vec ) 
-		
-	# Integral over z_s'
-	int_z_s_prime = np.zeros((len(chiLext), len(z_ph_vec)))
-	for xiL in range(0, len(chiLext)):
-		for zpi in range(0, len(z_ph_vec)):
-			int_z_s_prime[xiL, zpi] = scipy.integrate.simps( dNdz_spec * setup.p_z(z_ph_vec[zpi], z_spec, pa.pzpar_fid, pa.pztype) * ( chiS - chiLext[xiL]) / chiS * int_z_p[xiL] , z_spec )
-			
-	# And the corresponding z_ph'
-	int_z_p_prime = np.zeros(len(chiLext))
-	for xi in range(0,len(chiLext)):
-		int_z_p_prime[xi] = scipy.integrate.simps(int_z_s_prime[xi, :], z_ph_vec)
-		
-	# Now do the integral over chi, the "extended lens" comoving distance for cosmic shear
-	int_chiLext = np.zeros(len(lvec_less))
-	for li in range(0,len(lvec_less)):
-		int_chiLext[li] = 9./4.*H0**4 * scipy.integrate.simps((H/H0)**4 * Omz**2 * Pof_lx[li,:] * int_z_p_prime , chiLext)
-		
-	# Get the factor to normalize this:
-	int_dzs_norm = np.zeros(len(z_ph_vec))
-	for i in range(0,len(z_ph_vec)):
-		int_dzs_norm[i] = scipy.integrate.simps(dNdz_spec*setup.p_z(z_ph_vec[i], z_spec, pa.pzpar_fid, pa.pztype), z_spec)
-		
-	norm = scipy.integrate.simps(int_dzs_norm, z_ph_vec)
-
-	# Norm is squared because there are two integrals over dNdz_s here.
-	bchiS_intans = int_chiLext / norm**2
-	
-	np.savetxt('./txtfiles/Pkkterm_gammat_'+endfilename+'_method='+METHOD+'.txt', bchiS_intans )
-	
-	return bchiS_intans
-
-# TO INCORPORATE AN EXTENDED REDSHIFT DISTRIBUTION FOR LENSES, THIS FUNCTION WILL BECOME ALMOST THE SAME AS DOINTS_PKK, BUT WEHN INTEGRATING OF DNDZL, INTEGRATE ALSO OVER PGG(L, ZL).
-# SEE NOTES, AUGUST 10, FOR DETAILS.	
-def doints_PggPkk(Pkkterm, Clgg):
-	""" This function constructs the Pgg*Pkk term from Pkk and Clgg"""
-	
-	#Load integrals over Pkk
-	#Pkkterm = np.loadtxt(folderpath+outputfolder+'/Pkkterm_'+endfilename+'.txt')
-	
-	#And load Clgg
-	#Clgg=np.loadtxt(folderpath+outputfolder+'/Clgg_'+endfilename+'.txt')
-	
-	#The PggPkk term is simply these two things multiplied in the effective lens redshift case:
-	PggPkk = Clgg * Pkkterm
-	
-	np.savetxt('./txtfiles/PggPkkterm_gammat_'+endfilename+'_method='+METHOD+'.txt', PggPkk)
-	
-	return PggPkk
-
-# TO INCORPORATE AN EXTENDED REDSHIFT DISTRIBUTION FOR LENSES, MAKE THE SAME CHANGES HERE AS TO THE EQUIVALENT FUNCTION IN DELTASIGMA_VARIANCE.PY. 	
-def doconstint():
-	""" This function does the integrals in chiS, bchiS, chiL and bchiL for the constant term """
-	
-	# Get dNdzph:
-	(z_ph, Nofzph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, minz_src_p, maxz_src_p, minz_src_p, maxz_src_p, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
-	
-	# Do the integral in photo-z
-	chiSans = scipy.integrate.simps( Nofzph, z_ph)
-	
-	# The bchiL / bchiS integrals are the exact same so we don't need to do them again 
+	# Do the integral over dndzl. This includes the 1/ ns term that goes into this term, because it needs integrating over the lens distribution.
 	ns = get_ns_partial()
+	int_gg = np.zeros(len(lvec_less))
+	clgg= np.zeros(len(lvec_less))
+	for li in range(0,len(lvec_less)):
+		int_gg[li] = scipy.integrate.simps( dndzl**2 * H * Pdelta[li, :] / (chi**2 * ns), zL)
+		clgg[li] = scipy.integrate.simps( dndzl**2 * H * Pdelta[li, :] / (chi**2), zL)
+	
+	# Compare to CCL	
+	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = pa.A_s, n_s=pa.n_s_cosmo)
+	cosmo = ccl.Cosmology(p)
+	b_of_z = bias * np.ones(len(zL))
+	gtracer = ccl.cls.ClTracerNumberCounts(cosmo = cosmo, has_rsd = False, has_magnification = False, n = dndzl, bias = b_of_z, z = zL)
+	Clgg_ccl = ccl.cls.angular_cl(cosmo, gtracer, gtracer, lvec_less)  
+	
+	plt.figure()
+	plt.loglog(lvec_less, clgg, 'm+')
+	plt.hold(True)
+	plt.loglog(lvec_less, Clgg_ccl, 'g+')
+	#plt.ylim(10**(-11), 10**(-3))
+	plt.savefig('./plots/clgg_compare_CCL.pdf')
+	plt.close()
+			
+	np.savetxt('./txtfiles/Pggterm_gammat_extl_survey='+SURVEY+'_method='+METHOD+'.txt', int_gg)
+	
+	return int_gg
+
+def doconstint():
+	""" This function does the integrals for the constant term """
+	
+	# Integrate answer over dndzl, including over ns for each zl. This squared will be the value we need (because the integrals in primed and unprimed quantities are exactly symmetric).
+	ns = get_ns_partial()
+	
 	save=[0]
-	save[0]=chiSans ** 2 * gam ** 2 / ns / nl
+	save[0]= gam ** 2 / nl / ns
 	
-	np.savetxt('./txtfiles/const_gammat_1h2h_lpts=1e6_'+endfilename+'_method='+METHOD+'.txt', save)
+	print "gam=", gam
+	print "nl=", nl
 	
-	return chiSans ** 2 * gam ** 2 / ns / nl
+	np.savetxt('./txtfiles/const_gammat_extl_survey='+SURVEY+'_method='+METHOD+'.txt', save)
+	
+	return gam ** 2 / nl  / ns
 
 def get_lint():	
 #def get_lint(Pgkterm, PggPkkterm, Pkkterm, Pggterm, constterm):
 	""" Gets the integral over ell at each R and R' """
-	#Pgkterm		=	np.loadtxt('./txtfiles/Pgkterm_gammat_'+endfilename+'.txt')
-	#PggPkkterm	=	np.loadtxt('./txtfiles/PggPkkterm_gammat_'+endfilename+'.txt')
-	#Pkkterm		= 	np.loadtxt('./txtfiles/Pkkterm_gammat_'+endfilename+'.txt')
-	Pggterm		=	np.loadtxt('./txtfiles/Pggterm_gammat_1h2h_lpts=1e6_'+endfilename+'_method='+METHOD+'.txt')
-	constterm	=	np.loadtxt('./txtfiles/const_gammat_1h2h_lpts=1e6_'+endfilename+'_method='+METHOD+'.txt')
+	Pggterm		=	np.loadtxt('./txtfiles/Pggterm_gammat_extl_'+endfilename+'_survey='+SURVEY+'_method='+METHOD+'.txt')
+	constterm	=	np.loadtxt('./txtfiles/const_gammat_extl_'+endfilename+'_survey='+SURVEY+'_method='+METHOD+'.txt')
+	
+	print "constterm=", constterm
 	
 	# plot each thing to see what is dominating:
 	plt.figure()
-	plt.loglog(lvec_less, Pggterm*gam**2 / ns, 'g+', label='$\propto C_{gg} \gamma^2 / n_s$')
+	plt.loglog(lvec_less, Pggterm*gam**2 , 'g+', label='$\propto C_{gg} \gamma^2 / n_s$')
 	plt.hold(True)
 	plt.loglog(lvec_less, constterm * np.ones(len(lvec_less)), 'k+', label='$\gamma^2 / (n_l n_s)$')
 	plt.hold(True)
-	plt.loglog(lvec_less, (Pggterm*gam**2 / ns + constterm), 'y+', label='tot')
+	plt.loglog(lvec_less, (Pggterm*gam**2 + constterm), 'y+', label='tot')
 	plt.ylim(10**(-16), 10**(-10))
 	plt.ylabel('Contributions to covariance')
 	plt.xlabel('$l$')
 	plt.title('Survey='+SURVEY)
 	plt.legend()
-	plt.savefig('./plots/compareterms_gammatcov_1h2h_survey='+SURVEY+'_method='+METHOD+'.pdf')
+	plt.savefig('./plots/compareterms_gammat_extl_survey='+SURVEY+'_method='+METHOD+'.pdf')
 	plt.close()
 	
 	# Interpolate these things to get the result in terms of the more highly sampled lvec
@@ -515,8 +339,11 @@ def do_outsideints_SigR(i_Rbin, j_Rbin, lint_ans):
 ####################################### SET UP ###########################################
 ##########################################################################################
 
-SURVEY = 'LSST_DESI'
-METHOD = '2'
+SURVEY = 'SDSS'
+METHOD = '1'
+
+print "Survey=", SURVEY
+
 # Import the parameter file:
 if (SURVEY=='SDSS'):
 	import params as pa
@@ -525,6 +352,12 @@ elif (SURVEY=='LSST_DESI'):
 else:
 	print "We don't have support for that survey yet; exiting."
 	exit()
+	
+# Avoid needing to run twice if we use the same e_rms for both methods:
+if ((pa.e_rms_a == pa.e_rms_b)):
+	METHOD = 'same_rms'
+	
+print "METHOD=", METHOD
 
 # Cosmological parameters from parameters file
 Nnu	= pa.Nnu; HH0 =	pa.HH0; OmegaR = pa.OmR; OmegaN	= pa.OmN; OmegaB =	pa.OmB; OmegaM = pa.OmC; OmegaK	= 0.0; h =	HH0/100.; 
@@ -534,16 +367,11 @@ OmegaL	=	1.-OmegaM-OmegaB-OmegaR-OmegaN
 c			=	pa.c; MpCm	=	pa.mperMpc; G =	pa.Gnewt; H0 =	10**(5)/c; 
 
 #Directory set up
-folderpath 		= 	'/home/danielle/Dropbox/CMU/Research/Intrinsic_Alignments/'
-inputfolder		=	'/txtfiles/'
-outputfolder		=	'/txtfiles/'
 endfilename		=	SURVEY
 
 # Lenses:
-zval 		= 	pa.zeff
-chiLmean 	=	setup.com(zval, SURVEY)
 nl			=	pa.n_l * 3282.8 # n_l is in # / square degree, numerical factor converts to # / steradian
-bias		=	pa.bd_Bl
+bias		=	pa.bd
 
 # Sources:
 ns_tot			=	pa.n_s * 3600.*3282.8 # n_s is in # / sqamin, numerical factor converts to / steraidan
@@ -552,19 +380,16 @@ if (METHOD=='1'):
 	gam = pa.e_rms_a
 elif(METHOD=='2'):
 	gam = pa.e_rms_b
+elif (METHOD == 'same_rms'):
+	gam = pa.e_rms_a
 else:
 	print "We don't have support for that shape measurement method."
 	exit()
 	
-
-(z_close_high, z_close_low)	= 	setup.get_z_close(pa.zeff, pa.close_cut, SURVEY)
-maxz_src_p	=	z_close_high
-minz_src_p	=	z_close_low
-	
 #Vector set up
 src_spec_pts	=	100
 src_ph_pts		=	100
-Rpts			=	200
+Rpts			=	1500
 Rmin			=	pa.rp_min
 Rmax			=	pa.rp_max
 lpts			=	100000
@@ -572,9 +397,9 @@ lpts_less		=	500
 lmin			=	3
 lmax			=	10**6
 numRbins		=	pa.N_bins
-chiLext_min		=	0.1
-chiLext_max		=	setup.com(pa.zsmax, SURVEY)
-chiLextpts		=	150
+chiLext_min		=	0.001
+chiLext_max		=	setup.com(pa.zphmax, SURVEY)
+chiLextpts		=	250
 
 ##########################################################################################
 ################################  MAIN FUNCTION CALLS ####################################
@@ -584,34 +409,17 @@ a = time.time()
 
 # Set up
 (lvec, lvec_less, Rvec, Redges, Rcentres)					= 		setup_vectors()
-z_ofchi, com_of_z								=		setup.z_interpof_com(SURVEY)
+z_of_com, com_of_z								=		setup.z_interpof_com(SURVEY)
 (z_spec, dNdz_spec)								= 		setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, pa.zsmin, pa.zsmax, src_spec_pts)
 
 ns = get_ns_partial()
 
-# Get power spectra
-Clgg 	= 	get_Pgg()  # THIS FUNCTION HAS SOME SMALL INTERNAL CHANGES TO INCLUDE AN EXTENDED REDSHIFT DISTRIBUTION FOR LENSES. 
-print "get Pgg done"
-Clgk	=	get_Pgk() # THIS FUNCTION WILL BE MERGED INTO DOINTS_PGK TO INCORPORATE AND EXTENDED REDSHIFT DISTRIBUTION FOR LENSES; SEE NOTES AUGUST 10TH. 
-print "get Pgk done"
-
 # Do the integrals on each term up to the l integral (so chiS, bchiS, chiL, bchiL)
-Pggints = doints_Pgg(Clgg) 
-print "Done with Pgg integrals. Now do Pgk:"
-Pgkints = doints_Pgk(Clgk)  # THIS FUNCTION HAS INTERNAL CHANGES TO INCLUDE AN EXTENDED REDSHIFT DISTRIBUTION FOR LENSES, INCLUDING MERGING IN THE FUNCTIONALITY OF GET_PGK.
-print "Done with Pgk integrals. Now do Pkk:"
-Pkkints = doints_Pkk()
-print "Done with Pkk integrals. Now do constant:"
+Pggints = doints_Pgg() 
+print "Done with Pgg integrals. Now do constant:"
 constterm = doconstint()
-print "Done with constant integrals. Now do PggPkk:"
-PggPkkints = doints_PggPkk(Pkkints, Clgg)
-print "Done with PggPkk integrals. Now getting wbar:"
-#wbar = getwbar()
-#print "wbar=", wbar
-print "Done with getting wbar. Now doing integrals over R:"
-
+print "Done with constant integrals."
 # First, get the l integral in terms of R and R'. This is the long part, and needs only to be done once instead of over and over for each bin.
-#lint = get_lint(Pgkints, PggPkkints, Pkkints, Pggints, constterm)
 lint = get_lint()
 
 #This must be done for each set of bins
@@ -622,7 +430,5 @@ for i_R in range(0, numRbins):
 		print "i bin=", i_R, "j bin=", j_R
 		covariance[i_R, j_R]	=	do_outsideints_SigR(i_R, j_R, lint)
 		print "Covariance=", covariance[i_R, j_R]
-		
-np.savetxt(folderpath+outputfolder+'/cov_gamt_'+endfilename+'_rpts'+str(Rpts)+'_lpts'+str(lpts)+'_TEST_ELL_DOWNSAMPLE.txt', covariance)
 
 print '\nTime for completion:', '%.1f' % (time.time() - a), 'seconds'

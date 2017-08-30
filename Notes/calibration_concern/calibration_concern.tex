@@ -1,0 +1,86 @@
+\documentclass[onecolumn,amsmath,aps,fleqn, superscriptaddress]{revtex4}
+ 
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{epsfig}
+\usepackage{subfigure}
+\usepackage{mathrsfs}
+\usepackage{longtable}
+\usepackage{enumerate} 
+\usepackage{multirow}
+\usepackage{color}
+
+\usepackage[usenames,dvipsnames]{xcolor}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks = true,
+    citecolor = {MidnightBlue},
+    linkcolor = {BrickRed},
+    urlcolor = {BrickRed}
+}
+
+\newcommand{\be}{\begin{eqnarray}}
+\newcommand{\ee}{\end{eqnarray}}
+
+\allowdisplaybreaks[1]
+ 
+\begin{document}
+
+\title{Constraining IA with shape-measurement methods: calibration concern}
+
+\author{Danielle Leonard}
+
+\maketitle
+
+{\it What follows are some notes which describe the issue which I discussed with Joe Zuntz in Edinburgh (July 26, 2017).}
+
+When doing a lensing measurement using any given shape-measurement method, an estimator is constructed for ellipticity and then must be corrected for multiplicative bias $m$ and additive bias $c$:
+\begin{equation}
+\tilde{e} = (1+m)e + c
+\label{bias}
+\end{equation}
+where $\tilde{e}$ is the estimated ellipticity and $e$ is the true ellipticity.  (This equation may also have terms related to the PSF ellipticity but for now let us assume this simpler form.) We are mostly concerned here with the multiplicative bias $m$. The effect of this bias on $\tilde{\gamma}_t$ is similarly:
+\begin{equation}
+\tilde{\gamma}_t = (1+m) \gamma_t.
+\label{bias_gt}
+\end{equation}
+The objective is then to measure $m$ (via e.g. simulations, meta-calibration, or other methods) and remove its effect. However, clearly we can never measure $m$ perfectly and there will be some error on its value. Effectively, this means that post-calibration there is still a relation like:
+\begin{equation}
+\tilde{\gamma}_t = (1+\bar{m}) \gamma_t.
+\label{bias_gt_postcal}
+\end{equation}
+where $\bar{m}$ has a much smaller value than $m$, and represents the residual bias due to the fact that the value of $m$ determined from calibration is not exact.
+
+Consider then that for the two shape-measurement methods used in our method of constraining IA, the multiplicative biases will be independent, so the values of the residual biases will in general be different:
+\begin{align}
+\tilde{\gamma}_t &= (1+\bar{m}) \gamma_t = (1+\bar{m}) (\gamma_t^L + \gamma_t^{\rm IA}) \nonumber \\ 
+\tilde{\gamma}_t^\prime &= (1+\bar{m}^\prime) \gamma_t^\prime =(1+\bar{m}^\prime) (\gamma_t^L + a \gamma_t^{\rm IA})
+\label{both_gt_mbar}
+\end{align}
+
+Subtracting then the two estimated tangential shear measurements, we find:
+\begin{equation}
+\tilde{\gamma}_t - \tilde{\gamma}_t^\prime = (\bar{m} - \bar{m}^\prime) \gamma_t^L + (\bar{m} - \bar{m}^\prime a) \gamma_t^{\rm IA} + (1-a) \gamma_t^{\rm IA}
+\label{diff_w_mbars}
+\end{equation}
+(where there is also in principle the correction factor $N_{\rm corr}$ to ensure $\gamma_t^{\rm IA}$ is not underestimated, but it is not relevant here so we ignore it for now). 
+
+We see that for our method to work as we expect, $(\bar{m} - \bar{m}^\prime) \gamma_t^L + (\bar{m} - \bar{m}^\prime a) \gamma_t^{\rm IA}$ must be significantly smaller than $(1-a) \gamma_t^{\rm IA}$. This may be true, as $\bar{m} - \bar{m}^\prime$ is a difference of small values, but it seems that it merits checking, because we expect $\gamma_t^{\rm L}$ to be considerably larger in amplitude than $\gamma_t^{\rm IA}$.
+
+
+
+
+
+
+
+
+
+
+
+
+%-------------------------------------------------------------------------------
+
+
+%-------------------------------------------------------------------------------
+
+\end{document}

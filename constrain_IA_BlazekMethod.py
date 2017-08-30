@@ -1,6 +1,6 @@
 # This is a script which predicts constraints on intrinsic alignments, using an updated version of the method of Blazek et al 2012 in which it is not assumed that only excess galaxies contribute to IA (rather it is assumed that source galaxies which are close to the lens along the line-of-sight can contribute.)
 
-SURVEY = 'SDSS'
+SURVEY = 'LSST_DESI'
 print "SURVEY=", SURVEY
 
 import numpy as np
@@ -17,9 +17,9 @@ import pyccl as ccl
 def N_of_zph(z_a_def_s, z_b_def_s, z_a_norm_s, z_b_norm_s, z_a_def_ph, z_b_def_ph, z_a_norm_ph, z_b_norm_ph, dNdzpar, pzpar, dNdztype, pztype):
 	""" Returns dNdz_ph, the number density in terms of photometric redshift, defined over photo-z range (z_a_def_ph, z_b_def_ph), normalized over the photo-z range (z_a_norm_ph, z_b_norm_ph), normalized over the spec-z range (z_a_norm, z_b_norm), and defined on the spec-z range (z_a_def, z_b_def)"""
 	
-	(z, dNdZ) = setup.get_NofZ_unnormed(dNdzpar, dNdztype, z_a_def_s, z_b_def_s, 1000)
+	(z, dNdZ) = setup.get_NofZ_unnormed(dNdzpar, dNdztype, z_a_def_s, z_b_def_s, 200)
 	
-	(z_norm, dNdZ_norm) = setup.get_NofZ_unnormed(dNdzpar, dNdztype, z_a_norm_s, z_b_norm_s, 1000)
+	(z_norm, dNdZ_norm) = setup.get_NofZ_unnormed(dNdzpar, dNdztype, z_a_norm_s, z_b_norm_s, 200)
 	
 	z_ph_vec = scipy.linspace(z_a_def_ph, z_b_def_ph, 200)
 	z_ph_vec_norm = scipy.linspace(z_a_norm_ph, z_b_norm_ph, 200)
@@ -39,20 +39,12 @@ def N_of_zph(z_a_def_s, z_b_def_s, z_a_norm_s, z_b_norm_s, z_a_def_ph, z_b_def_p
 
 def sigma_e(z_s_):
 	""" Returns a value for the model for the per-galaxy noise as a function of source redshift"""
-	
-	if (pa.survey=='SDSS'):
 		
-		if hasattr(z_s_, "__len__"):
-			sig_e = 2. / pa.S_to_N * np.ones(len(z_s_))
-		else:
-			sig_e = 2. / pa.S_to_N
+	if hasattr(z_s_, "__len__"):
+		sig_e = 2. / pa.S_to_N * np.ones(len(z_s_))
+	else:
+		sig_e = 2. / pa.S_to_N
 			
-	elif(pa.survey=='LSST_DESI'):
-		if hasattr(z_s_, "__len__"):
-			sig_e = pa.a_sm / pa.SN_med * ( 1. + (pa.b_sm / pa.R_med)**pa.c_sm) * np.ones(len(z_s_))
-		else:
-			sig_e = pa.a_sm / pa.SN_med * ( 1. + (pa.b_sm / pa.R_med)**pa.c_sm) 
-
 	return sig_e
 	
 def weights(e_rms, z_, z_l_):
@@ -153,28 +145,48 @@ def shapenoise_cov(photoz_samp, rp, dNdzpar, pzpar, dNdztype, pztype):
 	# Get the area of each projected radial bin in square arcminutes
 	bin_areas       =       setup.get_areas(rp, pa.zeff, SURVEY) # We're just going to use the mean redshift for this.
 	
-	weighted_frac_sources = sum_weights(photoz_samp, 'nocut', rp, dNdzpar, pzpar, dNdztype, pztype) / sum_weights('full', 'nocut', rp, dNdzpar, pzpar, dNdztype, pztype)
+	#weighted_frac_sources = sum_weights(photoz_samp, 'nocut', rp, dNdzpar, pzpar, dNdztype, pztype) / sum_weights('full', 'nocut', rp, dNdzpar, pzpar, dNdztype, pztype)
 	
-	# Get weighted SigmaC values
-	SigC_avg = sum_weights_SigC(photoz_samp, 'nocut', rp, dNdzpar, pzpar, dNdztype, pztype)/ sum_weights(photoz_samp, 'nocut', rp, dNdzpar, pzpar, dNdztype, pztype)
+	# Define the vector of lens redshifts
+	zL = scipy.linspace(pa.zLmin, pa.zLmax, 200)
+	dndzl = setup.get_dNdzL(zL, SURVEY)
 	
-	if (photoz_samp=='A'):
-		e_rms = pa.e_rms_Bl_a
-	elif (photoz_samp =='B'):
-		e_rms = pa.e_rms_Bl_b
-	elif (phtoz_samp == 'full'):
-		e_rms = pa.e_rms_Bl_full
-	else:
-		print "We do not have support for that photoz sample"
-		exit()
+	# We have the effective source surface density, n_s, over the full distribution of sources. For each lens redshift, there is a different subset of these sources that contribute to neff. Get the corresponding neff as a function of zL
+	ns_eff = np.zeros(len(zL))
+	avg_SigC_inv = np.zeros(len(zL))
+	avg_SigC_inv_inside = np.zeros(len(zL))
+	for zi in range(0,len(zL)):
+		
+		# We require two different normalizations for Nofzph - one for getting the partial neff and another for averaging over SigmaC
+		if (photoz_samp =='A'):
+			(z_ph_ns, Nofzph_ns) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, zL[zi], zL[zi] + pa.delta_z, pa.zphmin, pa.zphmax, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
+			#(z_ph_Sig, Nofzph_Sig) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, zL[zi], zL[zi] + pa.delta_z, zL[zi], zL[zi] + pa.delta_z, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
+			e_rms = pa.e_rms_Bl_a
+		elif (photoz_samp == 'B'):
+			(z_ph_ns, Nofzph_ns) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, zL[zi] + pa.delta_z, pa.zphmax, pa.zphmin, pa.zphmax, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
+			#(z_ph_Sig, Nofzph_Sig) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, zL[zi] + pa.delta_z, pa.zphmax, zL[zi] + pa.delta_z, pa.zphmax, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
+			e_rms = pa.e_rms_Bl_b
+		elif (photoz_sample == 'full'):
+			# This is sort of pointless because if we are using the full sample we expect to recover the full sample value but including for completeness
+			(z_ph_ns, Nofzph_ns) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, pa.zphmin, pa.zphmax, pa.zphmin, pa.zphmax, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
+			#(z_ph_Sig, Nofzph_Sig) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, pa.zphmin, pa.zphmax, pa.zphmin, pa.zphmax, pa.zphmax, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
+			e_rms = pa.e_rms_Bl_full
+		else:
+			print "We do not have support for that sample. Exiting."
+				
+		ns_eff[zi] = pa.n_s * scipy.integrate.simps(Nofzph_ns, z_ph_ns)
 	
-	cov = e_rms**2 * SigC_avg**2 / ( pa.n_l * pa.Area_l * bin_areas * pa.n_s * weighted_frac_sources)
+	SigCterm = ( sum_weights_SigC(photoz_samp, 'nocut', 'all', rp, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype) / sum_weights(photoz_samp, 'nocut', 'all', rp, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype) ) 
+		
+	ns_avg = scipy.integrate.simps(dndzl * ns_eff, zL)
+
+	cov = e_rms**2 * SigCterm**2  / ( ns_avg * pa.n_l * pa.Area_l * bin_areas  )
 	
 	return cov
 
 ################### THEORETICAL VALUES FOR FRACTIONAL ERROR CALCULATION ########################333
 	
-def sum_weights(photoz_sample, specz_cut, rp_bins, dNdz_par, pz_par, dNdztype, pztype):
+def sum_weights(photoz_sample, specz_cut, color_cut, rp_bins, dNdz_par, pz_par, dNdztype, pztype):
 	""" Returns the sum over weights for each projected radial bin. 
 	photoz_sample = 'A', 'B', or 'full'
 	specz_cut = 'close', or 'nocut'
@@ -183,79 +195,148 @@ def sum_weights(photoz_sample, specz_cut, rp_bins, dNdz_par, pz_par, dNdztype, p
 	# Get lens redshift distribution
 	zL = np.linspace(pa.zLmin, pa.zLmax, 100)
 	dNdzL = setup.get_dNdzL(zL, SURVEY)
+	chiL = com_of_z(zL)
+	if (min(chiL)> (pa.close_cut + com_of_z(pa.zsmin))):
+		zminclose = z_of_com(chiL - pa.close_cut)
+	else:
+		zminclose = np.zeros(len(chiL))
+		for cli in range(0,len(chiL)):
+			if (chiL[cli]>pa.close_cut + com_of_z(pa.zsmin)):
+				zminclose[cli] = z_of_com(chiL[cli] - pa.close_cut)
+			else:
+				zminclose[cli] = pa.zsmin
+	zmaxclose = z_of_com(chiL + pa.close_cut)
 	
+	# Get norm, required for the color cut case:
+	zph_norm = np.linspace(pa.zphmin, pa.zphmax, 1000)
+	(zs_norm, dNdzs_norm) = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, pa.zsmin, pa.zsmax, 1000)
+	zs_integral_norm = np.zeros(len(zph_norm))
+	for zpi in range(0,len(zph_norm)):
+		pz = setup.p_z(zph_norm[zpi], zs_norm, pa.pzpar_fid, pa.pztype)
+		zs_integral_norm[zpi] = scipy.integrate.simps(pz * dNdzs_norm, zs_norm)
+	norm = scipy.integrate.simps(zs_integral_norm, zph_norm)
 	
 	# Loop over lens redshift values
 	sum_ans_zph = np.zeros(len(zL))
 	for zi in range(0,len(zL)):
-		if (photoz_sample == 'A'):
-			
-			if (specz_cut == 'nocut'):
-				(z_ph, dNdz_ph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, zL[zi], zL[zi] + pa.delta_z, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
-				
-				weight = weights(pa.e_rms_Bl_a, z_ph, zL[zi])
-				sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weight, z_ph)
-				
-			elif (specz_cut == 'close'):
-				(z_ph, dNdz_ph) = N_of_zph(zL[zi]-z_of_com(pa.close_cut), zL[zi]+z_of_com(pa.close_cut), pa.zsmin, pa.zsmax, zL[zi], zL[zi] + pa.delta_z, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
-				
-				weight = weights(pa.e_rms_Bl_a, z_ph, zL[zi])
-				sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weight, z_ph)
-				
-			else:
-				print "We do not have support for that spec-z cut. Exiting."
-				exit()
-			
-		elif(photoz_sample == 'B'):
-			
-			if (specz_cut == 'nocut'):
-				(z_ph, dNdz_ph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, zL[zi] + pa.delta_z, pa.zphmax, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
-				
-				weight = weights(pa.e_rms_Bl_b, z_ph, zL[zi])
-				sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weight, z_ph)
-				
-			elif (specz_cut == 'close'):
-				(z_ph, dNdz_ph) = N_of_zph(zL[zi]-z_of_com(pa.close_cut), zL[zi]+z_of_com(pa.close_cut), pa.zsmin, pa.zsmax, zL[zi] + pa.delta_z, pa.zphmax, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
-				
-				weight = weights(pa.e_rms_Bl_b, z_ph, zL[zi])
-				
-				sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weight, z_ph)
-				
-			else:
-				print "We do not have support for that spec-z cut. Exiting."
-				exit()
 		
-		elif(photoz_sample == 'full'):
+		if (color_cut=='all'):
+			if (photoz_sample == 'A'):
 			
-			if (specz_cut == 'nocut'):
-				(z_ph, dNdz_ph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, pa.zphmin, pa.zphmax, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
+				if (specz_cut == 'nocut'):
+					(z_ph, dNdz_ph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, zL[zi], zL[zi] + pa.delta_z, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
 				
-				weight = weights(pa.e_rms_Bl_full, z_ph, zL[zi])
+					weight = weights(pa.e_rms_Bl_a, z_ph, zL[zi])
+					sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weight, z_ph)
 				
-				sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weight, z_ph)
+				elif (specz_cut == 'close'):
+					(z_ph, dNdz_ph) = N_of_zph(zminclose[zi], zmaxclose[zi], pa.zsmin, pa.zsmax, zL[zi], zL[zi] + pa.delta_z, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
 				
-			elif (specz_cut == 'close'):
-				(z_ph, dNdz_ph) = N_of_zph(zL[zi]-z_of_com(pa.close_cut), zL[zi]+z_of_com(pa.close_cut), pa.zsmin, pa.zsmax, pa.zphmin, pa.zphmax, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
+					weight = weights(pa.e_rms_Bl_a, z_ph, zL[zi])
+					sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weight, z_ph)
 				
-				weight = weights(pa.e_rms_Bl_full, z_ph, zL[zi])
+				else:
+					print "We do not have support for that spec-z cut. Exiting."
+					exit()
+			
+			elif(photoz_sample == 'B'):
+			
+				if (specz_cut == 'nocut'):
+					(z_ph, dNdz_ph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, zL[zi] + pa.delta_z, pa.zphmax, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
 				
-				sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weight, z_ph)
+					weight = weights(pa.e_rms_Bl_b, z_ph, zL[zi])
+					sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weight, z_ph)
 				
-			else:
-				print "We do not have support for that spec-z cut. Exiting."
-				exit()
+				elif (specz_cut == 'close'):
+					(z_ph, dNdz_ph) = N_of_zph(zminclose[zi], zmaxclose[zi], pa.zsmin, pa.zsmax, zL[zi] + pa.delta_z, pa.zphmax, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
+				
+					weight = weights(pa.e_rms_Bl_b, z_ph, zL[zi])
+				
+					sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weight, z_ph)
+				
+				else:
+					print "We do not have support for that spec-z cut. Exiting."
+					exit()
 		
-		else:
-			print "We do not have support for that photo-z sample cut. Exiting."
-			print photoz_sample
-			exit()
+			elif(photoz_sample == 'full'):
+			
+				if (specz_cut == 'nocut'):
+					(z_ph, dNdz_ph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, pa.zphmin, pa.zphmax, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
+				
+					weight = weights(pa.e_rms_Bl_full, z_ph, zL[zi])
+				
+					sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weight, z_ph)
+				
+				elif (specz_cut == 'close'):
+					(z_ph, dNdz_ph) = N_of_zph(zminclose[zi], zmaxclose[zi], pa.zsmin, pa.zsmax, pa.zphmin, pa.zphmax, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
+				
+					weight = weights(pa.e_rms_Bl_full, z_ph, zL[zi])
+				
+					sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weight, z_ph)
+				
+				else:
+					print "We do not have support for that spec-z cut. Exiting."
+					exit()
+		
+			else:
+				print "We do not have support for that photo-z sample cut. Exiting."
+				print photoz_sample
+				exit()
+		elif (color_cut=='red'):
+			if(photoz_sample=='A'):
+				if (specz_cut=='close'):
+					z_ph = np.linspace(zL[zi], zL[zi] + pa.delta_z, 500)
+					zs, dNdzs = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, zminclose[zi], zmaxclose[zi], 500)
+				elif(specz_cut=='nocut'):
+					z_ph = np.linspace(zL[zi], zL[zi] + pa.delta_z, 500)
+					zs, dNdzs = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype,pa.zsmin, pa.zsmax, 500)
+				else:
+					print "We do not have support for that spec-z cut. Exiting."
+					exit()
+			elif(photoz_sample=='B'):
+				if (specz_cut=='close'):
+					z_ph = np.linspace(zL[zi]+pa.delta_z, pa.zphmax, 500)
+					zs, dNdzs = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, zminclose[zi], zmaxclose[zi], 500)
+				elif(specz_cut=='nocut'):
+					z_ph = np.linspace(zL[zi]+pa.delta_z, pa.zphmax, 500)
+					zs, dNdzs = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype,pa.zsmin, pa.zsmax, 500)
+				else:
+					print "We do not have support for that spec-z cut. Exiting."
+					exit()
+			elif (photoz_sample=='full'):
+				if (specz_cut=='close'):
+					z_ph = np.linspace(pa.zphmin, pa.zphmax, 500)
+					zs, dNdzs = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, zminclose[zi], zmaxclose[zi], 500)
+				elif (specz_cut=='nocut'):
+					z_ph = np.linspace(pa.zphmin, pa.zphmax, 500)
+					zs, dNdzs = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, pa.zsmin, pa.zsmax, 500)
+				else:
+					print "We do not have support for that spec-z cut. Exiting."
+					exit()
+			else:
+				print "We do not have support for that photo-z sample. Exiting."
+				exit()	
+			fred = fred_interp(zs)
+					
+			zs_integral = np.zeros(len(z_ph))
+			for zpi in range(0,len(z_ph)):
+				pz = setup.p_z(z_ph[zpi], zs, pa.pzpar_fid, pa.pztype)
+				zs_integral[zpi] = scipy.integrate.simps(pz*dNdzs*fred, zs)
+			dNdz_fred = zs_integral / norm 
+					
+			weight = weights(pa.e_rms_mean, z_ph, zL[zi])
+			sum_ans_zph[zi] = scipy.integrate.simps(weight * dNdz_fred, z_ph)
 	
+		else:
+			print "We do not have support for that color cut, exiting."
+			exit()
+			
 	# Now sum over lens redshift:
 	sum_ans = scipy.integrate.simps(sum_ans_zph * dNdzL, zL)
 	
 	return sum_ans
 
-def sum_weights_SigC(photoz_sample, specz_cut, rp_bins, dNdz_par, pz_par, dNdztype, pztype):
+def sum_weights_SigC(photoz_sample, specz_cut, color_cut, rp_bins, dNdz_par, pz_par, dNdztype, pztype):
 	""" Returns the sum over weights * SigmaC for each projected radial bin. 
 	photoz_sample = 'A', 'B', or 'full'
 	specz_cut = 'close', or 'nocut'
@@ -264,74 +345,144 @@ def sum_weights_SigC(photoz_sample, specz_cut, rp_bins, dNdz_par, pz_par, dNdzty
 	# Get lens redshift distribution
 	zL = np.linspace(pa.zLmin, pa.zLmax, 100)
 	dNdzL = setup.get_dNdzL(zL, SURVEY)
+	chiL = com_of_z(zL)
+	if (min(chiL)> (pa.close_cut + com_of_z(pa.zsmin))):
+		zminclose = z_of_com(chiL - pa.close_cut)
+	else:
+		zminclose = np.zeros(len(chiL))
+		for cli in range(0,len(chiL)):
+			if (chiL[cli]>pa.close_cut + com_of_z(pa.zsmin)):
+				zminclose[cli] = z_of_com(chiL[cli] - pa.close_cut)
+			else:
+				zminclose[cli] = pa.zsmin
+	zmaxclose = z_of_com(chiL + pa.close_cut)
+	
+	# Get norm, required for the color cut case:
+	zph_norm = np.linspace(pa.zphmin, pa.zphmax, 1000)
+	(zs_norm, dNdzs_norm) = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, pa.zsmin, pa.zsmax, 1000)
+	zs_integral_norm = np.zeros(len(zph_norm))
+	for zpi in range(0,len(zph_norm)):
+		pz = setup.p_z(zph_norm[zpi], zs_norm, pa.pzpar_fid, pa.pztype)
+		zs_integral_norm[zpi] = scipy.integrate.simps(pz * dNdzs_norm, zs_norm)
+	norm = scipy.integrate.simps(zs_integral_norm, zph_norm)
 	
 	# Loop over lens redshift values
 	sum_ans_zph = np.zeros(len(zL))
 	for zi in range(0,len(zL)):
-		if (photoz_sample == 'A'):
+		if (color_cut=='all'):
+			if (photoz_sample == 'A'):
 			
-			if (specz_cut == 'nocut'):
-				(z_ph, dNdz_ph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, zL[zi], zL[zi] + pa.delta_z, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
+				if (specz_cut == 'nocut'):
+					(z_ph, dNdz_ph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, zL[zi], zL[zi] + pa.delta_z, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
 				
-				weightSigC = weights_times_SigC(pa.e_rms_Bl_a, z_ph, zL[zi])
+					weightSigC = weights_times_SigC(pa.e_rms_Bl_a, z_ph, zL[zi])
 				
-				sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weightSigC, z_ph)
+					sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weightSigC, z_ph)
 				
-			elif (specz_cut == 'close'):
-				(z_ph, dNdz_ph) = N_of_zph(zL[zi]-z_of_com(pa.close_cut), zL[zi]+z_of_com(pa.close_cut), pa.zsmin, pa.zsmax, zL[zi], zL[zi] + pa.delta_z, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
+				elif (specz_cut == 'close'):
+					(z_ph, dNdz_ph) = N_of_zph(zminclose[zi], zmaxclose[zi], pa.zsmin, pa.zsmax, zL[zi], zL[zi] + pa.delta_z, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
 				
-				weightSigC = weights_times_SigC(pa.e_rms_Bl_a, z_ph, zL[zi])
+					weightSigC = weights_times_SigC(pa.e_rms_Bl_a, z_ph, zL[zi])
 				
-				sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weightSigC, z_ph)
+					sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weightSigC, z_ph)
 				
-			else:
-				print "We do not have support for that spec-z cut. Exiting."
-				exit()
+				else:
+					print "We do not have support for that spec-z cut. Exiting."
+					exit()
 			
-		elif(photoz_sample == 'B'):
+			elif(photoz_sample == 'B'):
 			
-			if (specz_cut == 'nocut'):
-				(z_ph, dNdz_ph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, zL[zi] + pa.delta_z, pa.zphmax, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
+				if (specz_cut == 'nocut'):
+					(z_ph, dNdz_ph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, zL[zi] + pa.delta_z, pa.zphmax, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
 				
-				weightSigC = weights_times_SigC(pa.e_rms_Bl_b, z_ph, zL[zi])
+					weightSigC = weights_times_SigC(pa.e_rms_Bl_b, z_ph, zL[zi])
 				
-				sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weightSigC, z_ph)
+					sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weightSigC, z_ph)
 				
-			elif (specz_cut == 'close'):
-				(z_ph, dNdz_ph) = N_of_zph(zL[zi]-z_of_com(pa.close_cut), zL[zi]+z_of_com(pa.close_cut), pa.zsmin, pa.zsmax, zL[zi] + pa.delta_z, pa.zphmax, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
+				elif (specz_cut == 'close'):
+					(z_ph, dNdz_ph) = N_of_zph(zminclose[zi], zmaxclose[zi], pa.zsmin, pa.zsmax, zL[zi] + pa.delta_z, pa.zphmax, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
 				
-				weightSigC = weights_times_SigC(pa.e_rms_Bl_b, z_ph, zL[zi])
+					weightSigC = weights_times_SigC(pa.e_rms_Bl_b, z_ph, zL[zi])
 				
-				sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weightSigC, z_ph)
+					sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weightSigC, z_ph)
 				
-			else:
-				print "We do not have support for that spec-z cut. Exiting."
-				exit()
+				else:
+					print "We do not have support for that spec-z cut. Exiting."
+					exit()
 		
-		elif(photoz_sample == 'full'):
+			elif(photoz_sample == 'full'):
 			
-			if (specz_cut == 'nocut'):
-				(z_ph, dNdz_ph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, pa.zphmin, pa.zphmax, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
+				if (specz_cut == 'nocut'):
+					(z_ph, dNdz_ph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, pa.zphmin, pa.zphmax, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
 				
-				weightSigC = weights_times_SigC(pa.e_rms_Bl_full, z_ph, zL[zi])
+					weightSigC = weights_times_SigC(pa.e_rms_Bl_full, z_ph, zL[zi])
 				
-				sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weightSigC, z_ph)
+					sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weightSigC, z_ph)
 				
-			elif (specz_cut == 'close'):
-				(z_ph, dNdz_ph) = N_of_zph(zL[zi]-z_of_com(pa.close_cut), zL[zi]+z_of_com(pa.close_cut), pa.zsmin, pa.zsmax, pa.zphmin, pa.zphmax, pa.zphmax, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
+				elif (specz_cut == 'close'):
+					(z_ph, dNdz_ph) = N_of_zph(zminclose[zi], zmaxclose[zi], pa.zsmin, pa.zsmax, pa.zphmin, pa.zphmax, pa.zphmax, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
 				
-				weightSigC = weights_times_SigC(pa.e_rms_Bl_full, z_ph, zL[zi])
+					weightSigC = weights_times_SigC(pa.e_rms_Bl_full, z_ph, zL[zi])
 				
-				sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weightSigC, z_ph)
+					sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weightSigC, z_ph)
 				
-			else:
-				print "We do not have support for that spec-z cut. Exiting."
-				exit()
+				else:
+					print "We do not have support for that spec-z cut. Exiting."
+					exit()
 		
+			else:
+				print "We do not have support for that photo-z sample cut. Exiting."
+				print photoz_sample
+				exit()
+		elif (color_cut=='red'):
+			if(photoz_sample=='A'):
+				if (specz_cut=='close'):
+					z_ph = np.linspace(zL[zi], zL[zi] + pa.delta_z, 500)
+					zs, dNdzs = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, zminclose[zi], zmaxclose[zi], 500)
+				elif(specz_cut=='nocut'):
+					z_ph = np.linspace(zL[zi], zL[zi] + pa.delta_z, 500)
+					zs, dNdzs = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype,pa.zsmin, pa.zsmax, 500)
+				else:
+					print "We do not have support for that spec-z cut. Exiting."
+					exit()
+			elif(photoz_sample=='B'):
+				if (specz_cut=='close'):
+					z_ph = np.linspace(zL[zi]+pa.delta_z, pa.zphmax, 500)
+					zs, dNdzs = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, zminclose[zi], zmaxclose[zi], 500)
+				elif(specz_cut=='nocut'):
+					z_ph = np.linspace(zL[zi]+pa.delta_z, pa.zphmax, 500)
+					zs, dNdzs = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype,pa.zsmin, pa.zsmax, 500)
+				else:
+					print "We do not have support for that spec-z cut. Exiting."
+					exit()
+			elif (photoz_sample=='full'):
+				if (specz_cut=='close'):
+					z_ph = np.linspace(pa.zphmin, pa.zphmax, 500)
+					zs, dNdzs = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, zminclose[zi], zmaxclose[zi], 500)
+				elif (specz_cut=='nocut'):
+					z_ph = np.linspace(pa.zphmin, pa.zphmax, 500)
+					zs, dNdzs = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, pa.zsmin, pa.zsmax, 500)
+				else:
+					print "We do not have support for that spec-z cut. Exiting."
+					exit()
+			else:
+				print "We do not have support for that photo-z sample. Exiting."
+				exit()	
+			fred = fred_interp(zs)
+					
+			zs_integral = np.zeros(len(z_ph))
+			for zpi in range(0,len(z_ph)):
+				pz = setup.p_z(z_ph[zpi], zs, pa.pzpar_fid, pa.pztype)
+				zs_integral[zpi] = scipy.integrate.simps(pz*dNdzs*fred, zs)
+			dNdz_fred = zs_integral / norm 
+					
+			weight_SigC = weights_times_SigC(pa.e_rms_mean, z_ph, zL[zi])
+			sum_ans_zph[zi] = scipy.integrate.simps(weight_SigC * dNdz_fred, z_ph)
+	
 		else:
-			print "We do not have support for that photo-z sample cut. Exiting."
-			print photoz_sample
+			print "We do not have support for that color cut, exiting."
 			exit()
+	
 	
 	# Now sum over lens redshift:
 	sum_ans = scipy.integrate.simps(sum_ans_zph * dNdzL, zL)
@@ -349,10 +500,10 @@ def get_F(photoz_sample, rp_bins_, dNdz_par, pz_par, dNdztype, pztype):
 	""" Returns F (the weighted fraction of lens-source pairs from the smooth dNdz which are contributing to IA) """
 
 	# Sum over `rand-close'
-	numerator = sum_weights(photoz_sample, 'close', rp_bins_, dNdz_par, pz_par, dNdztype, pztype)
+	numerator = sum_weights(photoz_sample, 'close', 'red', rp_bins_, dNdz_par, pz_par, dNdztype, pztype)
 
 	#Sum over all `rand'
-	denominator = sum_weights(photoz_sample, 'nocut', rp_bins_, dNdz_par, pz_par, dNdztype, pztype)
+	denominator = sum_weights(photoz_sample, 'nocut', 'all', rp_bins_, dNdz_par, pz_par, dNdztype, pztype)
 
 	F = np.asarray(numerator) / np.asarray(denominator)
 
@@ -362,7 +513,7 @@ def get_cz(photoz_sample, rp_bins_, dNdzpar, pzpar, dNdztype, pztype):
 	""" Returns the value of the photo-z bias parameter c_z"""
 
 	# The denominator (of 1+bz) is just a sum over tilde(weights) of all random-source pairs
-	denominator = sum_weights(photoz_sample, 'nocut', rp_bins_, dNdzpar, pzpar, dNdztype, pztype)
+	denominator = sum_weights(photoz_sample, 'nocut', 'all', rp_bins_, dNdzpar, pzpar, dNdztype, pztype)
 	
 	# Now get the mean of tilde(weight) tilde(Sigma_c) Sigma_c^{-1} 
 	bSigw = get_bSigW(photoz_sample, dNdzpar, dNdztype, pzpar, pztype)
@@ -447,17 +598,17 @@ def get_bSigW(photoz_samp, dNdzpar, dNdztype, pzpar, pztype):
 	return bsw_return
 	
 def get_Sig_IA(photoz_sample, rp_bins_, boost, dNdz_par, pz_par, dNdztype, pztype):
-	""" Returns the value of <\Sigma_c>_{IA} in radial bins. Parameters labeled '2' are for the `rand-close' sums and '1' are for the `excess' sums. """
+	""" Returns the value of <\Sigma_c>_{IA} in radial bins. """
 	
 	# There are four terms here. The two in the denominators are sums over randoms (or sums over lenses that can be written as randoms * boost), and these are already set up to calculate.
-	denom_rand_close =  sum_weights(photoz_sample, 'close', rp_bins_, dNdz_par, pz_par, dNdztype, pztype)
-	denom_rand =  sum_weights(photoz_sample, 'nocut', rp_bins_, dNdz_par, pz_par, dNdztype, pztype)
+	denom_rand_close =  sum_weights(photoz_sample, 'close', 'red', rp_bins_, dNdz_par, pz_par, dNdztype, pztype)
+	denom_rand =  sum_weights(photoz_sample, 'nocut', 'red', rp_bins_, dNdz_par, pz_par, dNdztype, pztype)
 	denom_excess = (boost - 1.) * denom_rand
 	
 	# The two in the numerator require summing over weights and Sigma_C. 
 	
 	#For the sum over rand-close in the numerator, this follows directly from the same type of expression as when summing weights:
-	num_rand_close = sum_weights_SigC(photoz_sample, 'close', rp_bins, dNdz_par, pz_par, dNdztype, pztype)
+	num_rand_close = sum_weights_SigC(photoz_sample, 'close', 'red', rp_bins, dNdz_par, pz_par, dNdztype, pztype)
 
 	# The other numerator sum is a term which represents the a sum over excess. We have to get the normalization indirectly so there are a bunch of terms here. See notes.
 	# We assume all excess galaxies are at the lens redshift.
@@ -476,9 +627,9 @@ def get_Sig_IA(photoz_sample, rp_bins_, boost, dNdz_par, pz_par, dNdztype, pztyp
 			weightSigC = weights_times_SigC(pa.e_rms_Bl_a, z_ph, zLvec[zi])
 			
 			# We first compute a sum over excess of weights and Sigma_C with arbitrary normalization:
-			exc_SigC_arbnorm_ofzL[zi] = scipy.integrate.simps(weightSigC * setup.p_z(z_ph, zLvec[zi], pz_par, pztype), z_ph)
+			exc_SigC_arbnorm_ofzL[zi] = scipy.integrate.simps(weightSigC * setup.p_z(z_ph, zLvec[zi], pz_par, pztype) * fred_interp(zLvec[zi]), z_ph)
 			# We do the same for a sum over excess of just weights with the same arbitrary normalization:
-			exc_arbnorm_ofzL[zi] = scipy.integrate.simps(weight * setup.p_z(z_ph, zLvec[zi], pz_par, pztype), z_ph)
+			exc_arbnorm_ofzL[zi] = scipy.integrate.simps(weight * setup.p_z(z_ph, zLvec[zi], pz_par, pztype) * fred_interp(zLvec[zi]), z_ph)
 			
 		elif (photoz_sample=='B'):
 			z_ph = scipy.linspace(zLvec[zi] + pa.delta_z, pa.zphmax, 1000)
@@ -487,9 +638,9 @@ def get_Sig_IA(photoz_sample, rp_bins_, boost, dNdz_par, pz_par, dNdztype, pztyp
 			weightSigC = weights_times_SigC(pa.e_rms_Bl_b, z_ph, zLvec[zi])
 			
 			# We first compute a sum over excess of weights and Sigma_C with arbitrary normalization:
-			exc_SigC_arbnorm_ofzL[zi] = scipy.integrate.simps(weightSigC * setup.p_z(z_ph, zLvec[zi], pz_par, pztype), z_ph)
+			exc_SigC_arbnorm_ofzL[zi] = scipy.integrate.simps(weightSigC * setup.p_z(z_ph, zLvec[zi], pz_par, pztype) * fred_interp(zLvec[zi]), z_ph)
 			# We do the same for a sum over excess of just weights with the same arbitrary normalization:
-			exc_arbnorm_ofzL[zi] = scipy.integrate.simps(weight * setup.p_z(z_ph, zLvec[zi], pz_par, pztype), z_ph)
+			exc_arbnorm_ofzL[zi] = scipy.integrate.simps(weight * setup.p_z(z_ph, zLvec[zi], pz_par, pztype) * fred_interp(zLvec[zi]), z_ph)
 		
 		elif (photoz-samlple == 'full'):
 			z_ph = scipy.linspace(pa.zphmin, pa.zphmax, 1000)
@@ -498,9 +649,9 @@ def get_Sig_IA(photoz_sample, rp_bins_, boost, dNdz_par, pz_par, dNdztype, pztyp
 			weightSigC = weights_times_SigC(pa.e_rms_Bl_full, z_ph, zLvec[zi])
 			
 			# We first compute a sum over excess of weights and Sigma_C with arbitrary normalization:
-			exc_SigC_arbnorm_ofzL[zi] = scipy.integrate.simps(weightSigC * setup.p_z(z_ph, zLvec[zi], pz_par, pztype), z_ph)
+			exc_SigC_arbnorm_ofzL[zi] = scipy.integrate.simps(weightSigC * setup.p_z(z_ph, zLvec[zi], pz_par, pztype) * fred_interp(zLvec[zi]), z_ph)
 			# We do the same for a sum over excess of just weights with the same arbitrary normalization:
-			exc_arbnorm_ofzL[zi] = scipy.integrate.simps(weight * setup.p_z(z_ph, zLvec[zi], pz_par, pztype), z_ph)
+			exc_arbnorm_ofzL[zi] = scipy.integrate.simps(weight * setup.p_z(z_ph, zLvec[zi], pz_par, pztype) * fred_interp(zLvec[zi]), z_ph)
 	
 		else:
 			print "We don't have support for that photo-z sample. Exiting."
@@ -520,13 +671,126 @@ def get_Sig_IA(photoz_sample, rp_bins_, boost, dNdz_par, pz_par, dNdztype, pztyp
 
 	return Sig_IA 
 
+def get_Sig_ex(photoz_sample, rp_bins_, boost, dNdz_par, pz_par, dNdztype, pztype):
+	""" This function gets the average Sigmac over (red) excess galaxies, to compare the original method with the new method of assuming all physically associated galaxies are subject to IA."""
+	
+	# Sum over weights in the denominator
+	denom_rand =  sum_weights(photoz_sample, 'nocut', 'red', rp_bins_, dNdz_par, pz_par, dNdztype, pztype)
+	denom_excess = (boost - 1.) * denom_rand
+	
+	# The numerator a sum over excess of SigmaC. We have to get the normalization indirectly so there are a bunch of terms here. See notes.
+	# We assume all excess galaxies are at the lens redshift.
+	
+	# Get the redshift distribution for the lenses
+	zLvec = np.linspace(pa.zLmin, pa.zLmax, 500)
+	dndzl = setup.get_dNdzL(zLvec, SURVEY)
+	
+	exc_SigC_arbnorm_ofzL = np.zeros(len(zLvec))
+	exc_arbnorm_ofzL = np.zeros(len(zLvec))
+	for zi in range(0, len(zLvec)):
+		if (photoz_sample=='A'):
+			z_ph = scipy.linspace(zLvec[zi], zLvec[zi] + pa.delta_z, 1000)
+			
+			weight = weights(pa.e_rms_Bl_a, z_ph, zLvec[zi])
+			weightSigC = weights_times_SigC(pa.e_rms_Bl_a, z_ph, zLvec[zi])
+			
+			# We first compute a sum over excess of weights and Sigma_C with arbitrary normalization:
+			exc_SigC_arbnorm_ofzL[zi] = scipy.integrate.simps(weightSigC * setup.p_z(z_ph, zLvec[zi], pz_par, pztype) * fred_interp(zLvec[zi]), z_ph)
+			# We do the same for a sum over excess of just weights with the same arbitrary normalization:
+			exc_arbnorm_ofzL[zi] = scipy.integrate.simps(weight * setup.p_z(z_ph, zLvec[zi], pz_par, pztype) * fred_interp(zLvec[zi]), z_ph)
+			
+		elif (photoz_sample=='B'):
+			z_ph = scipy.linspace(zLvec[zi] + pa.delta_z, pa.zphmax, 1000)
+			
+			weight = weights(pa.e_rms_Bl_b, z_ph, zLvec[zi])
+			weightSigC = weights_times_SigC(pa.e_rms_Bl_b, z_ph, zLvec[zi])
+			
+			# We first compute a sum over excess of weights and Sigma_C with arbitrary normalization:
+			exc_SigC_arbnorm_ofzL[zi] = scipy.integrate.simps(weightSigC * setup.p_z(z_ph, zLvec[zi], pz_par, pztype) * fred_interp(zLvec[zi]), z_ph)
+			# We do the same for a sum over excess of just weights with the same arbitrary normalization:
+			exc_arbnorm_ofzL[zi] = scipy.integrate.simps(weight * setup.p_z(z_ph, zLvec[zi], pz_par, pztype) * fred_interp(zLvec[zi]), z_ph)
+		
+		elif (photoz-samlple == 'full'):
+			z_ph = scipy.linspace(pa.zphmin, pa.zphmax, 1000)
+			
+			weight = weights(pa.e_rms_Bl_full, z_ph, zLvec[zi])
+			weightSigC = weights_times_SigC(pa.e_rms_Bl_full, z_ph, zLvec[zi])
+			
+			# We first compute a sum over excess of weights and Sigma_C with arbitrary normalization:
+			exc_SigC_arbnorm_ofzL[zi] = scipy.integrate.simps(weightSigC * setup.p_z(z_ph, zLvec[zi], pz_par, pztype) * fred_interp(zLvec[zi]), z_ph)
+			# We do the same for a sum over excess of just weights with the same arbitrary normalization:
+			exc_arbnorm_ofzL[zi] = scipy.integrate.simps(weight * setup.p_z(z_ph, zLvec[zi], pz_par, pztype) * fred_interp(zLvec[zi]), z_ph)
+	
+		else:
+			print "We don't have support for that photo-z sample. Exiting."
+			exit()
+			
+	exc_SigC_arbnorm = scipy.integrate.simps(exc_SigC_arbnorm_ofzL * dndzl, zLvec)
+	exc_arbnorm = scipy.integrate.simps(exc_arbnorm_ofzL * dndzl, zLvec)
+	
+	# We already have an appropriately normalized sum over excess weights, from above (denom_excess), via the relationship with the boost.
+	# Put these components together to get the appropriately normalized sum over excess of weights and SigmaC:
+	num_excess = exc_SigC_arbnorm / exc_arbnorm * denom_excess
+	
+	# Sigma_C_inv is in units of pc^2 / (h Msol) (comoving), so Sig_ex is in units of h Msol / pc^2 (comoving).
+	Sig_ex = (np.asarray(num_excess)) / (np.asarray(denom_excess)) 
+
+	return Sig_ex
+
 def get_est_DeltaSig(boost, F, cz, SigIA, g_IA_fid):
 	""" Returns the value of tilde Delta Sigma in bins"""
 		
 	EstDeltaSig = np.asarray(DeltaSigma_theoretical) / cz + (boost-1.+ F) * SigIA * g_IA_fid
 
 	return EstDeltaSig
+	
+def f_red_rand(photoz_sample):
+	""" We compute the weighted fraction of non-excess pairs with red sources over total weighted pairs."""
+	
+	f = sum_weights(photoz_sample, 'nocut', 'red', rp_bins, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype) / sum_weights(photoz_sample, 'nocut', 'all', rp_bins, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
 
+	return f
+	
+def get_fred(photoz_samp):
+	""" This function returns the zl- and zph- averaged red fraction for the given sample."""
+	
+	zL = np.linspace(pa.zLmin, pa.zLmax, 200)
+	
+	(zs, dNdzs) = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, 0.02, pa.zsmax, 500) # 0.02 is to stay within the range of interpolation for e- and k- corrections - this is so far below the photoz range it shouldn't matter much.
+	
+	fred_of_z = setup.get_fred_ofz(zs, SURVEY)
+	
+	ans2 = np.zeros(len(zL))
+	norm = np.zeros(len(zL))
+	for zi in range(0, len(zL)):
+		
+		if (photoz_samp=='A'):
+			
+			zph = np.linspace(zL[zi], zL[zi]+pa.delta_z, 500)
+			
+		elif (photoz_samp == 'B'):
+			zph = np.linspace(zL[zi]+ pa.delta_z,pa.zphmax, 500)
+			
+		elif (photoz_sampe =='full'):
+			zph = np.linspace(pa.zphmin, pa.zphmax, 500)
+		else:
+			print "That photo-z cut is not supported; exiting."
+			exit()
+		
+		ans1 = np.zeros(len(zph))
+		norm1 = np.zeros(len(zph))
+		for zpi in range(0,len(zph)):
+			pz = setup.p_z(zph[zpi], zs, pa.pzpar_fid, pa.pztype)
+			ans1[zpi] = scipy.integrate.simps(pz * dNdzs * fred_of_z, zs)
+			norm1[zpi] = scipy.integrate.simps(pz * dNdzs, zs)
+		ans2[zi] = scipy.integrate.simps(ans1, zph)
+		norm[zi] = scipy.integrate.simps(norm1, zph)
+		
+	dndzl = setup.get_dNdzL(zL, SURVEY)
+	
+	fred_avg = scipy.integrate.simps(dndzl * ans2 / norm, zL)
+	return fred_avg
+		
 def get_Pkgm_1halo():
 	""" Returns (and more usefully saves) the 1halo lens galaxies x dark matter power spectrum, for the calculation of Delta Sigma (theoretical) """
 	
@@ -542,7 +806,7 @@ def get_Pkgm_1halo():
 	zLvec = np.linspace(pa.zLmin, pa.zLmax, 500)
 	
 	# Get the halo mass function
-	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = 2.1*10**(-9), n_s=0.96)
+	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = pa.A_s, n_s=pa.n_s_cosmo)
 	cosmo = ccl.Cosmology(p)
 	HMF = np.zeros((len(Mhalo), len(zLvec)))
 	for zi in range(0, len(zLvec)):
@@ -754,26 +1018,33 @@ def get_gammaIA_cov(rp_bins, rp_bins_c, fudgeczA, fudgeczB, fudgeFA, fudgeFB, fu
 	
 		################ F's #################
 	
-		# F factors - first, fiducial
 		F_a_fid = get_F('A', rp_bins, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
 		F_b_fid = get_F('B', rp_bins, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
 		print "F_a_fid=", F_a_fid , "F_b_fid=", F_b_fid
 	
 		save_F = np.column_stack(([F_a_fid], [F_b_fid]))
-		np.savetxt('./txtfiles/F_afid_bfid_extL_survey='+pa.survey+'_deltaz='+str(pa.delta_z)+'.txt', save_F)
+		np.savetxt('./txtfiles/F_afid_bfid_fred_survey='+pa.survey+'_deltaz='+str(pa.delta_z)+'.txt', save_F)
 	
 		############# Sig_IA's ##############
 	
-		# Sig IA - first, fiducial
-		# TO INCLUDE AN EXTENDED Z DIST FOR LENSES, THE ARGUMENTS OF THIS FUNCTION WILL CHANGE TO PASS A OR B AS THE SAMPLE LABEL, SEE NOTEBOOK JULY 26.
 		Sig_IA_a_fid = get_Sig_IA('A', rp_bins, Boost_a,  pa.dNdzpar_fid, pa.pzpar_fid,  pa.dNdztype, pa.pztype)
 		Sig_IA_b_fid = get_Sig_IA('B', rp_bins, Boost_b,  pa.dNdzpar_fid, pa.pzpar_fid,  pa.dNdztype, pa.pztype)
 		print "Sig_IA_a_fid=", Sig_IA_a_fid
 		print "Sig_IA_b_fid=", Sig_IA_b_fid
 	
 		save_SigIA = np.column_stack((rp_bins_c, Sig_IA_a_fid, Sig_IA_b_fid))
-		np.savetxt('./txtfiles/Sig_IA_afid_bfid_extL_survey='+pa.survey+'_deltaz='+str(pa.delta_z)+'.txt', save_SigIA)
+		np.savetxt('./txtfiles/Sig_IA_afid_bfid_fred_survey='+pa.survey+'_deltaz='+str(pa.delta_z)+'.txt', save_SigIA)
+		
+		############# Sig_ex's ##############
+		
+		Sig_ex_a_fid = get_Sig_ex('A', rp_bins, Boost_a,  pa.dNdzpar_fid, pa.pzpar_fid,  pa.dNdztype, pa.pztype)
+		Sig_ex_b_fid = get_Sig_ex('B', rp_bins, Boost_b,  pa.dNdzpar_fid, pa.pzpar_fid,  pa.dNdztype, pa.pztype)
+		print "Sig_ex_a_fid=", Sig_ex_a_fid
+		print "Sig_ex_b_fid=", Sig_ex_b_fid
 	
+		save_Sigex = np.column_stack((rp_bins_c, Sig_ex_a_fid, Sig_ex_b_fid))
+		np.savetxt('./txtfiles/Sig_ex_afid_bfid_fred_survey='+pa.survey+'_deltaz='+str(pa.delta_z)+'.txt', save_Sigex)
+
 		############ c_z's ##############
 	
 		# Photometric biases to estimated Delta Sigmas, fiducial
@@ -782,34 +1053,41 @@ def get_gammaIA_cov(rp_bins, rp_bins_c, fudgeczA, fudgeczB, fudgeFA, fudgeFB, fu
 		print "cz_a_fid =", cz_a_fid, "cz_b_fid=", cz_b_fid
 		
 		save_cz = np.column_stack(([cz_a_fid], [cz_b_fid]))
-		np.savetxt('./txtfiles/cz_afid_bfid_extl_survey='+pa.survey+'_deltaz='+str(pa.delta_z)+'.txt', save_cz)
+		np.savetxt('./txtfiles/cz_afid_bfid_fred_survey='+pa.survey+'_deltaz='+str(pa.delta_z)+'.txt', save_cz)
+		
+		exit()
 	
 	############ gamma_IA ###########
 	# gamma_IA_fiducial, from model
 	g_IA_fid = gamma_fid(rp_bins_c)
-	
-	exit()
-	
+		
 	if pa.run_quants==False :
 		# Load stuff if we haven't computed it this time around:
-		(F_a_fid, F_b_fid) = np.loadtxt('./txtfiles/F_afid_bfid_extl_survey='+pa.survey+'_deltaz='+str(pa.delta_z)+'.txt', unpack=True)
-		(rp_bins_c, Sig_IA_a_fid, Sig_IA_b_fid) = np.loadtxt('./txtfiles/Sig_IA_afid_bfid_extl_survey='+pa.survey+'_deltaz='+str(pa.delta_z)+'.txt', unpack=True)
-		(cz_a_fid, cz_b_fid) = np.loadtxt('./txtfiles/cz_afid_bfid_extl_survey='+pa.survey+'_deltaz='+str(pa.delta_z)+'.txt', unpack=True)
+		(F_a_fid, F_b_fid) = np.loadtxt('./txtfiles/F_afid_bfid_fred_survey='+pa.survey+'_deltaz='+str(pa.delta_z)+'.txt', unpack=True)
+		(rp_bins_c, Sig_IA_a_fid, Sig_IA_b_fid) = np.loadtxt('./txtfiles/Sig_IA_afid_bfid_fred_survey='+pa.survey+'_deltaz='+str(pa.delta_z)+'.txt', unpack=True)
+		(rp_bins_c, Sig_ex_a_fid, Sig_ex_b_fid) = np.loadtxt('./txtfiles/Sig_ex_afid_bfid_fred_survey='+pa.survey+'_deltaz='+str(pa.delta_z)+'.txt', unpack=True)
+		(cz_a_fid, cz_b_fid) = np.loadtxt('./txtfiles/cz_afid_bfid_fred_survey='+pa.survey+'_deltaz='+str(pa.delta_z)+'.txt', unpack=True)
 	
 	# Estimated Delta Sigmas
-	#TO INCLUDE AN EXTENDED REDSHIFT DISTRIBUTION FOR LENSES, JUST REMOVE THE DEPENDENCING ON ZEFF HERE (WE DON'T USE IT ANYMORE).
 	DeltaSig_est_a = get_est_DeltaSig(Boost_a, F_a_fid, cz_a_fid, Sig_IA_a_fid, g_IA_fid)
 	DeltaSig_est_b = get_est_DeltaSig(Boost_b, F_b_fid, cz_b_fid, Sig_IA_b_fid, g_IA_fid)
 	
+	# Get the red fraction quantities
+	fred_rand_A = f_red_rand('A')
+	fred_rand_B = f_red_rand('B')
+	print "fred rand A=", fred_rand_A, "fred_rand_B=", fred_rand_B
+	
 	############ Get statistical error ############
 	
-	# Get the real-space shape-noise-only covariance matrices for Delta Sigma for each sample if we want to compare against them.
-	DeltaCov_a = shapenoise_cov('A', rp_bins, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
-	DeltaCov_b = shapenoise_cov('B', rp_bins, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
-	
 	# Import the covariance matrix of Delta Sigma for each sample as calculated from Fourier space in a different script, w / cosmic variance terms
-	DeltaCov_a_import_CV = np.loadtxt('./txtfiles/cov_DelSig_1h2h_'+SURVEY+'_sample=A_rpts2000_lpts100000_SNanalytic_deltaz=0.17.txt')
-	DeltaCov_b_import_CV = np.loadtxt('./txtfiles/cov_DelSig_1h2h_'+SURVEY+'_sample=B_rpts2000_lpts100000_SNanalytic_deltaz=0.17.txt')
+	DeltaCov_a_import_CV = np.loadtxt('./txtfiles/cov_DelSig_zLext_'+SURVEY+'_sample=A_rpts2000_lpts100000_deltaz=0.17_fixns.txt')
+	DeltaCov_b_import_CV = np.loadtxt('./txtfiles/cov_DelSig_zLext_'+SURVEY+'_sample=B_rpts2000_lpts100000_deltaz=0.17_fixns.txt')
+	
+	# Uncomment the followin section to plot comparison of diagonal covariance elements against shape-noise only real space case.
+	
+	"""# Get the real-space shape-noise-only covariance matrices for Delta Sigma for each sample if we want to compare against them.
+	#DeltaCov_a = shapenoise_cov('A', rp_bins, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
+	#DeltaCov_b = shapenoise_cov('B', rp_bins, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
 	
 	plt.figure()
 	plt.loglog(rp_bins_c, DeltaCov_a, 'mo', label='shape noise: real')
@@ -818,7 +1096,7 @@ def get_gammaIA_cov(rp_bins, rp_bins_c, fudgeczA, fudgeczB, fudgeFA, fudgeFB, fu
 	plt.xlabel('r_p')
 	plt.ylabel('Variance')
 	plt.legend()
-	plt.savefig('./plots/check_DeltaSigma_var_SNanalytic_'+SURVEY+'_A_1h2h_extl.pdf')
+	plt.savefig('./plots/check_DeltaSigma_var_'+SURVEY+'_A_extl_fixns.pdf')
 	plt.close()
 	
 	plt.figure()
@@ -828,9 +1106,9 @@ def get_gammaIA_cov(rp_bins, rp_bins_c, fudgeczA, fudgeczB, fudgeFA, fudgeFB, fu
 	plt.xlabel('r_p')
 	plt.ylabel('Variance')
 	plt.legend()
-	plt.savefig('./plots/check_DeltaSigma_var_SNanalytic_'+SURVEY+'_B_1h2h_extl.pdf')
-	plt.close()
-
+	plt.savefig('./plots/check_DeltaSigma_var_'+SURVEY+'_B_extl_fixns.pdf')"""
+	
+	
 	# Get the systematic error on boost-1. 
 	boosterr_sq_a = ((pa.boost_sys - 1.)*(Boost_a-1.))**2
 	boosterr_sq_b = ((pa.boost_sys - 1.)*(Boost_b-1.))**2
@@ -840,27 +1118,34 @@ def get_gammaIA_cov(rp_bins, rp_bins_c, fudgeczA, fudgeczB, fudgeFA, fudgeFB, fu
 	gammaIA_sysB_cov_withF = np.zeros((len(rp_bins_c), len(rp_bins_c)))
 	gammaIA_sysB_cov_noF = np.zeros((len(rp_bins_c), len(rp_bins_c)))
 	gammaIA_sysZ_cov = np.zeros((len(rp_bins_c), len(rp_bins_c)))
+	
 	# Calculate the covariance
 	for i in range(0,len((rp_bins_c))):	 
 		for j in range(0, len((rp_bins_c))):
 			
 			# Statistical
-			num_term_stat = cz_a_fid**2 * DeltaCov_a_import_CV[i,j] + cz_b_fid**2 * DeltaCov_b_import_CV[i,j]
-			denom_term_stat_withF =( ( cz_a_fid * (Boost_a[i] -1. + F_a_fid) * Sig_IA_a_fid[i]) -  ( cz_b_fid * (Boost_b[i] -1. + F_b_fid) * Sig_IA_b_fid[i]) ) * ( ( cz_a_fid * (Boost_a[j] -1. + F_a_fid) * Sig_IA_a_fid[j]) -  ( cz_b_fid * (Boost_b[j] -1. + F_b_fid) * Sig_IA_b_fid[j]) )
-			denom_term_stat_noF =( ( cz_a_fid * (Boost_a[i] -1.) * Sig_IA_a_fid[i]) -  ( cz_b_fid * (Boost_b[i] -1.) * Sig_IA_b_fid[i]) ) * ( ( cz_a_fid * (Boost_a[j] -1.) * Sig_IA_a_fid[j]) -  ( cz_b_fid * (Boost_b[j] -1.) * Sig_IA_b_fid[j]) )
+			num_term_stat = cz_a_fid**2 * DeltaCov_a_import_CV[i,j] + cz_b_fid**2 * DeltaCov_b_import_CV[i,j] 
+			
+			denom_term_stat_withF =( ( cz_a_fid * ( (Boost_a[i] -1.) * fred_rand_A + F_a_fid) * Sig_IA_a_fid[i]) -  ( cz_b_fid * ( (Boost_b[i] -1.) * fred_rand_B + F_b_fid) * Sig_IA_b_fid[i]) ) * ( ( cz_a_fid * ( (Boost_a[j] -1.) * fred_rand_A + F_a_fid) * Sig_IA_a_fid[j]) -  ( cz_b_fid * ( (Boost_b[j] -1.) * fred_rand_B + F_b_fid) * Sig_IA_b_fid[j]) )
+			
+			denom_term_stat_noF =( ( cz_a_fid * (Boost_a[i] -1.) * fred_rand_A * Sig_ex_a_fid[i]) -  ( cz_b_fid * (Boost_b[i] -1.)* fred_rand_B * Sig_ex_b_fid[i]) ) * ( ( cz_a_fid * (Boost_a[j] -1.) * fred_rand_A * Sig_ex_a_fid[j])  -  ( cz_b_fid * (Boost_b[j] -1.) *fred_rand_B* Sig_ex_b_fid[j]) )
+			
 			gammaIA_stat_cov_withF[i,j] = num_term_stat / denom_term_stat_withF
 			gammaIA_stat_cov_noF[i,j] = num_term_stat / denom_term_stat_noF	
 			
 			if (i==j):
 				
 				# Systematic, related to redshifts:
-				num_term_sysZ = ( cz_a_fid**2 * DeltaSig_est_a[i]**2 * fudgeczA**2 + cz_b_fid**2 * DeltaSig_est_b[i]**2  * fudgeczB**2 ) / ( ( cz_a_fid * (Boost_a[i] -1. + F_a_fid) * Sig_IA_a_fid[i]) -  ( cz_b_fid * (Boost_b[i] -1. + F_b_fid) * Sig_IA_b_fid[i]) )**2
-				denom_term_sysZ = ( ( cz_a_fid * (Boost_a[i] -1. + F_a_fid) * Sig_IA_a_fid[i])**2 * ( fudgeczA**2 + (fudgeFA * F_a_fid)**2 / (Boost_a[i] -1. + F_a_fid)**2 + fudgeSigA**2 ) + ( cz_b_fid * (Boost_b[i] -1. + F_b_fid) * Sig_IA_b_fid[i])**2 * ( fudgeczB**2 + (fudgeFB * F_b_fid)**2 / (Boost_b[i] -1. + F_b_fid)**2 + fudgeSigB**2 ) ) / ( ( cz_a_fid * (Boost_a[i] -1. + F_a_fid) * Sig_IA_a_fid[i]) -  ( cz_b_fid * (Boost_b[i] -1. + F_b_fid) * Sig_IA_b_fid[i]) )**2
+				num_term_sysZ = ( cz_a_fid**2 * DeltaSig_est_a[i]**2 * fudgeczA**2 + cz_b_fid**2 * DeltaSig_est_b[i]**2  * fudgeczB**2 ) / ( ( cz_a_fid * ( (Boost_a[i] -1.) * fred_rand_A + F_a_fid) * Sig_IA_a_fid[i]) -  ( cz_b_fid * ( (Boost_b[i] -1.) * fred_rand_B + F_b_fid) * Sig_IA_b_fid[i]) )**2
+				
+				denom_term_sysZ = ( ( cz_a_fid * ( (Boost_a[i] -1.) * fred_rand_A + F_a_fid) * Sig_IA_a_fid[i])**2 * ( fudgeczA**2 + (fudgeFA * F_a_fid)**2 / ( (Boost_a[i] -1.) * fred_rand_A + F_a_fid)**2 + fudgeSigA**2 ) + ( cz_b_fid * ( (Boost_b[i] -1.) * fred_rand_B + F_b_fid) * Sig_IA_b_fid[i])**2 * ( fudgeczB**2 + (fudgeFB * F_b_fid)**2 / ( (Boost_b[i] -1) * fred_rand_B + F_b_fid)**2 + fudgeSigB**2 ) ) / ( ( cz_a_fid * ( (Boost_a[i] -1.) * fred_rand_A + F_a_fid) * Sig_IA_a_fid[i]) -  ( cz_b_fid * ( (Boost_b[i] -1.) * fred_rand_B + F_b_fid) * Sig_IA_b_fid[i]) )**2
+				
 				gammaIA_sysZ_cov[i,i] = g_IA_fid[i]**2 * (num_term_sysZ + denom_term_sysZ)
 				
 				# Systematic, related to boost
-				gammaIA_sysB_cov_withF[i,j] = g_IA_fid[i]**2 * ( cz_a_fid**2 * Sig_IA_a_fid[i]**2 * boosterr_sq_a[i] + cz_b_fid**2 * Sig_IA_b_fid[i]**2 * boosterr_sq_b[i] ) / ( ( cz_a_fid * (Boost_a[i] -1. + F_a_fid) * Sig_IA_a_fid[i]) -  ( cz_b_fid * (Boost_b[i] -1. + F_b_fid) * Sig_IA_b_fid[i]) )**2
-				gammaIA_sysB_cov_noF[i,j] = g_IA_fid[i]**2 * ( cz_a_fid**2 * Sig_IA_a_fid[i]**2 * boosterr_sq_a[i] + cz_b_fid**2 * Sig_IA_b_fid[i]**2 * boosterr_sq_b[i] ) / ( ( cz_a_fid * (Boost_a[i] -1.) * Sig_IA_a_fid[i]) -  ( cz_b_fid * (Boost_b[i] -1.) * Sig_IA_b_fid[i]) )**2
+				gammaIA_sysB_cov_withF[i,j] = g_IA_fid[i]**2 * ( cz_a_fid**2 * Sig_IA_a_fid[i]**2 * boosterr_sq_a[i] + cz_b_fid**2 * Sig_IA_b_fid[i]**2 * boosterr_sq_b[i] ) / ( ( cz_a_fid * ((Boost_a[i] -1.) * fred_rand_A + F_a_fid) * Sig_IA_a_fid[i]) -  ( cz_b_fid * ( (Boost_b[i] -1.) * fred_rand_B + F_b_fid) * Sig_IA_b_fid[i]) )**2
+				
+				gammaIA_sysB_cov_noF[i,j] = g_IA_fid[i]**2 * ( cz_a_fid**2 * Sig_IA_a_fid[i]**2 * boosterr_sq_a[i] + cz_b_fid**2 * Sig_IA_b_fid[i]**2 * boosterr_sq_b[i] ) / ( ( cz_a_fid * ((Boost_a[i] -1.) * fred_rand_A) * Sig_ex_a_fid[i]) -  ( cz_b_fid * (Boost_b[i] -1.) * fred_rand_B* Sig_ex_b_fid[i]) )**2
 				
 	# For the systematic cases, we need to add off-diagonal elements - we assume fully correlated
 	for i in range(0,len((rp_bins_c))):	
@@ -874,12 +1159,10 @@ def get_gammaIA_cov(rp_bins, rp_bins_c, fudgeczA, fudgeczB, fudgeFA, fudgeFB, fu
 	gammaIA_cov_stat_sysB_withF = gammaIA_sysB_cov_withF + gammaIA_stat_cov_withF
 	gammaIA_cov_stat_sysB_noF = gammaIA_sysB_cov_noF + gammaIA_stat_cov_noF
 	
-	# Make a plot of the statistical + boost systematic errors with and without F
+	# Uncomment these lines to make make an error-bar plot of the statistical + boost systematic errors with and without F
 	"""if (SURVEY=='LSST_DESI'):
 		fig_sub=plt.subplot(111)
 		plt.rc('font', family='serif', size=14)
-		#fig_sub.axhline(y=0, xmax=20., color='k', linewidth=1)
-		#fig_sub.hold(True)
 		fig_sub.errorbar(rp_bins_c ,g_IA_fid, yerr = np.sqrt(np.diag(gammaIA_cov_stat_sysB_noF)), fmt='go', linewidth='2', label='Excess only')
 		fig_sub.hold(True)
 		fig_sub.errorbar(rp_bins_c * 1.05,g_IA_fid, yerr = np.sqrt(np.diag(gammaIA_cov_stat_sysB_withF)), fmt='mo', linewidth='2', label='All physically associated')
@@ -887,62 +1170,101 @@ def get_gammaIA_cov(rp_bins, rp_bins_c, fudgeczA, fudgeczB, fudgeFA, fudgeFB, fu
 		#fig_sub.set_yscale("log") #, nonposy='clip')
 		fig_sub.set_xlabel('$r_p$', fontsize=20)
 		fig_sub.set_ylabel('$\gamma_{IA}$', fontsize=20)
-		fig_sub.set_ylim(-0.002, 0.002)
-		#fig_sub.set_ylim(-0.015, 0.015)
+		fig_sub.set_ylim(-0.01, 0.01)
 		fig_sub.set_xlim(0.05,20.)
 		fig_sub.tick_params(axis='both', which='major', labelsize=18)
 		fig_sub.tick_params(axis='both', which='minor', labelsize=18)
 		fig_sub.legend()
 		plt.tight_layout()
-		plt.savefig('./plots/InclAllPhysicallyAssociated_stat+sysB_survey='+SURVEY+'_deltaz='+str(pa.delta_z)+'_1h2h.png')
+		plt.savefig('./plots/InclAllPhysicallyAssociated_stat+sysB_survey='+SURVEY+'_deltaz='+str(pa.delta_z)+'_fixSigCex.png')
 		plt.close()
 	elif (SURVEY=='SDSS'):
 		fig_sub=plt.subplot(111)
 		plt.rc('font', family='serif', size=14)
-		#fig_sub.axhline(y=0, xmax=20., color='k', linewidth=1)
-		#fig_sub.hold(True)
 		fig_sub.errorbar(rp_bins_c ,g_IA_fid, yerr = np.sqrt(np.diag(gammaIA_cov_stat_sysB_noF)), fmt='go', linewidth='2', label='Excess only')
 		fig_sub.hold(True)
 		fig_sub.errorbar(rp_bins_c * 1.05,g_IA_fid, yerr = np.sqrt(np.diag(gammaIA_cov_stat_sysB_withF)), fmt='mo', linewidth='2',label='All physically associated')
 		fig_sub.set_xscale("log")
-		#fig_sub.set_yscale("log") #, nonposy='clip')
 		fig_sub.set_xlabel('$r_p$', fontsize=20)
 		fig_sub.set_ylabel('$\gamma_{IA}$', fontsize=20)
-		#fig_sub.set_ylim(-0.002, 0.005)
 		fig_sub.set_ylim(-0.015, 0.015)
 		fig_sub.set_xlim(0.05,20.)
 		fig_sub.tick_params(axis='both', which='major', labelsize=18)
 		fig_sub.tick_params(axis='both', which='minor', labelsize=18)
 		fig_sub.legend()
 		plt.tight_layout()
-		plt.savefig('./plots/InclAllPhysicallyAssociated_stat+sysB_survey='+SURVEY+'_deltaz='+str(pa.delta_z)+'_1h2h.png')
+		plt.savefig('./plots/InclAllPhysicallyAssociated_stat+sysB_survey='+SURVEY+'_deltaz='+str(pa.delta_z)+'_fixSigCex.png')
 		plt.close()"""
+		
+	"""# Make a plot of the signal-to-noise attributable to statistical + boost systematic errors assuming only excess and excess + rand, per R bin.
+	StoN_perbin_stat_sysb_noF = g_IA_fid /  np.sqrt(np.diag(gammaIA_cov_stat_sysB_noF))
+	StoN_perbin_stat_sysb_withF = g_IA_fid /  np.sqrt(np.diag(gammaIA_cov_stat_sysB_withF))
+	
+	if (SURVEY=='LSST_DESI'):
+		fig_sub=plt.subplot(111)
+		plt.rc('font', family='serif', size=14)
+		fig_sub.scatter(rp_bins_c ,StoN_perbin_stat_sysb_noF, color='g', marker='o', s=100, label='Excess only')
+		fig_sub.hold(True)
+		fig_sub.scatter(rp_bins_c ,StoN_perbin_stat_sysb_withF,color='m', marker='o', s=100, label='All physically associated')
+		fig_sub.set_xscale("log")
+		fig_sub.set_xlabel('$r_p$', fontsize=20)
+		fig_sub.set_ylabel('$\\frac{S}{N}$', fontsize=20)
+		fig_sub.set_ylim(0, 2.0)
+		fig_sub.set_xlim(0.05,20.)
+		fig_sub.tick_params(axis='both', which='major', labelsize=18)
+		fig_sub.tick_params(axis='both', which='minor', labelsize=18)
+		fig_sub.legend(loc='upper left')
+		plt.tight_layout()
+		plt.savefig('./plots/FvNoF_stat+sysB_survey='+SURVEY+'_deltaz='+str(pa.delta_z)+'_fixSigCex.png')
+		plt.close()
+	elif (SURVEY=='SDSS'):
+		fig_sub=plt.subplot(111)
+		plt.rc('font', family='serif', size=14)
+		fig_sub.scatter(rp_bins_c ,StoN_perbin_stat_sysb_noF, color='g', marker='o', s=100,  label='Excess only')
+		fig_sub.hold(True)
+		fig_sub.scatter(rp_bins_c ,StoN_perbin_stat_sysb_withF,color='m', marker='o', s=100,  label='All physically associated')
+		fig_sub.set_xscale("log")
+		fig_sub.set_xlabel('$r_p$', fontsize=20)
+		fig_sub.set_ylabel('$\\frac{S}{N}$', fontsize=20)
+		fig_sub.set_ylim(0, 2.0)
+		fig_sub.set_xlim(0.05,20.)
+		fig_sub.tick_params(axis='both', which='major', labelsize=18)
+		fig_sub.tick_params(axis='both', which='minor', labelsize=18)
+		fig_sub.legend(loc='upper left')
+		plt.tight_layout()
+		plt.savefig('./plots/FvNoF_stat+sysB_survey='+SURVEY+'_deltaz='+str(pa.delta_z)+'_fixSigCex.png')
+		plt.close()
+	
+	exit()"""
 	
 	# Now get the sysZ + stat covariance matrix assuming all physically associated galaxies can be subject to IA:
-	gamma_IA_cov_tot_withF = gammaIA_stat_cov_withF + gammaIA_sysZ_cov
+	gamma_IA_cov_sysZ_stat_withF = gammaIA_stat_cov_withF + gammaIA_sysZ_cov
 	
-	# Okay, let's compute the Signal to Noise things we want in order to compare statistcal-only signal to noise to that from z-related systematics
+	# Compute the Signal to Noise things we want in order to 
+	#1) compare statistcal-only signal to noise to that from z-related systematics
+	#2) save stat + sysB signal to noise for comparison with our method.
+	
+	# 1)
 	Cov_inv_stat = np.linalg.inv(gammaIA_stat_cov_withF)
 	StoNsq_stat = np.dot(g_IA_fid, np.dot(Cov_inv_stat, g_IA_fid))
 	
-	Cov_inv_tot = np.linalg.inv(gamma_IA_cov_tot_withF)
-	StoNsq_tot = np.dot(g_IA_fid, np.dot(Cov_inv_tot, g_IA_fid))
+	Cov_inv_sysZ_stat = np.linalg.inv(gamma_IA_cov_sysZ_stat_withF)
+	StoNsq_sysZ_stat = np.dot(g_IA_fid, np.dot(Cov_inv_sysZ_stat, g_IA_fid))
 	
-	#print "StoNsq_tot=", StoNsq_tot
-	#print "StoNsq_stat=", StoNsq_stat
-	
-	# Now subtract stat from total in quadrature to get sys
-	NtoSsq_sys = 1./StoNsq_tot - 1./StoNsq_stat
-	
+	# Subtract stat from sysz+stat in quadrature to get sys
+	NtoSsq_sys = 1./StoNsq_sysZ_stat - 1./StoNsq_stat
 	StoNsq_sys = 1. / NtoSsq_sys
 	
-	return (StoNsq_stat, StoNsq_sys)
+	#2)
+	Cov_inv_stat_sysB = np.linalg.inv(gammaIA_cov_stat_sysB_withF)
+	StoNsq_stat_sysB = np.dot(g_IA_fid, np.dot(Cov_inv_stat_sysB, g_IA_fid))
+	
+	return (StoNsq_stat, StoNsq_sys, StoNsq_stat_sysB)
 	
 def gamma_fid(rp):
 	""" Returns the fiducial gamma_IA from a combination of terms from different models which are valid at different scales """
-	# TO INCLUDE AN EXTENDED REDSHIFT DISTRIBUTION: THESE WILL NEED TO BE RE-RUN USING THE MODS NOTED IN SHARED_FUNCTIONS_WLP_WLS. 
-	wgg_rp = ws.wgg_full(rp, pa.fsat_LRG, pa.fsky, pa.bd, pa.bs, './txtfiles/wgg_1h_survey='+pa.survey+'_extl.txt', './txtfiles/wgg_2h_survey='+pa.survey+'_kpts='+str(pa.kpts_wgg)+'_extl.txt', './plots/wgg_full_Blazek_survey='+pa.survey+'_extl2h.pdf', SURVEY)
-	wgp_rp = ws.wgp_full(rp, pa.bd, pa.Ai_Bl, pa.ah_Bl, pa.q11_Bl, pa.q12_Bl, pa.q13_Bl, pa.q21_Bl, pa.q22_Bl, pa.q23_Bl, pa.q31_Bl, pa.q32_Bl, pa.q33_Bl, './txtfiles/wgp_1h_survey='+pa.survey+'_extl.txt','./txtfiles/wgp_2hsurvey='+pa.survey+'_extl.txt', './plots/wgp_full_Blazek_survey='+pa.survey+'_extl.pdf', SURVEY)
+	wgg_rp = ws.wgg_full(rp, pa.fsky, pa.bd, pa.bs, './txtfiles/wgg_1h_survey='+pa.survey+'_extl_Aug28.txt', './txtfiles/wgg_2h_survey='+pa.survey+'_kpts='+str(pa.kpts_wgg)+'_extl_Aug28.txt', './plots/wgg_full_Blazek_survey='+pa.survey+'_extl_Aug28.pdf', SURVEY)
+	wgp_rp = ws.wgp_full(rp, pa.bd, pa.Ai, pa.ah, pa.q11, pa.q12, pa.q13, pa.q21, pa.q22, pa.q23, pa.q31, pa.q32, pa.q33, './txtfiles/wgp_1h_survey='+pa.survey+'_extl_Aug28.txt','./txtfiles/wgp_2hsurvey='+pa.survey+'_extl_Aug28.txt', './plots/wgp_full_Blazek_survey='+pa.survey+'_extl_Aug28.pdf', SURVEY)
 	
 	gammaIA = wgp_rp / (wgg_rp + 2. * pa.close_cut) 
 	
@@ -999,7 +1321,7 @@ elif (SURVEY=='LSST_DESI'):
 else:
 	print "We don't have support for that survey yet; exiting."
 	exit()
-
+	
 # Uncomment these lines if you want to load two covariance matrices and check how well they have converged.
 #check_covergence()
 #exit()
@@ -1011,7 +1333,15 @@ rp_cent		=	setup.rp_bins_mid(rp_bins)
 # Set up a function to get z as a function of comoving distance
 (z_of_com, com_of_z) = setup.z_interpof_com(SURVEY) 
 
-DeltaSigma_theoretical = get_DeltaSig_theory(rp_bins, rp_cent)
+# Get the red fraction as a function of z and interpolate in advance (this takes a while)
+z = np.linspace(pa.zsmin, pa.zsmax, 5000)
+fred_setup = setup.get_fred_ofz(z, SURVEY)
+fred_interp = scipy.interpolate.interp1d(z, fred_setup)
+
+#get_Pkgm_1halo()
+#exit()
+
+"""DeltaSigma_theoretical = get_DeltaSig_theory(rp_bins, rp_cent)
 
 #StoNstat = get_gammaIA_cov(rp_bins, rp_cent, 0., 0., 0., 0., 0., 0.)
 #print "StoNstat", np.sqrt(StoNstat)
@@ -1031,27 +1361,33 @@ for i in range(0,len(pa.fudge_frac_level)):
 	print "Running, systematic level #"+str(i+1)
 	
 	# Get the statistical error on gammaIA
-	(StoNstat, StoN_cza[i]) = get_gammaIA_cov(rp_bins, rp_cent, pa.fudge_frac_level[i], 0., 0., 0., 0., 0.)
-	print "StoNstat, StoNczb=", np.sqrt(StoNstat), np.sqrt(StoN_cza[i])
-	(StoNstat, StoN_czb[i]) = get_gammaIA_cov(rp_bins, rp_cent, 0., pa.fudge_frac_level[i], 0., 0., 0., 0.)
-	print "StoNstat, StoNczb=", np.sqrt(StoNstat), np.sqrt(StoN_czb[i])
-	(StoNstat, StoN_Fa[i])  = get_gammaIA_cov(rp_bins, rp_cent, 0., 0., pa.fudge_frac_level[i], 0., 0., 0.)
-	print "StoNstat, StoNFa=", np.sqrt(StoNstat), np.sqrt(StoN_Fa[i])
-	(StoNstat, StoN_Fb[i])  = get_gammaIA_cov(rp_bins, rp_cent, 0., 0., 0., pa.fudge_frac_level[i], 0., 0.)
-	print "StoNstat, StoNFb=", np.sqrt(StoNstat), np.sqrt(StoN_Fb[i])
-	(StoNstat, StoN_Siga[i])= get_gammaIA_cov(rp_bins, rp_cent, 0., 0., 0., 0., pa.fudge_frac_level[i], 0.)
-	print "StoNstat, StoNSiga=", np.sqrt(StoNstat), np.sqrt(StoN_Siga[i])
-	(StoNstat, StoN_Sigb[i])= get_gammaIA_cov(rp_bins, rp_cent, 0., 0., 0., 0., 0., pa.fudge_frac_level[i])
-	print "StoNstat, StoNSiga=", np.sqrt(StoNstat), np.sqrt(StoN_Sigb[i])
+	(StoNstat, StoN_cza[i], StoN_stat_sysB) = get_gammaIA_cov(rp_bins, rp_cent, pa.fudge_frac_level[i], 0., 0., 0., 0., 0.)
+	print "StoNstat, StoNczb, StoNstatsysb=", np.sqrt(StoNstat), np.sqrt(StoN_cza[i]), np.sqrt(StoN_stat_sysB)
+	(StoNstat, StoN_czb[i], StoN_stat_sysB) = get_gammaIA_cov(rp_bins, rp_cent, 0., pa.fudge_frac_level[i], 0., 0., 0., 0.)
+	print "StoNstat, StoNczb, StoNstatsysb=", np.sqrt(StoNstat), np.sqrt(StoN_czb[i]), np.sqrt(StoN_stat_sysB)
+	(StoNstat, StoN_Fa[i], StoN_stat_sysB)  = get_gammaIA_cov(rp_bins, rp_cent, 0., 0., pa.fudge_frac_level[i], 0., 0., 0.)
+	print "StoNstat, StoNFa, StoNstatsysb=", np.sqrt(StoNstat), np.sqrt(StoN_Fa[i]), np.sqrt(StoN_stat_sysB)
+	(StoNstat, StoN_Fb[i], StoN_stat_sysB)  = get_gammaIA_cov(rp_bins, rp_cent, 0., 0., 0., pa.fudge_frac_level[i], 0., 0.)
+	print "StoNstat, StoNFb, StoNstatsysb=", np.sqrt(StoNstat), np.sqrt(StoN_Fb[i]), np.sqrt(StoN_stat_sysB)
+	(StoNstat, StoN_Siga[i], StoN_stat_sysB)= get_gammaIA_cov(rp_bins, rp_cent, 0., 0., 0., 0., pa.fudge_frac_level[i], 0.)
+	print "StoNstat, StoNSiga, StoNstatsysb=", np.sqrt(StoNstat), np.sqrt(StoN_Siga[i]), np.sqrt(StoN_stat_sysB)
+	(StoNstat, StoN_Sigb[i],StoN_stat_sysB)= get_gammaIA_cov(rp_bins, rp_cent, 0., 0., 0., 0., 0., pa.fudge_frac_level[i])
+	print "StoNstat, StoNSiga, StoNstatsysb=", np.sqrt(StoNstat), np.sqrt(StoN_Sigb[i]), np.sqrt(StoN_stat_sysB)
 
-# Save the statistical-only S-to-N
+# Save the statistical-only S-to-N   
 StoNstat_save = [StoNstat]
 print "StoNstat=", StoNstat
-np.savetxt('./txtfiles/StoNstat_Blazek_1h2h_survey='+SURVEY+'_ahAistopgap_deltaz='+str(pa.delta_z)+'.txt', StoNstat_save)
+np.savetxt('./txtfiles/StoNstat_Blazek_extl_'+SURVEY+'_deltaz='+str(pa.delta_z)+'.txt', StoNstat_save)
 
-# Save the ratios of S/N sys to stat.	
-saveSN_ratios = np.column_stack(( pa.fudge_frac_level, np.sqrt(StoN_cza) / np.sqrt(StoNstat), np.sqrt(StoN_czb) / np.sqrt(StoNstat), np.sqrt(StoN_Fa) / np.sqrt(StoNstat), np.sqrt(StoN_Fb) / np.sqrt(StoNstat), np.sqrt(StoN_Siga) / np.sqrt(StoNstat), np.sqrt(StoN_Sigb) / np.sqrt(StoNstat)))
-np.savetxt('./txtfiles/StoN_SysToStat_Blazek_survey='+SURVEY+'_MvirFix_ahAistopgap_deltaz='+str(pa.delta_z)+'.txt', saveSN_ratios)
+# Save the statistical + sysB S-to-N   
+StoNstat_sysB_save = [StoN_stat_sysB]
+print "StoNstat_sysB=", StoN_stat_sysB
+np.savetxt('./txtfiles/StoN_stat_sysB_Blazek_extl_'+SURVEY+'_deltaz='+str(pa.delta_z)+'.txt', StoNstat_sysB_save)
+
+# Save the sysZ stuff	
+saveSN_sysZ = np.column_stack(( pa.fudge_frac_level, StoN_cza, StoN_czb, StoN_Fa, StoN_Fb, StoN_Siga, StoN_Sigb))
+np.savetxt('./txtfiles/StoN_SysToStat_Blazek_'+SURVEY+'_deltaz='+str(pa.delta_z)+'.txt', saveSN_sysZ)"""
+
 
 # Uncomment this to load ratios from file and plot. To plot directly use the below case.
 """frac_levels, StoNratio_sqrt_cza, StoNratio_sqrt_czb, StoNratio_sqrt_Fa,  StoNratio_sqrt_Fb, StoNratio_sqrt_Siga, StoNratio_sqrt_Sigb = np.loadtxt('./plots/SN_ratios.txt', unpack=True)
@@ -1078,61 +1414,83 @@ plt.savefig('./plots/ratio_StoN.pdf')
 plt.close()"""	
 
 # Load the Ncorr information from the other method to include this in the plot:
-(frac_level, SNsys_squared_ncorr, SNstat_squared_ncorr) = np.loadtxt('./txtfiles/save_Ncorr_StoNsqSys_survey='+SURVEY+'.txt', unpack=True)
+#(frac_level, SNsys_squared_ncorr, SNstat_squared_ncorr) = np.loadtxt('./txtfiles/save_Ncorr_StoNsqSys_survey='+SURVEY+'.txt', unpack=True)
+# Load information for Ncorr from other method to use in this plot. StoN(stat) and StoN(sysz).
+#Both are 2D matrices. The sysz one is a function of a and fraclevel - pick the a value we want to use. The stat one is a function of a and rho - pick the value of a and rho we want to use.
+StoNsq_sysz_Ncorr_mat = np.loadtxt('./txtfiles/StoNsq_sysz_shapes_extl_survey='+SURVEY+'.txt')
+StoNsq_stat_Ncorr_mat = np.loadtxt('./txtfiles/StoNsq_stat_shapes_extl_survey='+SURVEY+'.txt')
+avec = np.loadtxt('./txtfiles/a_survey='+SURVEY+'.txt')
+rhovec = np.loadtxt('./txtfiles/rho_survey='+SURVEY+'.txt')
+
+# here we pick our a and rho values and find their indices:
+a = 0.7; rho = 0.7
+ind_a = next(j[0] for j in enumerate(avec) if j[1]>=a)
+ind_rho = next(j[0] for j in enumerate(rhovec) if j[1]>=rho)
+print "For Ncorr sysz: a=", avec[ind_a], "rho=", rhovec[ind_rho]
+
+StoN_sq_sysz_Ncorr = StoNsq_sysz_Ncorr_mat[ind_a, :]
+StoN_sq_stat_Ncorr = StoNsq_stat_Ncorr_mat[ind_a, ind_rho]
+
+# If necessary, load the stuff from this method:
+levels, StoN_cza, StoN_czb, StoN_Fa, StoN_Fb, StoN_Siga, StoN_Sigb = np.loadtxt('./txtfiles/StoN_SysToStat_Blazek_'+SURVEY+'_deltaz='+str(pa.delta_z)+'.txt', unpack=True)
+StoNstat = np.loadtxt('./txtfiles/StoNstat_Blazek_extl_'+SURVEY+'_deltaz='+str(pa.delta_z)+'.txt')
+
+print "(np.sqrt(StoNstat) / np.sqrt(StoN_cza)) / pa.fudge_frac_level=",(np.sqrt(StoNstat) / np.sqrt(StoN_cza)) / pa.fudge_frac_level
+print "(np.sqrt(StoNstat) / np.sqrt(StoN_Siga)) / pa.fudge_frac_level=",(np.sqrt(StoNstat) / np.sqrt(StoN_Siga)) / pa.fudge_frac_level
 
 # Make plot of (S/N)_sys / (S/N)_stat as a function of fractional z-related systematic error on each relevant parameter.
 if (SURVEY=='SDSS'):
 	plt.figure()
-	plt.loglog(pa.fudge_frac_level,  np.sqrt(StoNstat) / np.sqrt(StoN_cza), 's', color='#006cc0', label='$c_z^a$')
+	plt.loglog(pa.fudge_frac_level,  (np.sqrt(StoNstat) / np.sqrt(StoN_cza)) / pa.fudge_frac_level, 's', color='#006cc0', label='$c_z^a$')
 	plt.hold(True)
-	plt.loglog(pa.fudge_frac_level,  np.sqrt(StoNstat) / np.sqrt(StoN_czb), '^',color='#006cc0', label='$c_z^b$')
+	plt.loglog(pa.fudge_frac_level,  (np.sqrt(StoNstat) / np.sqrt(StoN_czb))/ pa.fudge_frac_level, '^',color='#006cc0', label='$c_z^b$')
 	plt.hold(True)
-	plt.loglog(pa.fudge_frac_level, np.sqrt(SNstat_squared_ncorr) / np.sqrt(SNsys_squared_ncorr), 'mo', label='$N_{\\rm corr}$, $a=0.7$')
+	plt.loglog(pa.fudge_frac_level, (np.sqrt(StoN_sq_stat_Ncorr) / np.sqrt(StoN_sq_sysz_Ncorr)) / pa.fudge_frac_level, 'mo', label='$N_{\\rm corr}$')
 	plt.hold(True)
-	plt.loglog(pa.fudge_frac_level,  np.sqrt(StoNstat) / np.sqrt(StoN_Fa), 'gs', linewidth='2', label='$F_a$')
+	plt.loglog(pa.fudge_frac_level,  (np.sqrt(StoNstat) / np.sqrt(StoN_Fa)) / pa.fudge_frac_level, 'gs', linewidth='2', label='$F_a$')
 	plt.hold(True)
-	plt.loglog(pa.fudge_frac_level, np.sqrt(StoNstat) /  np.sqrt(StoN_Fb) , 'g^',linewidth='2', label='$F_b$')
+	plt.loglog(pa.fudge_frac_level,(np.sqrt(StoNstat) /  np.sqrt(StoN_Fb)) / pa.fudge_frac_level, 'g^',linewidth='2', label='$F_b$')
 	plt.hold(True)
-	plt.loglog(pa.fudge_frac_level, np.sqrt(StoNstat) / np.sqrt(StoN_Siga) , 's',linewidth='2', color='#FFA500', label='$<\\Sigma_{IA}^a>$')
+	plt.loglog(pa.fudge_frac_level, (np.sqrt(StoNstat) / np.sqrt(StoN_Siga)) / pa.fudge_frac_level, 's',linewidth='2', color='#FFA500', label='$<\\Sigma_{IA}^a>$')
 	plt.hold(True)
-	plt.loglog(pa.fudge_frac_level,   np.sqrt(StoNstat) / np.sqrt(StoN_Sigb), '^', linewidth='2',color='#FFA500', label='$<\\Sigma_{IA}^b>$')
+	plt.loglog(pa.fudge_frac_level,  (np.sqrt(StoNstat) / np.sqrt(StoN_Sigb)) / pa.fudge_frac_level, '^', linewidth='2',color='#FFA500', label='$<\\Sigma_{IA}^b>$')
 	plt.hold(True)
 	plt.axhline(y=1, color='k', linewidth=2, linestyle='--')
 	plt.xlabel('Fractional error', fontsize=25)
-	plt.ylabel('$\\frac{S/N_{\\rm stat}}{S/N_{\\rm sys}}$', fontsize=25)
+	plt.ylabel('$\\frac{S/N_{\\rm stat}}{S/N_{\\rm sys}} / {\\rm Frac err}$', fontsize=25)
 	plt.tick_params(axis='both', which='major', labelsize=18)
 	plt.tick_params(axis='both', which='minor', labelsize=18)
-	plt.xlim(0.008, 2.)
-	plt.ylim(0.00005, 500)
-	plt.legend(ncol=3, numpoints=1, fontsize=18)
+	plt.xlim(0.008, 10)
+	plt.ylim(0.03, 100)
+	plt.legend(ncol=4, numpoints=1, fontsize=14, loc='upper center', bbox_to_anchor=(0.5, 1.05))
 	plt.tight_layout()
-	plt.savefig('./plots/SysNoiseToStatNoise_Blazek_survey='+SURVEY+'_NAM_deltaz='+str(pa.delta_z)+'.png')
+	plt.savefig('./plots/SysNoiseToStatNoise_'+SURVEY+'_extl_.png')
 	plt.close()
 elif(SURVEY=='LSST_DESI'):
 	plt.figure()
-	plt.loglog(pa.fudge_frac_level, np.sqrt(StoNstat) / np.sqrt(StoN_cza) , 's', color='#006cc0', label='$c_z^a$')
+	plt.loglog(pa.fudge_frac_level, np.sqrt(StoNstat) / np.sqrt(StoN_cza) / pa.fudge_frac_level , 's', color='#006cc0', label='$c_z^a$')
 	plt.hold(True)
-	plt.loglog(pa.fudge_frac_level, np.sqrt(StoNstat) / np.sqrt(StoN_czb) , '^',color='#006cc0', label='$c_z^b$')
+	plt.loglog(pa.fudge_frac_level, np.sqrt(StoNstat) / np.sqrt(StoN_czb)  / pa.fudge_frac_level, '^',color='#006cc0', label='$c_z^b$')
 	plt.hold(True)
-	plt.loglog(pa.fudge_frac_level,  np.sqrt(StoNstat) /np.sqrt(StoN_Fa), 'gs', label='$F_a$')
+	plt.loglog(pa.fudge_frac_level, np.sqrt(StoNstat) /np.sqrt(StoN_Fa) / pa.fudge_frac_level, 'gs', label='$F_a$')
 	plt.hold(True)
-	plt.loglog(pa.fudge_frac_level, np.sqrt(StoNstat) / np.sqrt(StoN_Fb), 'g^', label='$F_b$')
+	plt.loglog(pa.fudge_frac_level, np.sqrt(StoNstat) / np.sqrt(StoN_Fb)  / pa.fudge_frac_level, 'g^', label='$F_b$')
 	plt.hold(True)
-	plt.loglog(pa.fudge_frac_level,  np.sqrt(StoNstat) / np.sqrt(StoN_Siga), 's', color='#FFA500', label='$<\\Sigma_{IA}^a>$')
+	plt.loglog(pa.fudge_frac_level, np.sqrt(StoNstat) / np.sqrt(StoN_Siga) / pa.fudge_frac_level , 's', color='#FFA500', label='$<\\Sigma_{IA}^a>$')
 	plt.hold(True)
-	plt.loglog(pa.fudge_frac_level, np.sqrt(StoNstat) / np.sqrt(StoN_Sigb), '^', color='#FFA500', label='$<\\Sigma_{IA}^b>$')
+	plt.loglog(pa.fudge_frac_level, np.sqrt(StoNstat) / np.sqrt(StoN_Sigb) / pa.fudge_frac_level, '^', color='#FFA500', label='$<\\Sigma_{IA}^b>$')
 	plt.hold(True)
-	plt.loglog(pa.fudge_frac_level, np.sqrt(SNstat_squared_ncorr) / np.sqrt(SNsys_squared_ncorr), 'mo', label='$N_{\\rm corr}$, $a=0.7$')
+	plt.loglog(pa.fudge_frac_level, (np.sqrt(StoN_sq_stat_Ncorr) / np.sqrt(StoN_sq_sysz_Ncorr)) / pa.fudge_frac_level, 'mo', label='$N_{\\rm corr}$')
 	plt.axhline(y=1, color='k', linewidth=2, linestyle='--')
 	plt.xlabel('Fractional error', fontsize=25)
 	plt.ylabel('$\\frac{S/N_{\\rm stat}}{S/N_{\\rm sys}}$', fontsize=25)
 	plt.tick_params(axis='both', which='major', labelsize=18)
 	plt.tick_params(axis='both', which='minor', labelsize=18)
 	plt.xlim(0.008, 2.)
-	plt.legend(ncol=3, numpoints=1, fontsize=18)
-	plt.ylim(0.00005, 500)
+	plt.legend(ncol=4, numpoints=1, fontsize=14, loc='upper center', bbox_to_anchor=(0.5, 1.05))
+	plt.ylim(0.001, 10)
 	plt.tight_layout()
-	plt.savefig('./plots/NoiseSysToNoiseStat_Blazek_survey='+SURVEY+'_NAM_deltaz='+str(pa.delta_z)+'.png')
+	plt.savefig('./plots/SysNoiseToStatNoise_'+SURVEY+'_extl.png')
 	plt.close()
 
 exit()

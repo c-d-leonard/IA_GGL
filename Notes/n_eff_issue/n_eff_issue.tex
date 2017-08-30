@@ -1,0 +1,90 @@
+\documentclass[onecolumn,amsmath,aps,fleqn, superscriptaddress]{revtex4}
+ 
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{epsfig}
+\usepackage{subfigure}
+\usepackage{mathrsfs}
+\usepackage{longtable}
+\usepackage{enumerate} 
+\usepackage{multirow}
+\usepackage{color}
+
+\usepackage[usenames,dvipsnames]{xcolor}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks = true,
+    citecolor = {MidnightBlue},
+    linkcolor = {BrickRed},
+    urlcolor = {BrickRed}
+}
+
+\newcommand{\be}{\begin{eqnarray}}
+\newcommand{\ee}{\end{eqnarray}}
+
+\allowdisplaybreaks[1]
+ 
+\begin{document}
+
+\title{Constraining IA with shape-measurement methods: $n_{\rm eff}$ / shape noise term issue}
+
+\author{Danielle Leonard}
+
+\maketitle
+
+{\it Here are some notes summarizing the issue we discussed in our meeting yesterday, August 23, 2017.}
+
+\vspace{2mm}
+
+For a given observational scenario, we have $n_{\rm eff}$, the effective surface density of source galaxies. This is $1/{\rm arcmin}^2$ for SDSS and $26/{\rm arcmin}^2$ for LSST. This value refers to the effective surface density of sources for the full sample of source galaxies, without any cuts (e.g. on photometric redshift).
+
+However, we are concenred with source samples which are defined by cuts on photometric redshifts, so we need to calculate their $n_{\rm eff}^\prime$ values from the known values for the full source samples.
+
+Previously, I was getting $n_{\rm eff}^\prime$ from $n_{\rm eff}$ using this expression:
+\begin{equation}
+n_{\rm eff}^\prime = n_{\rm eff} \frac{\int_{z_p^{min}}^{z_p^{max}} dz_p \tilde{w}(z_p) \frac{dN}{dz_p}}{\int_{0}^{\infty} dz_p \tilde{w}(z_p) \frac{dN}{dz_p}}
+\label{neff_prev}
+\end{equation} 
+where $z_p^{min}$ and $z_p^{max}$ are the lower and upper photo-z cuts on the source sample, and $\tilde{w}$ are the weights, given by:
+\begin{equation}
+\tilde{w}(z_p) = \frac{1}{\Sigma_c^2(z_l, z_p)(\sigma_\gamma^2 + \sigma_e^2)}
+\label{weights}
+\end{equation}
+Note that I have assumed $z_l$ is a fixed single value for now as we did yesterday to simplify the equations.
+
+The problem with equation \ref{neff_prev} is that $\tilde{w}(z_p)$ is definitionally zero for $z_p$ below $z_l$, so 
+$n_{\rm eff}^\prime = n_{\rm eff}$ for any value of $z_p^{min}$ such that $0\le z_p^{\rm min}\le z_l$. This is clearly wrong, since such a source sample does not include sources below $z_p^{\rm min}$, which in general exist and contribute to the calculation of $n_{\rm eff}$.
+
+What I am currently doing is the following. First, get a source-sample-appropriate value of $n_{\rm eff}^\prime$ via:
+\begin{equation}
+n_{\rm eff}^\prime = n_{\rm eff} \frac{\int_{z_p^{min}}^{z_p^{max}} dz_p \frac{dN}{dz_p}}{\int_{0}^{\infty} dz_p \frac{dN}{dz_p}}
+\end{equation}
+My logic here is that $n_{\rm eff}$ by definition only differs from a `non-effective' surface density in that it acounts for measurement error $\sigma_e$, and we are modelling $\sigma_e$ as z-independent. I'm not sure if this logic is sound so please tell me if it doesn't make sense to you.
+
+Given then $n_{\rm eff}^\prime$, we still have to account for the factor of $\Sigma_c^{-2}$ in the weights. I'm suggesting that the shape-noise term of the covariance matrix is given by:
+\begin{equation}
+\frac{\sigma_{\gamma}^2}{n_{\rm eff}^\prime n_l} \frac{\int_{z_p^{min}}^{z_p^{max}} dz_p \Sigma_c^{2}(z_l, z_p) \frac{dN}{dz_p}}{\int_{z_p^{min}}^{z_p^{max}}  dz_p  \frac{dN}{dz_p}}
+\label{first}
+\end{equation}
+where I've left out the factors of area that turn $n_{\rm eff}^\prime n_l$ into a number of lens-source pairs.
+
+In practice this will diverge as $z_p$ goes to $z_l$, so actually what I'm doing is: 
+ \begin{equation}
+\frac{\sigma_{\gamma}^2}{n_{\rm eff}^\prime n_l} \frac{\int_{z_p^{min}}^{z_p^{max}} dz_p \Sigma_c^{-2}(z_l, z_p) \frac{dN}{dz_p}}{\left(\int_{z_p^{min}}^{z_p^{max}} dz_p \Sigma_c^{-2}(z_l, z_p) \frac{dN}{dz_p}\right)^2} 
+ \end{equation}
+ This method makes some sense to me for the following reason. Our weights here are inverse-variance weights, which I think is equivalent to saying that the variance is the inverse of a sum over weights. We can write the inverse of a sum over weights as:
+ \begin{equation}
+\frac{\left(\sigma_{\gamma}^2 + \sigma_e^2\right)}{n_s^\prime n_l} \frac{\int_{z_p^{min}}^{z_p^{max}} dz_p \Sigma_c^{2}(z_l, z_p) \frac{dN}{dz_p}}{\int_{z_p^{min}}^{z_p^{max}}  dz_p  \frac{dN}{dz_p}}
+ \end{equation}
+ where $n_s^\prime$ is the non-effective surface density of sources.
+ 
+ My understanding is that going from $n_s^\prime$ to $n_{\rm eff}^\prime$ somehow accounts for the measurement noise $\sigma_e$, so then changing to $n_{\rm eff}^\prime$, an inverse sum over weights is given by equation \ref{first}.
+ 
+ Let me know if this makes sense and, if not, where you think I might be going wrong.
+ 
+%-------------------------------------------------------------------------------
+
+
+%-------------------------------------------------------------------------------
+
+\end{document}

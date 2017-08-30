@@ -163,7 +163,7 @@ def wgp_2halo(rp_cents_, bd, Ai, savefile, survey):
 	z_gp, win_gp = window(survey)
 	
 	# Get the required matter power spectrum from CCL
-	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = pa.A_s, n_s=pa.n_s)
+	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = pa.A_s, n_s=pa.n_s_cosmo)
 	cosmo = ccl.Cosmology(p)
 	h = (pa.HH0/100.)
 	k_gp = np.logspace(-5., 7., 100000)
@@ -322,7 +322,7 @@ def rho_NFW(r_, M_insol, survey):
 	
 	return rho_nfw
 
-def wgg_1halo_Four(rp_cents_, fsat, fsky, savefile, survey):
+def wgg_1halo_Four(rp_cents_, fsky, savefile, survey):
 	""" Gets the 1halo term of wgg via Fourier space, to account for central-satelite pairs and satelite-satelite pairs. """
 	
 	if (survey == 'SDSS'):
@@ -338,7 +338,8 @@ def wgg_1halo_Four(rp_cents_, fsat, fsky, savefile, survey):
 	kvec_FT = np.logspace(logkmin, logkmax, kpts)
 	
 	# If we don't yet have Pk / xi: uncomment these lines.
-	#Pk = get_Pkgg_1halo(kvec_FT, fsat, fsky, Mmax, survey) # Gets the 1halo galaxy power spectrum including c-s and s-s terms. Pass rvec because need to get rho_NFW in here.
+	
+	#Pk = get_Pkgg_1halo(kvec_FT, fsky, Mmax, survey) # Gets the 1halo galaxy power spectrum including c-s and s-s terms. Pass rvec because need to get rho_NFW in here.
 	#exit()
 	
 	# This function loads the xi_{gg}1h function computed from FFTlog externallyE.
@@ -347,7 +348,7 @@ def wgg_1halo_Four(rp_cents_, fsat, fsky, savefile, survey):
 	plt.figure()
 	plt.loglog(rvec_xi, xi_gg_1h, 'm+')
 	plt.xlim(10**(-4), 10**3)
-	plt.savefig('./plots/xigg_1h_extl_survey='+survey+'.pdf')
+	plt.savefig('./plots/xigg_1h_extl_survey='+survey+'_Aug28.pdf')
 	plt.close()
 	
 	# Get the max R associated to our max M
@@ -387,11 +388,11 @@ def wgg_1halo_Four(rp_cents_, fsat, fsky, savefile, survey):
 def get_xi_1h(survey):
 	""" Returns the 1 halo galaxy correlation function including cen-sat and sat-sat terms, from the power spectrum via Fourier transform."""
 	
-	(r, xi) = np.loadtxt('./txtfiles/xi_survey='+survey+'_extl.txt', unpack=True)
+	(r, xi) = np.loadtxt('./txtfiles/xi_survey='+survey+'_extl_Aug28.txt', unpack=True)
 	
 	return (r, xi)
 	
-def get_Pkgg_1halo(kvec_ft, fsat, fsky, Mmax, survey):
+def get_Pkgg_1halo(kvec_ft, fsky, Mmax, survey):
 	""" Returns the 1halo galaxy power spectrum with c-s and s-s terms"""
 	
 	if (survey == 'SDSS'):
@@ -411,7 +412,7 @@ def get_Pkgg_1halo(kvec_ft, fsat, fsky, Mmax, survey):
 	Mstarlow = get_Mstar_low(survey, tot_nsrc)
 	
 	# Get the halo mass function from CCL
-	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = 2.1*10**(-9), n_s=0.96)
+	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = pa.A_s, n_s=pa.n_s_cosmo)
 	cosmo = ccl.Cosmology(p)
 	HMF = np.zeros((len(Mhalo), len(z)))
 	for zi in range(0,len(z)):
@@ -468,7 +469,7 @@ def get_Pkgg_1halo(kvec_ft, fsat, fsky, Mmax, survey):
 	Pkgg = np.exp(logPkgg)
 	
 	Pkgg_save = np.column_stack((kvec_ft, Pkgg))
-	np.savetxt('./txtfiles/Pkgg_1h_dndM_'+survey+'_extl.txt', Pkgg_save)
+	np.savetxt('./txtfiles/Pkgg_1h_dndM_'+survey+'_extl_Aug28.txt', Pkgg_save)
 	
 	plt.figure()
 	plt.loglog(kvec_ft, 4* np.pi * kvec_ft**3 * Pkgg / (2* np.pi)**3, 'mo')
@@ -498,7 +499,7 @@ def get_Pkgg_ll_1halo_kz(kvec, zvec, survey):
 	Mhalo = np.logspace(7., 16., 30)
 	
 	# Get the halo mass function at each z (use CCL)
-	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = 2.1*10**(-9), n_s=0.96)
+	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = pa.A_s, n_s=pa.n_s_cosmo)
 	cosmo = ccl.Cosmology(p)
 	HMF = np.zeros((len(Mhalo), len(zvec_short)))
 	for zi in range(0,len(zvec_short)):
@@ -516,7 +517,6 @@ def get_Pkgg_ll_1halo_kz(kvec, zvec, survey):
 	tot_ng = np.zeros(len(zvec_short))
 	for zi in range(0, len(zvec_short)):
 		tot_ng[zi] = scipy.integrate.simps( ( Ncen_lens + Nsat_lens) * HMF[:, zi], np.log10(Mhalo / (pa.HH0/100.) ) ) / (pa.HH0 / 100.)**3
-		print "nlens=", tot_ng[zi]
 	
 	# Get the density of matter in comoving coordinates
 	rho_crit = 3. * 10**10 * pa.mperMpc / (8. * np.pi * pa.Gnewt * pa.Msun)  # Msol h^2 / Mpc^3, for use with M in Msol / h (comoving distances)
@@ -569,7 +569,7 @@ def get_Pkgm_1halo_kz(kvec, zvec, survey):
 	Mhalo = np.logspace(7., 16., 30)
 	
 	# Get the halo mass function at each z (use CCL)
-	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = 2.1*10**(-9), n_s=0.96)
+	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = pa.A_s, n_s=pa.n_s_cosmo)
 	cosmo = ccl.Cosmology(p)
 	HMF = np.zeros((len(Mhalo), len(zvec_short)))
 	for zi in range(0,len(zvec_short)):
@@ -590,7 +590,6 @@ def get_Pkgm_1halo_kz(kvec, zvec, survey):
 	for zi in range(0,len(zvec_short)):
 		tot_ng[zi] = scipy.integrate.simps( ( Ncen_lens + Nsat_lens) * HMF[:, zi], np.log10(Mhalo / (pa.HH0/100.) ) ) / (pa.HH0 / 100.)**3
 		# Because the number density comes out a little different than the actual case, especially for DESI, we are going to use this number to get the right normalization.
-		print "tot=", tot_ng[zi]
 
 	# Get the fourier space NFW profile equivalent
 	y = gety(Mhalo, kvec_short, survey) 
@@ -640,7 +639,7 @@ def get_Pkmm_1halo_kz(kvec, zvec, survey):
 	Mhalo = np.logspace(7., 16., 30)
 	
 	# Get the halo mass function at each z (use CCL)
-	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = 2.1*10**(-9), n_s=0.96)
+	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = pa.A_s, n_s=pa.n_s_cosmo)
 	cosmo = ccl.Cosmology(p)
 	HMF = np.zeros((len(Mhalo), len(zvec_short)))
 	for zi in range(0,len(zvec_short)):
@@ -724,7 +723,7 @@ def get_Mh_avg(Mlow_star, ngvol, survey):
 	
 	Mh_test = np.logspace(np.log10(Mh_low), np.log10(Mh_high), 10000)
 	# Get the halo mass function (from CCL) to integrate over (dn / dlog10M, Tinker 2010 I think)
-	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = 2.1*10**(-9), n_s=0.96)
+	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = pa.A_s, n_s=pa.n_s_cosmo)
 	cosmo = ccl.Cosmology(p)
 	HMF = ccl.massfunction.massfunc(cosmo, Mh_test / (pa.HH0/100.), 1./ (1. + pa.zeff), odelta=200.)
 	#Ncen = get_Ncen_src(Mh_test, Mlow_star, survey)
@@ -816,7 +815,7 @@ def get_Mhhigh( Mh_low, Mlow_star, ngvol, survey ):
 		Nsat_of_Mh = get_Nsat(Mh_test, Mlow_star, survey)
 	
 	# Get the halo mass function (from CCL) to integrate over (dn / dlog10M, Tinker 2010 I think)
-	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = 2.1*10**(-9), n_s=0.96)
+	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = pa.A_s, n_s=pa.n_s_cosmo)
 	cosmo = ccl.Cosmology(p)
 	HMF = ccl.massfunction.massfunc(cosmo, Mh_test / (pa.HH0/100.), 1./ (1. + pa.zeff), odelta=200.)
 	
@@ -850,7 +849,7 @@ def get_Mstar_low(survey, ngal):
 		Ncen = get_Ncen(Mh_vec, Ms_low_vec, survey)
 	
 		# Get the halo mass function (from CCL) to integrate over (dn / dlog10M, Tinker 2010 I think)
-		p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = 2.1*10**(-9), n_s=0.96)
+		p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = pa.A_s, n_s=pa.n_s_cosmo)
 		cosmo = ccl.Cosmology(p)
 		HMF = ccl.massfunction.massfunc(cosmo, Mh_vec / (pa.HH0/100.), 1./ (1. + pa.zeff), odelta=200.) 
 	
@@ -1123,7 +1122,7 @@ def wgg_2halo(rp_cents_, bd, bs, savefile, survey):
 	z_gg, win_gg = window(survey)
 	
 	# Get the required matter power spectrum from CCL
-	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = pa.A_s, n_s=pa.n_s)
+	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = pa.A_s, n_s=pa.n_s_cosmo)
 	cosmo = ccl.Cosmology(p)
 	h = (pa.HH0/100.)
 	k_gg = np.logspace(-5., 7., 100000)
@@ -1165,7 +1164,7 @@ def wgg_2halo(rp_cents_, bd, bs, savefile, survey):
 	
 	return wgg_2h
 
-def wgg_full(rp_c, fsat, fsky, bd, bs, savefile_1h, savefile_2h, plotfile,survey):
+def wgg_full(rp_c, fsky, bd, bs, savefile_1h, savefile_2h, plotfile,survey):
 	""" Combine 1 and 2 halo terms of wgg """
 	
 	# Check if savefile_1h exists and if not compute the 1halo term.
@@ -1174,7 +1173,7 @@ def wgg_full(rp_c, fsat, fsky, bd, bs, savefile_1h, savefile_2h, plotfile,survey
 		(rp_cen, wgg_1h) = np.loadtxt(savefile_1h, unpack=True)	
 	else:
 		print "Computing wgg 1halo term."
-		wgg_1h = wgg_1halo_Four(rp_c, fsat, fsky, savefile_1h, survey)
+		wgg_1h = wgg_1halo_Four(rp_c, fsky, savefile_1h, survey)
 		
 	# Same for savefile_2h 
 	if (os.path.isfile(savefile_2h)):

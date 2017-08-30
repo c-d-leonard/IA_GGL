@@ -1,0 +1,143 @@
+\documentclass[onecolumn,amsmath,aps,fleqn, superscriptaddress]{revtex4}
+ 
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{epsfig}
+\usepackage{subfigure}
+\usepackage{mathrsfs}
+\usepackage{longtable}
+\usepackage{enumerate} 
+\usepackage{multirow}
+\usepackage{color}
+
+\usepackage[usenames,dvipsnames]{xcolor}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks = true,
+    citecolor = {MidnightBlue},
+    linkcolor = {BrickRed},
+    urlcolor = {BrickRed}
+}
+
+\newcommand{\be}{\begin{eqnarray}}
+\newcommand{\ee}{\end{eqnarray}}
+
+\allowdisplaybreaks[1]
+ 
+\begin{document}
+
+\title{Covariance matrices of $\Delta \Sigma$ and $\gamma_t$ including cosmic variance}
+
+\author{Danielle Leonard}
+
+\maketitle
+This set of notes explains how we get the {\bf statistical-only} covariance matrices required for both the Blazek et al. method and the multiple-shape-measurements method. In this document a `covariance matrix' will in general be shorthand for the covariance matrix between $r_p$ bins for the given lensing observable.
+\section{$\Delta \Sigma$ (Blazek et al. method)}
+In the Blazek et al. method, we need a covariance matrix for $\Delta\Sigma_a$ and for $\Delta\Sigma_b$, where $a$ and $b$ indicate the two photo-z source bins. We assume at the moment that these have totally uncorrelated covariance so we will end up combining them as covariance matrices of independent random variables.
+
+We start with an expression for ${\rm Cov}(\gamma_t(\theta), \gamma_t(\theta^\prime))$ found in Appendix B of Jeong et al. 2009:
+\begin{equation}
+{\rm Cov}(\gamma_t(\theta), \gamma_t(\theta^\prime)) = \frac{1}{4\pi f_{\rm sky}} \int \frac{l \, dl}{2\pi} J_2(l \theta) J_2 (l \theta^\prime) \left[ (C_l^{g \kappa})^2 + \left(C_l^{gg} + \frac{1}{n_L}\right)\left(C_l^{\kappa \kappa} + \frac{\sigma_{\gamma}^2}{n_S}\right)\right].
+\label{covgamgam}
+\end{equation}
+We have replaced their `halo' terms with `galaxy' terms, and $n_L$ and $n_S$ are the surface densities of, respectively, lenses and sources in number/steradian. In the case of sources this is the {\it effective} surface density value, such that $\sigma_\gamma$ is simply the rms intrinsic ellipticity. It is also the source surface density value which accounts for the weighted fraction of total galaxies in the current source bin ($a$ or $b$).
+
+This expression uses angular separation $\theta$, whereas we are interested in an expression in terms of projected radius $r_p$, so we will immediately change to this variable using $r_p = \theta \chi_L$. It will also be helpful for us to fully multiply-out the bracketed term: 
+\begin{equation}
+{\rm Cov}(\gamma_t(r_p), \gamma_t(r_p^\prime)) = \frac{1}{4\pi f_{\rm sky}} \int \frac{l \, dl}{2\pi} J_2\left(l \frac{r_p}{\chi_L}\right) J_2 \left(l \frac{r_p^\prime}{\chi_L}\right) \left[ (C_l^{g \kappa})^2 + \frac{ \gamma^2 C_l^{gg}}{n_S} + \frac{C_l^{\kappa \kappa}}{n_L} + C_l^{gg} C_l^{\kappa \kappa} + \frac{\sigma_{\gamma}^2}{n_S n_L}\right].
+\label{covgamgam_rp}
+\end{equation}
+In order to convert this to an expression for the covariance of $\Delta \Sigma$, we must introduce appropriate factors of the estimated critical surface density $\Sigma_c$ (estimated in the sense of using source photometric redshifts). In the same vein, in order to get the covariance matrices of $\Delta \Sigma$ for two samples which are defined by cuts on photometric redshifts of source galaxies, any power spectrum term which involes source galaxies (i.e. $C_l^{g\kappa}$ and $C_l^{\kappa \kappa}$) must account for these cuts. We make these adjustments to get:
+\begin{align}
+{\rm Cov}(\Delta \Sigma(r_p), \Delta \Sigma(r_p^\prime)) &= \frac{1}{4\pi f_{\rm sky}\bar{w}^2} \int \frac{l \, dl}{2\pi} J_2\left(l \frac{r_p}{\chi_L}\right) J_2 \left(l \frac{r_p^\prime}{\chi_L}\right) \int_{z_p^{\rm min}}^{z_p^{\rm max}} d z_p \Sigma_c^{-1}(z_p) \int_{z_p^{\rm min}}^{z_p^{\rm max}} dz_p^\prime \Sigma_c^{-1}(z_p^\prime)\nonumber \\ &\times \left[ (C_l^{g \kappa}(z_p)C_l^{g \kappa}(z_p^\prime)  + \frac{dN}{dz_p}\frac{dN}{dz_p^\prime}\frac{ \gamma^2 C_l^{gg}}{n_S} + \frac{C_l^{\kappa \kappa}(z_p, z_p^\prime)}{n_L} + C_l^{gg} C_l^{\kappa \kappa}(z_p, z_p^\prime) + \frac{dN}{dz_p}\frac{dN}{dz_p^\prime}\frac{\sigma_{\gamma}^2}{n_S n_L}\right].
+\label{covDSDS_rp}
+\end{align}
+where spectroscopic redshift distributions and photometric redshift probability distributions are hidden inside all power spectra other than $C_l^{gg}$, and $\bar{w}$ is given by
+\begin{equation}
+\bar{w} = \int_{z_p^{\rm min}}^{z_p^{\rm max}} d z_p \Sigma_c^{-2}(z_p).
+\label{wbar}
+\end{equation}
+The reason we have this factor of $\bar{w}$ and two factors of inverse $\Sigma_c$ in equation \ref{covDSDS_rp} is because in fact what is required is a weighted sum over $\Sigma_c$ - the fact that the weights go like $\Sigma_c^{-2}$ and non-z-dependent parts cancel enforces this structure. We should also note that $\frac{dN}{dz_p}$ is here normalized such that:
+\begin{equation}
+\int_{z_p^{\rm min}}^{z_p^{\rm max}} d z_p \frac{dN}{dz_p} = 1.
+\end{equation}
+
+In reality we don't want the covariance between specific points in $r_p$ and $r_p^\prime$, but between bins in these variables. We therefore introduce averaging over projected radial bins to get:
+\begin{align}
+{\rm Cov}(\Delta \Sigma(r_p^i), \Delta \Sigma(r_p^j)) &= \frac{1}{4\pi f_{\rm sky}\bar{w}^2}\frac{2}{((r^i_{\rm max})^2 - (r^i_{\rm min})^2)}\frac{2}{((r^j_{\rm max})^2 - (r^j_{\rm min})^2)} \int_{r^i_{\rm min}}^{r^i_{\rm max}} dr_p r_p \int_{r^j_{\rm min}}^{r^j_{\rm max}} dr_p^\prime r_p^\prime \nonumber \\ &\times\int \frac{l \, dl}{2\pi} J_2\left(l \frac{r_p}{\chi_L}\right) J_2 \left(l \frac{r_p^\prime}{\chi_L}\right) \int_{z_p^{\rm min}}^{z_p^{\rm max}} d z_p \Sigma_c^{-1}(z_p) \int_{z_p^{\rm min}}^{z_p^{\rm max}} dz_p^\prime \Sigma_c^{-1}(z_p^\prime)\nonumber \\ &\times \left[ (C_l^{g \kappa}(z_p)C_l^{g \kappa}(z_p^\prime)  + \frac{dN}{dz_p}\frac{dN}{dz_p^\prime}\frac{ \gamma^2 C_l^{gg}}{n_S} + \frac{C_l^{\kappa \kappa}(z_p, z_p^\prime)}{n_L} + C_l^{gg} C_l^{\kappa \kappa}(z_p, z_p^\prime) + \frac{dN}{dz_p}\frac{dN}{dz_p^\prime}\frac{\sigma_{\gamma}^2}{n_S n_L}\right].
+\label{covDSDS_rpavg}
+\end{align}
+where recall that the averaging takes this form because $r_p$ is a polar radial coordinate. 
+
+Consider now the final term in brackets of equation \ref{covDSDS_rpavg}. This is the term which accounts for shape noise, and does not depend on $l$. We therefore find that, considering only this term, we have:
+\begin{align}
+{\rm Cov}^{\rm SN}(\Delta \Sigma(r_p^i), \Delta \Sigma(r_p^j)) &= \frac{1}{4\pi f_{\rm sky}\bar{w}^2}\frac{2}{((r^i_{\rm max})^2 - (r^i_{\rm min})^2)}\frac{2}{((r^j_{\rm max})^2 - (r^j_{\rm min})^2)} \int_{r^i_{\rm min}}^{r^i_{\rm max}} dr_p r_p \int_{r^j_{\rm min}}^{r^j_{\rm max}} dr_p^\prime r_p^\prime \nonumber \\ &\times\int \frac{l \, dl}{2\pi} J_2\left(l \frac{r_p}{\chi_L}\right) J_2 \left(l \frac{r_p^\prime}{\chi_L}\right) \int_{z_p^{\rm min}}^{z_p^{\rm max}} d z_p \Sigma_c^{-1}(z_p)\frac{dN}{dz_p} \int_{z_p^{\rm min}}^{z_p^{\rm max}} dz_p^\prime \Sigma_c^{-1}(z_p^\prime) \frac{dN}{dz_p^\prime}\frac{\sigma_{\gamma}^2}{n_S n_L} \nonumber \\
+&= \frac{1}{4\pi f_{\rm sky}\bar{w}^2}\frac{2}{((r^i_{\rm max})^2 - (r^i_{\rm min})^2)}\frac{2}{((r^j_{\rm max})^2 - (r^j_{\rm min})^2)} \int_{r^i_{\rm min}}^{r^i_{\rm max}} dr_p r_p \int_{r^j_{\rm min}}^{r^j_{\rm max}} dr_p^\prime r_p^\prime \nonumber \\ &\times \frac{\delta(r_p - r_p^\prime) \chi_L^2}{2 \pi r_p} \int_{z_p^{\rm min}}^{z_p^{\rm max}} d z_p \Sigma_c^{-1}(z_p)\frac{dN}{dz_p} \int_{z_p^{\rm min}}^{z_p^{\rm max}} dz_p^\prime \Sigma_c^{-1}(z_p^\prime) \frac{dN}{dz_p^\prime}\frac{\sigma_{\gamma}^2}{n_S n_L} \nonumber \\
+&= \frac{\chi_L^2\delta_{ij}}{4\pi^2 f_{\rm sky}\bar{w}^2((r^i_{\rm max})^2 - (r^i_{\rm min})^2)} \int_{z_p^{\rm min}}^{z_p^{\rm max}} d z_p \Sigma_c^{-1}(z_p)\frac{dN}{dz_p} \int_{z_p^{\rm min}}^{z_p^{\rm max}} dz_p^\prime \Sigma_c^{-1}(z_p^\prime) \frac{dN}{dz_p^\prime}\frac{\sigma_{\gamma}^2}{n_S n_L}.
+\label{covDSDS_rpavg_SN}
+\end{align}
+Because the number of sources in a bin is equal to $n_s \pi ((r^i_{\rm max})^2 - (r^i_{\rm min})^2) / \chi_L^2$ and the number lenses in equal to $n_L 4\pi f_{\rm sky}$, this is equal to the known real-space expression for the shape-noise contribution to this convariance. Since this term can be obtained analytically it is beneficial to do so, because the corresponding integrand persists to high $l$ and causes numerical instability, whereas all other terms die out at high $l$. Our final expression is therefore:
+\begin{align}
+{\rm Cov}(\Delta \Sigma(r_p), \Delta \Sigma(r_p^\prime)) &= \frac{1}{4\pi f_{\rm sky}\bar{w}^2}\frac{2}{((r^i_{\rm max})^2 - (r^i_{\rm min})^2)}\frac{2}{((r^j_{\rm max})^2 - (r^j_{\rm min})^2)} \int_{r^i_{\rm min}}^{r^i_{\rm max}} dr_p r_p \int_{r^j_{\rm min}}^{r^j_{\rm max}} dr_p^\prime r_p^\prime \nonumber \\ &\times\int \frac{l \, dl}{2\pi} J_2\left(l \frac{r_p}{\chi_L}\right) J_2 \left(l \frac{r_p^\prime}{\chi_L}\right) \int_{z_p^{\rm min}}^{z_p^{\rm max}} d z_p \Sigma_c^{-1}(z_p) \int_{z_p^{\rm min}}^{z_p^{\rm max}} dz_p^\prime \Sigma_c^{-1}(z_p^\prime)\nonumber \\ &\times \left[ (C_l^{g \kappa}(z_p)C_l^{g \kappa}(z_p^\prime)  + \frac{dN}{dz_p}\frac{dN}{dz_p^\prime}\frac{ \gamma^2 C_l^{gg}}{n_S} + \frac{C_l^{\kappa \kappa}(z_p, z_p^\prime)}{n_L} + C_l^{gg} C_l^{\kappa \kappa}(z_p, z_p^\prime)\right]\nonumber \\  &+ {\rm Cov}^{\rm SN}(\Delta \Sigma(r_p), \Delta \Sigma(r_p^\prime)).
+\label{covDSDS_rpavg}
+\end{align}
+
+\section{$\gamma_t$ (multiple-shape-measurements method)}
+For the method with multiple shape-measurement methods, we ultimately require the covariance matrix in projected radial bins of the difference of tangential shear measured by two techniques: ${\rm Cov}(\gamma_t^1(r_p) - \gamma_t^2(r_p), \gamma_t^1(r_p^\prime) - \gamma_t^2(r_p^\prime))$. The tangential shear measured from these two shape-measurement methods should be considered as correlated random variables and not assumed to be independent (contrary to the above case).
+
+We will first consider ${\rm Cov}(\gamma_t(r_p), \gamma_t(r_p^\prime))$ and then use this to get ${\rm Cov}(\gamma_t^1(r_p) - \gamma_t^2(r_p), \gamma_t^1(r_p^\prime) - \gamma_t^2(r_p^\prime))$.
+
+${\rm Cov}(\gamma_t(r_p), \gamma_t(r_p^\prime))$ is given by an expression very similar to equation \ref{covDSDS_rp} above. We adjust that equation to account for the fact that in the case of tangential shear no factors of critical surface density are required, and weights are redshift-independent, to get:
+\begin{align}
+{\rm Cov}(\gamma_t(r_p), \gamma_t(r_p^\prime)) &= \frac{1}{4\pi f_{\rm sky}} \int \frac{l \, dl}{2\pi} J_2\left(l \frac{r_p}{\chi_L}\right) J_2 \left(l \frac{r_p^\prime}{\chi_L}\right) \Bigg[ \int_{z_p^{\rm min}}^{z_p^{\rm max}} d z_p  \int_{z_p^{\rm min}}^{z_p^{\rm max}} dz_p^\prime C_l^{g \kappa}(z_p)C_l^{g \kappa}(z_p^\prime)  \nonumber \\ &\times + \frac{ \gamma^2 C_l^{gg}}{n_S} + \int_{z_p^{\rm min}}^{z_p^{\rm max}} d z_p  \int_{z_p^{\rm min}}^{z_p^{\rm max}} dz_p^\prime\frac{C_l^{\kappa \kappa}(z_p, z_p^\prime)}{n_L} + C_l^{gg} C_l^{\kappa \kappa}(z_p, z_p^\prime) + \frac{\sigma_{\gamma}^2}{n_S n_L}\Bigg].
+\label{covgtgt_rp}
+\end{align}
+where again factors of the spectroscopic redshift distribution and photometric redshift probability distribution are hidden inside power spectra that depend on sources.
+
+Once again, we can take advantage of Bessel function identities to perform analytically the integral in $l$ over the final shape noise term. Averaging over $r_p$ as before, we get:
+\begin{align}
+{\rm Cov}^{\rm SN}(\gamma_t(r_p^i), \gamma_t(r_p^j)) &= \frac{\chi_L^2 \delta_{ij}}{4\pi^2 f_{\rm sky}((r^i_{\rm max})^2 - (r^i_{\rm min})^2)}\frac{\sigma_{\gamma}^2}{n_S n_L}
+\label{SNgam}
+\end{align}
+Once again it is sensible, in order to achieve numerical convergence, to split our final expression along these lines. We average over $r_p$ in the full expression to get:
+\begin{align}
+{\rm Cov}(\gamma_t(r_p^i), \gamma_t(r_p^j)) &= \frac{1}{\pi f_{\rm sky}((r^i_{\rm max})^2 - (r^i_{\rm min})^2)((r^j_{\rm max})^2 - (r^j_{\rm min})^2)}  \int_{r^i_{\rm min}}^{r^i_{\rm max}} dr_p r_p \int_{r^j_{\rm min}}^{r^j_{\rm max}} dr_p^\prime r_p^\prime \int \frac{l \, dl}{2\pi} J_2\left(l \frac{r_p}{\chi_L}\right) J_2 \left(l \frac{r_p^\prime}{\chi_L}\right) \nonumber \\ &\Bigg[ \int_{z_p^{\rm min}}^{z_p^{\rm max}} d z_p  \int_{z_p^{\rm min}}^{z_p^{\rm max}} dz_p^\prime(C_l^{g \kappa}(z_p)C_l^{g \kappa}(z_p^\prime)   + \frac{ \gamma^2 C_l^{gg}}{n_S} + \int_{z_p^{\rm min}}^{z_p^{\rm max}} d z_p  \int_{z_p^{\rm min}}^{z_p^{\rm max}} dz_p^\prime\frac{C_l^{\kappa \kappa}(z_p, z_p^\prime)}{n_L} + C_l^{gg} C_l^{\kappa \kappa}(z_p, z_p^\prime)\Bigg] \nonumber \\ &+ {\rm Cov}^{\rm SN}(\gamma_t(r_p), \gamma_t(r_p^\prime)).
+\label{covgtgt_rp_final}
+\end{align}
+
+The question now becomes: how does equation \ref{covgtgt_rp_final} relate to ${\rm Cov}(\gamma_t^1(r_p) - \gamma_t^2(r_p), \gamma_t^1(r_p^\prime) - \gamma_t^2(r_p^\prime))$? Through simple algebra we can easily show:
+\begin{align}
+{\rm Cov}(\gamma_t^1(r_p) - \gamma_t^2(r_p), \gamma_t^1(r_p^\prime) - \gamma_t^2(r_p^\prime)) & = \langle (\gamma_t^1(r_p) - \gamma_t^2(r_p))(\gamma_t^1(r_p^\prime) - \gamma_t^2(r_p^\prime))\rangle - \langle (\gamma_t^1(r_p) - \gamma_t^2(r_p)) \rangle \langle(\gamma_t^1(r_p^\prime) - \gamma_t^2(r_p^\prime))\rangle \nonumber \\ &= {\rm Cov}(\gamma_t^1(r_p), \gamma_t^1(r_p^\prime)) + {\rm Cov}(\gamma_t^2(r_p), \gamma_t^2(r_p^\prime)) \nonumber \\ &- {\rm Cov}(\gamma_t^2(r_p), \gamma_t^1(r_p^\prime)) - {\rm Cov}(\gamma_t^1(r_p), \gamma_t^2(r_p^\prime))
+\label{covexpandgam}
+\end{align}
+The first two terms are straightforwardly given by equation \ref{covgtgt_rp_final}. The second two terms are more tricky: they each demand the covariance of $\gamma_t$ measured using method 1 in a single projected radial bin against $\gamma_t$ measured using method 2 in another projected radial bin. This is given by:
+\begin{align}
+{\rm Cov}(\gamma_t^1(r_p^i), \gamma_t^2(r_p^j)) &= \frac{1}{\pi f_{\rm sky}((r^i_{\rm max})^2 - (r^i_{\rm min})^2)((r^j_{\rm max})^2 - (r^j_{\rm min})^2)}  \int_{r^i_{\rm min}}^{r^i_{\rm max}} dr_p r_p \int_{r^j_{\rm min}}^{r^j_{\rm max}} dr_p^\prime r_p^\prime \int \frac{l \, dl}{2\pi} J_2\left(l \frac{r_p}{\chi_L}\right) J_2 \left(l \frac{r_p^\prime}{\chi_L}\right) \nonumber \\ &\Bigg[ \int_{z_p^{\rm min}}^{z_p^{\rm max}} d z_p  \int_{z_p^{\rm min}}^{z_p^{\rm max}} dz_p^\prime C_l^{g \kappa}(z_p)C_l^{g \kappa}(z_p^\prime) + \int_{z_p^{\rm min}}^{z_p^{\rm max}} d z_p  \int_{z_p^{\rm min}}^{z_p^{\rm max}} dz_p^\prime\frac{C_l^{\kappa \kappa}(z_p, z_p^\prime)}{n_L} \nonumber \\ &+ C_l^{gg} C_l^{\kappa \kappa}(z_p, z_p^\prime)  + {\rm Corr}_{\gamma^2}\left(\frac{C_l^{gg}}{n_S} + \frac{1}{n_S n_L} \right)  \Bigg]
+\label{covgtgt_diffmeth}
+\end{align}
+This expression is explained as follows: the power-spectra terms source both variance when $i=j$ and covariance with $i \ne j$, and are present regardless of the method of shape-measurement. ${\rm Corr}_{\gamma^2}$ quantifies the correlation in the rms shape given by by each methods. It is given more usefully by:
+\begin{equation}
+{\rm Corr}_{\gamma^2} = \rho_{\gamma^2} \sigma_{\gamma}^{1}\sigma_{\gamma}^{2}
+\label{corr_gam}
+\end{equation}
+where $\rho_{\gamma^2}$ is the pearson correlation coefficient between $\sigma_{\gamma}^{1} $ and $\sigma_{\gamma}^{2}$. This is an input variable to our calculation. Note that in equation \ref{covgtgt_diffmeth} we have left it implicit that in the case $i \ne j$ the constant term proportional to ${\rm Corr}_{\gamma^2}$ is equal to 0, we will account for this in our final expression.
+
+Plugging in now to equation \ref{covexpandgam}, we find that the covariance of differences we need is given by:
+\begin{align}
+{\rm Cov}(\gamma_t^1(r_p^i) - \gamma_t^2(r_p^i), \gamma_t^1(r_p^j) - \gamma_t^2(r_p^j))&= \frac{1}{\pi f_{\rm sky}((r^i_{\rm max})^2 - (r^i_{\rm min})^2)((r^j_{\rm max})^2 - (r^j_{\rm min})^2)}  \int_{r^i_{\rm min}}^{r^i_{\rm max}} dr_p r_p \int_{r^j_{\rm min}}^{r^j_{\rm max}} dr_p^\prime r_p^\prime \nonumber \\ &\times \int \frac{l \, dl}{2\pi} J_2\left(l \frac{r_p}{\chi_L}\right) J_2 \left(l \frac{r_p^\prime}{\chi_L}\right) \nonumber \\ &\times \Bigg[(\sigma_{\gamma}^{1})^2\left(\frac{C_l^{gg}}{n_s} + \frac{1}{n_L n_s}\right) + (\sigma_{\gamma}^{2})^2\left(\frac{C_l^{gg}}{n_s} + \frac{1}{n_L n_s}\right)- 2\rho_{\gamma^2} \sigma_{\gamma}^{1}\sigma_{\gamma}^{2} \left(\frac{C_l^{gg}}{n_S} + \frac{1}{n_S n_L} \right)  \Bigg]
+\label{cov_diff}
+\end{align}
+and to be explicit about the fact that shape-noise-related terms only contribute to diagonal elements:
+\begin{align}
+{\rm Cov}(\gamma_t^1(r_p^i) - \gamma_t^2(r_p^i), \gamma_t^1(r_p^j) - \gamma_t^2(r_p^j))&= \frac{1}{\pi f_{\rm sky}((r^i_{\rm max})^2 - (r^i_{\rm min})^2)((r^j_{\rm max})^2 - (r^j_{\rm min})^2)}  \int_{r^i_{\rm min}}^{r^i_{\rm max}} dr_p r_p \int_{r^j_{\rm min}}^{r^j_{\rm max}} dr_p^\prime r_p^\prime\nonumber \\ & \int \frac{l \, dl}{2\pi} J_2\left(l \frac{r_p}{\chi_L}\right) J_2 \left(l \frac{r_p^\prime}{\chi_L}\right) \Bigg[(\sigma_{\gamma}^{1})^2 \frac{C_l^{gg}}{n_s} + (\sigma_{\gamma}^{2})^2\frac{C_l^{gg}}{n_s} - 2\rho_{\gamma^2} \sigma_{\gamma}^{1}\sigma_{\gamma}^{2}\frac{C_l^{gg}}{n_S}  \Bigg]  \nonumber \\ &+\left(\frac{\sigma_{\gamma^1}^2}{n_S n_L} +\frac{\sigma_{\gamma^2}^2}{n_S n_L} - 2 \frac{\rho_{\gamma^2} \sigma_{\gamma}^{1}\sigma_{\gamma}^{2}}{n_Sn_L}\right)\frac{\chi_L^2}{4\pi^2 f_{\rm sky}((r^i_{\rm max})^2 - (r^i_{\rm min})^2)}\delta_{ij}
+\label{cov_diff_exp}
+\end{align}
+
+
+
+%-------------------------------------------------------------------------------
+
+
+%-------------------------------------------------------------------------------
+
+\end{document}
