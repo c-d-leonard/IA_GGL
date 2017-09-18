@@ -25,6 +25,14 @@ N_shapes		= 	Area_l * n_s * 3600 # Number of galaxies in the shape sample.
 boost_assoc = 0.42
 boost_far = 0.038
 boost_close = 0.27
+# For SDSS with an LSST sigmaz (testing)
+#boost_assoc = 0.800
+#boost_far = 0.00115
+#boost_close = 0.165
+# For SDSS with LSST dNdz s and l (testing)
+#boost_assoc = 0.173
+#boost_far = 0.0137
+#boost_close = 0.148
 
 # Parameters associated with the projected radial bins
 rp_max 	=	20.0 # The maximum projected radius (Mpc/h)
@@ -48,6 +56,7 @@ zLmin	= 	0.16  # See Kazin 2010
 zLmax	=	0.36  # See Kazin 2010. 
 dNdzL_file	=  'SDSS_LRG_DR7dim_nofz.txt'
 
+
 close_cut = 100.# Mpc/h # The maximum separation from a lens to consider part of `rand-close', in Mpc/h
 #Blazek et al. case
 zsmin 	=	0.02
@@ -65,7 +74,7 @@ zmin_ph	=	0.0 # Minimu photo-z
 zmax_ph	=	5.0 # Maximum photo-z
 
 # Fractional errors on 'fudge factors' we are using to get a handle on the relative importance of different systematic errors.
-fudge_frac_level = np.logspace(-2, 0, 15)
+fudge_frac_level = np.logspace(-4, 0, 15)
 
 # Constants / conversions
 mperMpc = 3.0856776*10**22

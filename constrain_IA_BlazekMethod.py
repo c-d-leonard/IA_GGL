@@ -1,6 +1,6 @@
 # This is a script which predicts constraints on intrinsic alignments, using an updated version of the method of Blazek et al 2012 in which it is not assumed that only excess galaxies contribute to IA (rather it is assumed that source galaxies which are close to the lens along the line-of-sight can contribute.)
 
-SURVEY = 'LSST_DESI'
+SURVEY = 'SDSS'
 print "SURVEY=", SURVEY
 
 import numpy as np
@@ -11,6 +11,8 @@ import scipy.interpolate
 import shared_functions_setup as setup
 import shared_functions_wlp_wls as ws
 import pyccl as ccl
+
+np.set_printoptions(linewidth=240)
 	
 ############## GENERIC FUNCTIONS ###############
 	
@@ -136,8 +138,8 @@ def get_SigmaC_inv(z_s_, z_l_):
                     
     return Sigma_c_inv
 
-#### THESE ARE OLD FUNCTIONS WHICH COMPUTE THE SHAPE-NOISE ONLY COVARIANCE IN REAL SPACE #####
-# I'm just keeping these to be able to compare with their output
+#### THIS IS AN OLD FUNCTIONS WHICH COMPUTES THE SHAPE-NOISE ONLY COVARIANCE IN REAL SPACE #####
+# I'm just keeping this to compare with its output
 
 def shapenoise_cov(photoz_samp, rp, dNdzpar, pzpar, dNdztype, pztype):
 	""" Returns a diagonal covariance matrix in bins of projected radius for a measurement dominated by shape noise. Elements are 1 / (sum_{ls} w), carefully normalized, in each bin. """
@@ -173,12 +175,17 @@ def shapenoise_cov(photoz_samp, rp, dNdzpar, pzpar, dNdztype, pztype):
 			e_rms = pa.e_rms_Bl_full
 		else:
 			print "We do not have support for that sample. Exiting."
-				
+		
+			
 		ns_eff[zi] = pa.n_s * scipy.integrate.simps(Nofzph_ns, z_ph_ns)
 	
 	SigCterm = ( sum_weights_SigC(photoz_samp, 'nocut', 'all', rp, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype) / sum_weights(photoz_samp, 'nocut', 'all', rp, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype) ) 
+	
+	print "SigC^2 avg=", SigCterm**2
 		
 	ns_avg = scipy.integrate.simps(dndzl * ns_eff, zL)
+	
+	print "neff=", ns_avg
 
 	cov = e_rms**2 * SigCterm**2  / ( ns_avg * pa.n_l * pa.Area_l * bin_areas  )
 	
@@ -500,7 +507,7 @@ def get_F(photoz_sample, rp_bins_, dNdz_par, pz_par, dNdztype, pztype):
 	""" Returns F (the weighted fraction of lens-source pairs from the smooth dNdz which are contributing to IA) """
 
 	# Sum over `rand-close'
-	numerator = sum_weights(photoz_sample, 'close', 'red', rp_bins_, dNdz_par, pz_par, dNdztype, pztype)
+	numerator = sum_weights(photoz_sample, 'close', 'all', rp_bins_, dNdz_par, pz_par, dNdztype, pztype)
 
 	#Sum over all `rand'
 	denominator = sum_weights(photoz_sample, 'nocut', 'all', rp_bins_, dNdz_par, pz_par, dNdztype, pztype)
@@ -601,16 +608,16 @@ def get_Sig_IA(photoz_sample, rp_bins_, boost, dNdz_par, pz_par, dNdztype, pztyp
 	""" Returns the value of <\Sigma_c>_{IA} in radial bins. """
 	
 	# There are four terms here. The two in the denominators are sums over randoms (or sums over lenses that can be written as randoms * boost), and these are already set up to calculate.
-	denom_rand_close =  sum_weights(photoz_sample, 'close', 'red', rp_bins_, dNdz_par, pz_par, dNdztype, pztype)
-	denom_rand =  sum_weights(photoz_sample, 'nocut', 'red', rp_bins_, dNdz_par, pz_par, dNdztype, pztype)
+	denom_rand_close =  sum_weights(photoz_sample, 'close', 'all', rp_bins_, dNdz_par, pz_par, dNdztype, pztype)
+	denom_rand =  sum_weights(photoz_sample, 'nocut', 'all', rp_bins_, dNdz_par, pz_par, dNdztype, pztype)
 	denom_excess = (boost - 1.) * denom_rand
 	
 	# The two in the numerator require summing over weights and Sigma_C. 
 	
 	#For the sum over rand-close in the numerator, this follows directly from the same type of expression as when summing weights:
-	num_rand_close = sum_weights_SigC(photoz_sample, 'close', 'red', rp_bins, dNdz_par, pz_par, dNdztype, pztype)
+	num_rand_close = sum_weights_SigC(photoz_sample, 'close', 'all', rp_bins, dNdz_par, pz_par, dNdztype, pztype)
 
-	# The other numerator sum is a term which represents the a sum over excess. We have to get the normalization indirectly so there are a bunch of terms here. See notes.
+	# The other numerator is a sum over excess. We have to get the normalization indirectly so there are a bunch of terms here. See notes.
 	# We assume all excess galaxies are at the lens redshift.
 	
 	# Get the redshift distribution for the lenses
@@ -627,9 +634,9 @@ def get_Sig_IA(photoz_sample, rp_bins_, boost, dNdz_par, pz_par, dNdztype, pztyp
 			weightSigC = weights_times_SigC(pa.e_rms_Bl_a, z_ph, zLvec[zi])
 			
 			# We first compute a sum over excess of weights and Sigma_C with arbitrary normalization:
-			exc_SigC_arbnorm_ofzL[zi] = scipy.integrate.simps(weightSigC * setup.p_z(z_ph, zLvec[zi], pz_par, pztype) * fred_interp(zLvec[zi]), z_ph)
+			exc_SigC_arbnorm_ofzL[zi] = scipy.integrate.simps(weightSigC * setup.p_z(z_ph, zLvec[zi], pz_par, pztype), z_ph)
 			# We do the same for a sum over excess of just weights with the same arbitrary normalization:
-			exc_arbnorm_ofzL[zi] = scipy.integrate.simps(weight * setup.p_z(z_ph, zLvec[zi], pz_par, pztype) * fred_interp(zLvec[zi]), z_ph)
+			exc_arbnorm_ofzL[zi] = scipy.integrate.simps(weight * setup.p_z(z_ph, zLvec[zi], pz_par, pztype), z_ph)
 			
 		elif (photoz_sample=='B'):
 			z_ph = scipy.linspace(zLvec[zi] + pa.delta_z, pa.zphmax, 1000)
@@ -638,9 +645,9 @@ def get_Sig_IA(photoz_sample, rp_bins_, boost, dNdz_par, pz_par, dNdztype, pztyp
 			weightSigC = weights_times_SigC(pa.e_rms_Bl_b, z_ph, zLvec[zi])
 			
 			# We first compute a sum over excess of weights and Sigma_C with arbitrary normalization:
-			exc_SigC_arbnorm_ofzL[zi] = scipy.integrate.simps(weightSigC * setup.p_z(z_ph, zLvec[zi], pz_par, pztype) * fred_interp(zLvec[zi]), z_ph)
+			exc_SigC_arbnorm_ofzL[zi] = scipy.integrate.simps(weightSigC * setup.p_z(z_ph, zLvec[zi], pz_par, pztype), z_ph)
 			# We do the same for a sum over excess of just weights with the same arbitrary normalization:
-			exc_arbnorm_ofzL[zi] = scipy.integrate.simps(weight * setup.p_z(z_ph, zLvec[zi], pz_par, pztype) * fred_interp(zLvec[zi]), z_ph)
+			exc_arbnorm_ofzL[zi] = scipy.integrate.simps(weight * setup.p_z(z_ph, zLvec[zi], pz_par, pztype), z_ph)
 		
 		elif (photoz-samlple == 'full'):
 			z_ph = scipy.linspace(pa.zphmin, pa.zphmax, 1000)
@@ -649,9 +656,9 @@ def get_Sig_IA(photoz_sample, rp_bins_, boost, dNdz_par, pz_par, dNdztype, pztyp
 			weightSigC = weights_times_SigC(pa.e_rms_Bl_full, z_ph, zLvec[zi])
 			
 			# We first compute a sum over excess of weights and Sigma_C with arbitrary normalization:
-			exc_SigC_arbnorm_ofzL[zi] = scipy.integrate.simps(weightSigC * setup.p_z(z_ph, zLvec[zi], pz_par, pztype) * fred_interp(zLvec[zi]), z_ph)
+			exc_SigC_arbnorm_ofzL[zi] = scipy.integrate.simps(weightSigC * setup.p_z(z_ph, zLvec[zi], pz_par, pztype), z_ph)
 			# We do the same for a sum over excess of just weights with the same arbitrary normalization:
-			exc_arbnorm_ofzL[zi] = scipy.integrate.simps(weight * setup.p_z(z_ph, zLvec[zi], pz_par, pztype) * fred_interp(zLvec[zi]), z_ph)
+			exc_arbnorm_ofzL[zi] = scipy.integrate.simps(weight * setup.p_z(z_ph, zLvec[zi], pz_par, pztype), z_ph)
 	
 		else:
 			print "We don't have support for that photo-z sample. Exiting."
@@ -666,8 +673,6 @@ def get_Sig_IA(photoz_sample, rp_bins_, boost, dNdz_par, pz_par, dNdztype, pztyp
 	
 	# Sigma_C_inv is in units of pc^2 / (h Msol) (comoving), so Sig_IA is in units of h Msol / pc^2 (comoving).
 	Sig_IA = (np.asarray(num_excess + num_rand_close)) / (np.asarray(denom_excess + denom_rand_close)) 
-	#print "num=", (np.asarray(num_excess + num_rand_close))
-	#print "denom=", (np.asarray(denom_excess + denom_rand_close)) 
 
 	return Sig_IA 
 
@@ -675,7 +680,7 @@ def get_Sig_ex(photoz_sample, rp_bins_, boost, dNdz_par, pz_par, dNdztype, pztyp
 	""" This function gets the average Sigmac over (red) excess galaxies, to compare the original method with the new method of assuming all physically associated galaxies are subject to IA."""
 	
 	# Sum over weights in the denominator
-	denom_rand =  sum_weights(photoz_sample, 'nocut', 'red', rp_bins_, dNdz_par, pz_par, dNdztype, pztype)
+	denom_rand =  sum_weights(photoz_sample, 'nocut', 'all', rp_bins_, dNdz_par, pz_par, dNdztype, pztype)
 	denom_excess = (boost - 1.) * denom_rand
 	
 	# The numerator a sum over excess of SigmaC. We have to get the normalization indirectly so there are a bunch of terms here. See notes.
@@ -695,9 +700,9 @@ def get_Sig_ex(photoz_sample, rp_bins_, boost, dNdz_par, pz_par, dNdztype, pztyp
 			weightSigC = weights_times_SigC(pa.e_rms_Bl_a, z_ph, zLvec[zi])
 			
 			# We first compute a sum over excess of weights and Sigma_C with arbitrary normalization:
-			exc_SigC_arbnorm_ofzL[zi] = scipy.integrate.simps(weightSigC * setup.p_z(z_ph, zLvec[zi], pz_par, pztype) * fred_interp(zLvec[zi]), z_ph)
+			exc_SigC_arbnorm_ofzL[zi] = scipy.integrate.simps(weightSigC * setup.p_z(z_ph, zLvec[zi], pz_par, pztype), z_ph)
 			# We do the same for a sum over excess of just weights with the same arbitrary normalization:
-			exc_arbnorm_ofzL[zi] = scipy.integrate.simps(weight * setup.p_z(z_ph, zLvec[zi], pz_par, pztype) * fred_interp(zLvec[zi]), z_ph)
+			exc_arbnorm_ofzL[zi] = scipy.integrate.simps(weight * setup.p_z(z_ph, zLvec[zi], pz_par, pztype), z_ph)
 			
 		elif (photoz_sample=='B'):
 			z_ph = scipy.linspace(zLvec[zi] + pa.delta_z, pa.zphmax, 1000)
@@ -706,9 +711,9 @@ def get_Sig_ex(photoz_sample, rp_bins_, boost, dNdz_par, pz_par, dNdztype, pztyp
 			weightSigC = weights_times_SigC(pa.e_rms_Bl_b, z_ph, zLvec[zi])
 			
 			# We first compute a sum over excess of weights and Sigma_C with arbitrary normalization:
-			exc_SigC_arbnorm_ofzL[zi] = scipy.integrate.simps(weightSigC * setup.p_z(z_ph, zLvec[zi], pz_par, pztype) * fred_interp(zLvec[zi]), z_ph)
+			exc_SigC_arbnorm_ofzL[zi] = scipy.integrate.simps(weightSigC * setup.p_z(z_ph, zLvec[zi], pz_par, pztype), z_ph)
 			# We do the same for a sum over excess of just weights with the same arbitrary normalization:
-			exc_arbnorm_ofzL[zi] = scipy.integrate.simps(weight * setup.p_z(z_ph, zLvec[zi], pz_par, pztype) * fred_interp(zLvec[zi]), z_ph)
+			exc_arbnorm_ofzL[zi] = scipy.integrate.simps(weight * setup.p_z(z_ph, zLvec[zi], pz_par, pztype), z_ph)
 		
 		elif (photoz-samlple == 'full'):
 			z_ph = scipy.linspace(pa.zphmin, pa.zphmax, 1000)
@@ -717,9 +722,9 @@ def get_Sig_ex(photoz_sample, rp_bins_, boost, dNdz_par, pz_par, dNdztype, pztyp
 			weightSigC = weights_times_SigC(pa.e_rms_Bl_full, z_ph, zLvec[zi])
 			
 			# We first compute a sum over excess of weights and Sigma_C with arbitrary normalization:
-			exc_SigC_arbnorm_ofzL[zi] = scipy.integrate.simps(weightSigC * setup.p_z(z_ph, zLvec[zi], pz_par, pztype) * fred_interp(zLvec[zi]), z_ph)
+			exc_SigC_arbnorm_ofzL[zi] = scipy.integrate.simps(weightSigC * setup.p_z(z_ph, zLvec[zi], pz_par, pztype), z_ph)
 			# We do the same for a sum over excess of just weights with the same arbitrary normalization:
-			exc_arbnorm_ofzL[zi] = scipy.integrate.simps(weight * setup.p_z(z_ph, zLvec[zi], pz_par, pztype) * fred_interp(zLvec[zi]), z_ph)
+			exc_arbnorm_ofzL[zi] = scipy.integrate.simps(weight * setup.p_z(z_ph, zLvec[zi], pz_par, pztype), z_ph)
 	
 		else:
 			print "We don't have support for that photo-z sample. Exiting."
@@ -770,6 +775,8 @@ def get_fred(photoz_samp):
 			
 		elif (photoz_samp == 'B'):
 			zph = np.linspace(zL[zi]+ pa.delta_z,pa.zphmax, 500)
+		elif (photoz_samp == 'A+B'):
+			zph = np.linspace(zL[zi],pa.zphmax, 500)
 			
 		elif (photoz_sampe =='full'):
 			zph = np.linspace(pa.zphmin, pa.zphmax, 500)
@@ -963,7 +970,7 @@ def get_DeltaSig_theory(rp_bins, rp_bins_c):
 		
 	DeltaSigma_1h = (barSigma_1h - Sigma_1h)
 	
-	plt.figure()
+	"""plt.figure()
 	plt.loglog(rpvec, DeltaSigma_1h  / (10**12), 'g+', label='1-halo')
 	plt.hold(True)
 	plt.loglog(rpvec, DeltaSigma_HF  / (10**12), 'm+', label='halofit')
@@ -975,7 +982,7 @@ def get_DeltaSig_theory(rp_bins, rp_bins_c):
 	plt.ylabel('$\Delta \Sigma$, $h M_\odot / pc^2$')
 	plt.legend()
 	plt.savefig('./plots/test_DeltaSigmatot_extzl_survey='+SURVEY+'.pdf')
-	plt.close()
+	plt.close()"""
 	
 	# Interpolate and output at r_bins_c:
 	ans_interp = scipy.interpolate.interp1d(rpvec, (DeltaSigma_1h + DeltaSigma_HF) / (10**12))
@@ -985,26 +992,6 @@ def get_DeltaSig_theory(rp_bins, rp_bins_c):
 
 ##### ERRORS FOR FRACTIONAL ERROR CALCULATION #####
 	
-def boost_errors(rp_bins_c, filename):
-	""" For the SDSS case, imports a file with 2 columns, [rp (kpc/h), sigma(boost-1)]. Interpolates and returns the value of the error on the boost at the center of each bin. """
-	
-	if (pa.survey == 'SDSS'):
-		(rp_kpc, boost_error_raw) = np.loadtxt(filename, unpack=True)
-		# Convert the projected radius to Mpc/h
-		rp_Mpc = rp_kpc / 1000.	
-		interpolate_boost_error = scipy.interpolate.interp1d(rp_Mpc, boost_error_raw)
-		boost_error = interpolate_boost_error(rp_bins_c)
-		
-	elif (pa.survey == 'LSST_DESI'):
-		# At the moment I don't have a good model for the boost errors for LSST x DESI, so I'm assuming it's zero (aka subdominant)
-		print "The boost statistical error is currently assumed to be subdominant and set to zero."
-		boost_error = np.zeros(len(rp_bins_c))
-	else:
-		print "That survey doesn't have a boost statistical error model yet."
-		exit()
-	
-	return boost_error
-
 def get_gammaIA_cov(rp_bins, rp_bins_c, fudgeczA, fudgeczB, fudgeFA, fudgeFB, fudgeSigA, fudgeSigB):
 	""" Takes information about the uncertainty on constituent elements of gamma_{IA} and combines them to get the covariance matrix of gamma_{IA} in projected radial bins."""
 	""" We are only interested right now in the diagonal elements of the covariance matrix, so we assume it is diagonal. """ 
@@ -1023,7 +1010,7 @@ def get_gammaIA_cov(rp_bins, rp_bins_c, fudgeczA, fudgeczB, fudgeFA, fudgeFB, fu
 		print "F_a_fid=", F_a_fid , "F_b_fid=", F_b_fid
 	
 		save_F = np.column_stack(([F_a_fid], [F_b_fid]))
-		np.savetxt('./txtfiles/F_afid_bfid_fred_survey='+pa.survey+'_deltaz='+str(pa.delta_z)+'.txt', save_F)
+		np.savetxt('./txtfiles/F_afid_bfid_extl_survey='+pa.survey+'_deltaz='+str(pa.delta_z)+'.txt', save_F)
 	
 		############# Sig_IA's ##############
 	
@@ -1033,7 +1020,7 @@ def get_gammaIA_cov(rp_bins, rp_bins_c, fudgeczA, fudgeczB, fudgeFA, fudgeFB, fu
 		print "Sig_IA_b_fid=", Sig_IA_b_fid
 	
 		save_SigIA = np.column_stack((rp_bins_c, Sig_IA_a_fid, Sig_IA_b_fid))
-		np.savetxt('./txtfiles/Sig_IA_afid_bfid_fred_survey='+pa.survey+'_deltaz='+str(pa.delta_z)+'.txt', save_SigIA)
+		np.savetxt('./txtfiles/Sig_IA_afid_bfid_extl_survey='+pa.survey+'_deltaz='+str(pa.delta_z)+'.txt', save_SigIA)
 		
 		############# Sig_ex's ##############
 		
@@ -1043,7 +1030,7 @@ def get_gammaIA_cov(rp_bins, rp_bins_c, fudgeczA, fudgeczB, fudgeFA, fudgeFB, fu
 		print "Sig_ex_b_fid=", Sig_ex_b_fid
 	
 		save_Sigex = np.column_stack((rp_bins_c, Sig_ex_a_fid, Sig_ex_b_fid))
-		np.savetxt('./txtfiles/Sig_ex_afid_bfid_fred_survey='+pa.survey+'_deltaz='+str(pa.delta_z)+'.txt', save_Sigex)
+		np.savetxt('./txtfiles/Sig_ex_afid_bfid_extl_survey='+pa.survey+'_deltaz='+str(pa.delta_z)+'.txt', save_Sigex)
 
 		############ c_z's ##############
 	
@@ -1053,29 +1040,22 @@ def get_gammaIA_cov(rp_bins, rp_bins_c, fudgeczA, fudgeczB, fudgeFA, fudgeFB, fu
 		print "cz_a_fid =", cz_a_fid, "cz_b_fid=", cz_b_fid
 		
 		save_cz = np.column_stack(([cz_a_fid], [cz_b_fid]))
-		np.savetxt('./txtfiles/cz_afid_bfid_fred_survey='+pa.survey+'_deltaz='+str(pa.delta_z)+'.txt', save_cz)
+		np.savetxt('./txtfiles/cz_afid_bfid_extl_survey='+pa.survey+'_deltaz='+str(pa.delta_z)+'.txt', save_cz)
 		
-		exit()
 	
+
 	############ gamma_IA ###########
-	# gamma_IA_fiducial, from model
-	g_IA_fid = gamma_fid(rp_bins_c)
 		
 	if pa.run_quants==False :
 		# Load stuff if we haven't computed it this time around:
-		(F_a_fid, F_b_fid) = np.loadtxt('./txtfiles/F_afid_bfid_fred_survey='+pa.survey+'_deltaz='+str(pa.delta_z)+'.txt', unpack=True)
-		(rp_bins_c, Sig_IA_a_fid, Sig_IA_b_fid) = np.loadtxt('./txtfiles/Sig_IA_afid_bfid_fred_survey='+pa.survey+'_deltaz='+str(pa.delta_z)+'.txt', unpack=True)
-		(rp_bins_c, Sig_ex_a_fid, Sig_ex_b_fid) = np.loadtxt('./txtfiles/Sig_ex_afid_bfid_fred_survey='+pa.survey+'_deltaz='+str(pa.delta_z)+'.txt', unpack=True)
-		(cz_a_fid, cz_b_fid) = np.loadtxt('./txtfiles/cz_afid_bfid_fred_survey='+pa.survey+'_deltaz='+str(pa.delta_z)+'.txt', unpack=True)
+		(F_a_fid, F_b_fid) = np.loadtxt('./txtfiles/F_afid_bfid_extl_survey='+pa.survey+'_deltaz='+str(pa.delta_z)+'.txt', unpack=True)
+		(rp_bins_c, Sig_IA_a_fid, Sig_IA_b_fid) = np.loadtxt('./txtfiles/Sig_IA_afid_bfid_extl_survey='+pa.survey+'_deltaz='+str(pa.delta_z)+'.txt', unpack=True)
+		(rp_bins_c, Sig_ex_a_fid, Sig_ex_b_fid) = np.loadtxt('./txtfiles/Sig_ex_afid_bfid_extl_survey='+pa.survey+'_deltaz='+str(pa.delta_z)+'.txt', unpack=True)
+		(cz_a_fid, cz_b_fid) = np.loadtxt('./txtfiles/cz_afid_bfid_extl_survey='+pa.survey+'_deltaz='+str(pa.delta_z)+'.txt', unpack=True)
 	
 	# Estimated Delta Sigmas
 	DeltaSig_est_a = get_est_DeltaSig(Boost_a, F_a_fid, cz_a_fid, Sig_IA_a_fid, g_IA_fid)
 	DeltaSig_est_b = get_est_DeltaSig(Boost_b, F_b_fid, cz_b_fid, Sig_IA_b_fid, g_IA_fid)
-	
-	# Get the red fraction quantities
-	fred_rand_A = f_red_rand('A')
-	fred_rand_B = f_red_rand('B')
-	print "fred rand A=", fred_rand_A, "fred_rand_B=", fred_rand_B
 	
 	############ Get statistical error ############
 	
@@ -1085,9 +1065,14 @@ def get_gammaIA_cov(rp_bins, rp_bins_c, fudgeczA, fudgeczB, fudgeFA, fudgeFB, fu
 	
 	# Uncomment the followin section to plot comparison of diagonal covariance elements against shape-noise only real space case.
 	
-	"""# Get the real-space shape-noise-only covariance matrices for Delta Sigma for each sample if we want to compare against them.
-	#DeltaCov_a = shapenoise_cov('A', rp_bins, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
-	#DeltaCov_b = shapenoise_cov('B', rp_bins, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
+	# Get the real-space shape-noise-only covariance matrices for Delta Sigma for each sample if we want to compare against them.
+	"""print "A"
+	DeltaCov_a = shapenoise_cov('A', rp_bins, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
+	print "B"
+	DeltaCov_b = shapenoise_cov('B', rp_bins, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
+	
+	DeltaCov_a_import_CV = np.diag(DeltaCov_a)
+	DeltaCov_b_import_CV = np.diag(DeltaCov_b)
 	
 	plt.figure()
 	plt.loglog(rp_bins_c, DeltaCov_a, 'mo', label='shape noise: real')
@@ -1119,16 +1104,16 @@ def get_gammaIA_cov(rp_bins, rp_bins_c, fudgeczA, fudgeczB, fudgeFA, fudgeFB, fu
 	gammaIA_sysB_cov_noF = np.zeros((len(rp_bins_c), len(rp_bins_c)))
 	gammaIA_sysZ_cov = np.zeros((len(rp_bins_c), len(rp_bins_c)))
 	
-	# Calculate the covariance
+	# Calculate the covariance - we are letting the signal be rp * gamma_IA here
 	for i in range(0,len((rp_bins_c))):	 
 		for j in range(0, len((rp_bins_c))):
 			
 			# Statistical
-			num_term_stat = cz_a_fid**2 * DeltaCov_a_import_CV[i,j] + cz_b_fid**2 * DeltaCov_b_import_CV[i,j] 
+			num_term_stat = cz_a_fid**2 * DeltaCov_a_import_CV[i,j] + cz_b_fid**2 * DeltaCov_b_import_CV[i,j]
 			
-			denom_term_stat_withF =( ( cz_a_fid * ( (Boost_a[i] -1.) * fred_rand_A + F_a_fid) * Sig_IA_a_fid[i]) -  ( cz_b_fid * ( (Boost_b[i] -1.) * fred_rand_B + F_b_fid) * Sig_IA_b_fid[i]) ) * ( ( cz_a_fid * ( (Boost_a[j] -1.) * fred_rand_A + F_a_fid) * Sig_IA_a_fid[j]) -  ( cz_b_fid * ( (Boost_b[j] -1.) * fred_rand_B + F_b_fid) * Sig_IA_b_fid[j]) )
+			denom_term_stat_withF =( ( cz_a_fid * ( Boost_a[i] -1. + F_a_fid) * Sig_IA_a_fid[i]) -  ( cz_b_fid * ( Boost_b[i] -1. + F_b_fid) * Sig_IA_b_fid[i]) ) * ( ( cz_a_fid * (Boost_a[j] -1. + F_a_fid) * Sig_IA_a_fid[j]) -  ( cz_b_fid * ( Boost_b[j] -1.+ F_b_fid) * Sig_IA_b_fid[j]) )
 			
-			denom_term_stat_noF =( ( cz_a_fid * (Boost_a[i] -1.) * fred_rand_A * Sig_ex_a_fid[i]) -  ( cz_b_fid * (Boost_b[i] -1.)* fred_rand_B * Sig_ex_b_fid[i]) ) * ( ( cz_a_fid * (Boost_a[j] -1.) * fred_rand_A * Sig_ex_a_fid[j])  -  ( cz_b_fid * (Boost_b[j] -1.) *fred_rand_B* Sig_ex_b_fid[j]) )
+			denom_term_stat_noF =( ( cz_a_fid * (Boost_a[i] -1.) * Sig_ex_a_fid[i]) -  ( cz_b_fid * (Boost_b[i] -1.) * Sig_ex_b_fid[i]) ) * ( ( cz_a_fid * (Boost_a[j] -1.) * Sig_ex_a_fid[j])  -  ( cz_b_fid * (Boost_b[j] -1.) * Sig_ex_b_fid[j]) )
 			
 			gammaIA_stat_cov_withF[i,j] = num_term_stat / denom_term_stat_withF
 			gammaIA_stat_cov_noF[i,j] = num_term_stat / denom_term_stat_noF	
@@ -1136,16 +1121,17 @@ def get_gammaIA_cov(rp_bins, rp_bins_c, fudgeczA, fudgeczB, fudgeFA, fudgeFB, fu
 			if (i==j):
 				
 				# Systematic, related to redshifts:
-				num_term_sysZ = ( cz_a_fid**2 * DeltaSig_est_a[i]**2 * fudgeczA**2 + cz_b_fid**2 * DeltaSig_est_b[i]**2  * fudgeczB**2 ) / ( ( cz_a_fid * ( (Boost_a[i] -1.) * fred_rand_A + F_a_fid) * Sig_IA_a_fid[i]) -  ( cz_b_fid * ( (Boost_b[i] -1.) * fred_rand_B + F_b_fid) * Sig_IA_b_fid[i]) )**2
+				num_term_sysZ = ( cz_a_fid**2 * DeltaSig_est_a[i]**2 * fudgeczA**2 + cz_b_fid**2 * DeltaSig_est_b[i]**2  * fudgeczB**2 ) / ( (( cz_a_fid * ( Boost_a[i] -1.+ F_a_fid) * Sig_IA_a_fid[i]) -  ( cz_b_fid * ( Boost_b[i] -1. + F_b_fid) * Sig_IA_b_fid[i]) ) * g_IA_fid[i] )**2
 				
-				denom_term_sysZ = ( ( cz_a_fid * ( (Boost_a[i] -1.) * fred_rand_A + F_a_fid) * Sig_IA_a_fid[i])**2 * ( fudgeczA**2 + (fudgeFA * F_a_fid)**2 / ( (Boost_a[i] -1.) * fred_rand_A + F_a_fid)**2 + fudgeSigA**2 ) + ( cz_b_fid * ( (Boost_b[i] -1.) * fred_rand_B + F_b_fid) * Sig_IA_b_fid[i])**2 * ( fudgeczB**2 + (fudgeFB * F_b_fid)**2 / ( (Boost_b[i] -1) * fred_rand_B + F_b_fid)**2 + fudgeSigB**2 ) ) / ( ( cz_a_fid * ( (Boost_a[i] -1.) * fred_rand_A + F_a_fid) * Sig_IA_a_fid[i]) -  ( cz_b_fid * ( (Boost_b[i] -1.) * fred_rand_B + F_b_fid) * Sig_IA_b_fid[i]) )**2
+				denom_term_sysZ = ( ( cz_a_fid * ( Boost_a[i] -1.+ F_a_fid) * Sig_IA_a_fid[i])**2 * ( fudgeczA**2 + (fudgeFA * F_a_fid)**2 / ( Boost_a[i] -1. + F_a_fid)**2 + fudgeSigA**2 ) + ( cz_b_fid * ( Boost_b[i] -1.+ F_b_fid) * Sig_IA_b_fid[i])**2 * ( fudgeczB**2 + (fudgeFB * F_b_fid)**2 / ( Boost_b[i] -1+ F_b_fid)**2 + fudgeSigB**2 ) ) / ( ( cz_a_fid * ( Boost_a[i] -1. + F_a_fid) * Sig_IA_a_fid[i]) -  ( cz_b_fid * ( Boost_b[i] -1.+ F_b_fid) * Sig_IA_b_fid[i]) )**2
 				
 				gammaIA_sysZ_cov[i,i] = g_IA_fid[i]**2 * (num_term_sysZ + denom_term_sysZ)
 				
 				# Systematic, related to boost
-				gammaIA_sysB_cov_withF[i,j] = g_IA_fid[i]**2 * ( cz_a_fid**2 * Sig_IA_a_fid[i]**2 * boosterr_sq_a[i] + cz_b_fid**2 * Sig_IA_b_fid[i]**2 * boosterr_sq_b[i] ) / ( ( cz_a_fid * ((Boost_a[i] -1.) * fred_rand_A + F_a_fid) * Sig_IA_a_fid[i]) -  ( cz_b_fid * ( (Boost_b[i] -1.) * fred_rand_B + F_b_fid) * Sig_IA_b_fid[i]) )**2
+				gammaIA_sysB_cov_withF[i,j] = g_IA_fid[i]**2 * ( cz_a_fid**2 * Sig_IA_a_fid[i]**2 * boosterr_sq_a[i] + cz_b_fid**2 * Sig_IA_b_fid[i]**2 * boosterr_sq_b[i] ) / ( ( cz_a_fid * (Boost_a[i] -1. + F_a_fid) * Sig_IA_a_fid[i]) -  ( cz_b_fid * ( Boost_b[i] -1. + F_b_fid) * Sig_IA_b_fid[i]) )**2
 				
-				gammaIA_sysB_cov_noF[i,j] = g_IA_fid[i]**2 * ( cz_a_fid**2 * Sig_IA_a_fid[i]**2 * boosterr_sq_a[i] + cz_b_fid**2 * Sig_IA_b_fid[i]**2 * boosterr_sq_b[i] ) / ( ( cz_a_fid * ((Boost_a[i] -1.) * fred_rand_A) * Sig_ex_a_fid[i]) -  ( cz_b_fid * (Boost_b[i] -1.) * fred_rand_B* Sig_ex_b_fid[i]) )**2
+				gammaIA_sysB_cov_noF[i,j] = g_IA_fid[i]**2 * ( cz_a_fid**2 * Sig_IA_a_fid[i]**2 * boosterr_sq_a[i] + cz_b_fid**2 * Sig_IA_b_fid[i]**2 * boosterr_sq_b[i] ) / ( ( cz_a_fid * (Boost_a[i] -1.) * Sig_ex_a_fid[i]) -  ( cz_b_fid * (Boost_b[i] -1.) * Sig_ex_b_fid[i]) )**2
+				
 				
 	# For the systematic cases, we need to add off-diagonal elements - we assume fully correlated
 	for i in range(0,len((rp_bins_c))):	
@@ -1154,87 +1140,56 @@ def get_gammaIA_cov(rp_bins, rp_bins_c, fudgeczA, fudgeczB, fudgeFA, fudgeFB, fu
 				gammaIA_sysB_cov_withF[i,j] = np.sqrt(gammaIA_sysB_cov_withF[i,i]) * np.sqrt(gammaIA_sysB_cov_withF[j,j])
 				gammaIA_sysB_cov_noF[i,j] = np.sqrt(gammaIA_sysB_cov_noF[i,i]) * np.sqrt(gammaIA_sysB_cov_noF[j,j])
 				gammaIA_sysZ_cov[i,j]	=	np.sqrt(gammaIA_sysZ_cov[i,i]) * np.sqrt(gammaIA_sysZ_cov[j,j])
+				
 		
 	# Get the stat + sysB covariance matrix for showing the difference between using excess and using all physically associated galaxies:
 	gammaIA_cov_stat_sysB_withF = gammaIA_sysB_cov_withF + gammaIA_stat_cov_withF
 	gammaIA_cov_stat_sysB_noF = gammaIA_sysB_cov_noF + gammaIA_stat_cov_noF
+		
+	# Make a plot of the signal-to-noise attributable to statistical + boost systematic errors assuming only excess and excess + rand, per R bin.
 	
-	# Uncomment these lines to make make an error-bar plot of the statistical + boost systematic errors with and without F
+	StoN_perbin_stat_sysb_noF = g_IA_fid  /  np.sqrt(np.diag(gammaIA_cov_stat_sysB_noF))
+	StoN_perbin_stat_sysb_withF = g_IA_fid /  np.sqrt(np.diag(gammaIA_cov_stat_sysB_withF))
+	
+	# Save the signal-to-noise with F in a txtfile to plot against the same from other method
+	save_ston_sysb_stat = np.column_stack((rp_bins_c, StoN_perbin_stat_sysb_withF))
+	np.savetxt('./txtfiles/StoN_sysB_stat_Blazek_'+SURVEY+'.txt', save_ston_sysb_stat)
+	
 	"""if (SURVEY=='LSST_DESI'):
 		fig_sub=plt.subplot(111)
 		plt.rc('font', family='serif', size=14)
-		fig_sub.errorbar(rp_bins_c ,g_IA_fid, yerr = np.sqrt(np.diag(gammaIA_cov_stat_sysB_noF)), fmt='go', linewidth='2', label='Excess only')
+		fig_sub.scatter(rp_bins_c ,StoN_perbin_stat_sysb_noF, color='#FFA500', marker='o', s=100, label='Excess only')
 		fig_sub.hold(True)
-		fig_sub.errorbar(rp_bins_c * 1.05,g_IA_fid, yerr = np.sqrt(np.diag(gammaIA_cov_stat_sysB_withF)), fmt='mo', linewidth='2', label='All physically associated')
+		fig_sub.scatter(rp_bins_c ,StoN_perbin_stat_sysb_withF,color='b', marker='^', s=100, label='All physically associated')
 		fig_sub.set_xscale("log")
-		#fig_sub.set_yscale("log") #, nonposy='clip')
 		fig_sub.set_xlabel('$r_p$', fontsize=20)
-		fig_sub.set_ylabel('$\gamma_{IA}$', fontsize=20)
-		fig_sub.set_ylim(-0.01, 0.01)
+		fig_sub.set_ylabel('$\\frac{S}{N}$', fontsize=20)
+		fig_sub.set_ylim(0, 1.6)
 		fig_sub.set_xlim(0.05,20.)
 		fig_sub.tick_params(axis='both', which='major', labelsize=18)
 		fig_sub.tick_params(axis='both', which='minor', labelsize=18)
-		fig_sub.legend()
+		fig_sub.legend(loc='upper left')
 		plt.tight_layout()
-		plt.savefig('./plots/InclAllPhysicallyAssociated_stat+sysB_survey='+SURVEY+'_deltaz='+str(pa.delta_z)+'_fixSigCex.png')
+		plt.savefig('./plots/FvNoF_stat_sysB_'+SURVEY+'.png')
 		plt.close()
 	elif (SURVEY=='SDSS'):
 		fig_sub=plt.subplot(111)
 		plt.rc('font', family='serif', size=14)
-		fig_sub.errorbar(rp_bins_c ,g_IA_fid, yerr = np.sqrt(np.diag(gammaIA_cov_stat_sysB_noF)), fmt='go', linewidth='2', label='Excess only')
+		fig_sub.scatter(rp_bins_c ,StoN_perbin_stat_sysb_noF, color='#FFA500', marker='o', s=100,  label='Excess only')
 		fig_sub.hold(True)
-		fig_sub.errorbar(rp_bins_c * 1.05,g_IA_fid, yerr = np.sqrt(np.diag(gammaIA_cov_stat_sysB_withF)), fmt='mo', linewidth='2',label='All physically associated')
+		fig_sub.scatter(rp_bins_c ,StoN_perbin_stat_sysb_withF,color='b', marker='^', s=100,  label='All physically associated')
 		fig_sub.set_xscale("log")
 		fig_sub.set_xlabel('$r_p$', fontsize=20)
-		fig_sub.set_ylabel('$\gamma_{IA}$', fontsize=20)
-		fig_sub.set_ylim(-0.015, 0.015)
+		fig_sub.set_ylabel('$\\frac{S}{N}$', fontsize=20)
+		fig_sub.set_ylim(0, 1.6)
 		fig_sub.set_xlim(0.05,20.)
 		fig_sub.tick_params(axis='both', which='major', labelsize=18)
 		fig_sub.tick_params(axis='both', which='minor', labelsize=18)
-		fig_sub.legend()
+		fig_sub.legend(loc='upper left')
 		plt.tight_layout()
-		plt.savefig('./plots/InclAllPhysicallyAssociated_stat+sysB_survey='+SURVEY+'_deltaz='+str(pa.delta_z)+'_fixSigCex.png')
-		plt.close()"""
+		plt.savefig('./plots/FvNoF_stat_sysB_'+SURVEY+'.png')
+		plt.close()
 		
-	"""# Make a plot of the signal-to-noise attributable to statistical + boost systematic errors assuming only excess and excess + rand, per R bin.
-	StoN_perbin_stat_sysb_noF = g_IA_fid /  np.sqrt(np.diag(gammaIA_cov_stat_sysB_noF))
-	StoN_perbin_stat_sysb_withF = g_IA_fid /  np.sqrt(np.diag(gammaIA_cov_stat_sysB_withF))
-	
-	if (SURVEY=='LSST_DESI'):
-		fig_sub=plt.subplot(111)
-		plt.rc('font', family='serif', size=14)
-		fig_sub.scatter(rp_bins_c ,StoN_perbin_stat_sysb_noF, color='g', marker='o', s=100, label='Excess only')
-		fig_sub.hold(True)
-		fig_sub.scatter(rp_bins_c ,StoN_perbin_stat_sysb_withF,color='m', marker='o', s=100, label='All physically associated')
-		fig_sub.set_xscale("log")
-		fig_sub.set_xlabel('$r_p$', fontsize=20)
-		fig_sub.set_ylabel('$\\frac{S}{N}$', fontsize=20)
-		fig_sub.set_ylim(0, 2.0)
-		fig_sub.set_xlim(0.05,20.)
-		fig_sub.tick_params(axis='both', which='major', labelsize=18)
-		fig_sub.tick_params(axis='both', which='minor', labelsize=18)
-		fig_sub.legend(loc='upper left')
-		plt.tight_layout()
-		plt.savefig('./plots/FvNoF_stat+sysB_survey='+SURVEY+'_deltaz='+str(pa.delta_z)+'_fixSigCex.png')
-		plt.close()
-	elif (SURVEY=='SDSS'):
-		fig_sub=plt.subplot(111)
-		plt.rc('font', family='serif', size=14)
-		fig_sub.scatter(rp_bins_c ,StoN_perbin_stat_sysb_noF, color='g', marker='o', s=100,  label='Excess only')
-		fig_sub.hold(True)
-		fig_sub.scatter(rp_bins_c ,StoN_perbin_stat_sysb_withF,color='m', marker='o', s=100,  label='All physically associated')
-		fig_sub.set_xscale("log")
-		fig_sub.set_xlabel('$r_p$', fontsize=20)
-		fig_sub.set_ylabel('$\\frac{S}{N}$', fontsize=20)
-		fig_sub.set_ylim(0, 2.0)
-		fig_sub.set_xlim(0.05,20.)
-		fig_sub.tick_params(axis='both', which='major', labelsize=18)
-		fig_sub.tick_params(axis='both', which='minor', labelsize=18)
-		fig_sub.legend(loc='upper left')
-		plt.tight_layout()
-		plt.savefig('./plots/FvNoF_stat+sysB_survey='+SURVEY+'_deltaz='+str(pa.delta_z)+'_fixSigCex.png')
-		plt.close()
-	
 	exit()"""
 	
 	# Now get the sysZ + stat covariance matrix assuming all physically associated galaxies can be subject to IA:
@@ -1246,13 +1201,14 @@ def get_gammaIA_cov(rp_bins, rp_bins_c, fudgeczA, fudgeczB, fudgeFA, fudgeFB, fu
 	
 	# 1)
 	Cov_inv_stat = np.linalg.inv(gammaIA_stat_cov_withF)
-	StoNsq_stat = np.dot(g_IA_fid, np.dot(Cov_inv_stat, g_IA_fid))
+	StoNsq_stat = np.dot( g_IA_fid , np.dot(Cov_inv_stat, g_IA_fid))
 	
-	Cov_inv_sysZ_stat = np.linalg.inv(gamma_IA_cov_sysZ_stat_withF)
-	StoNsq_sysZ_stat = np.dot(g_IA_fid, np.dot(Cov_inv_sysZ_stat, g_IA_fid))
+	Cov_inv_sysZ_stat =  np.linalg.pinv(gamma_IA_cov_sysZ_stat_withF, rcond = 10**(-15)) #np.dot(np.dot(U, np.diag(invS)), Vh)
+					
+	StoNsq_sysZ_stat = np.dot(g_IA_fid  , np.dot(Cov_inv_sysZ_stat, g_IA_fid ))
 	
 	# Subtract stat from sysz+stat in quadrature to get sys
-	NtoSsq_sys = 1./StoNsq_sysZ_stat - 1./StoNsq_stat
+	NtoSsq_sys = (1./StoNsq_sysZ_stat - 1./StoNsq_stat)
 	StoNsq_sys = 1. / NtoSsq_sys
 	
 	#2)
@@ -1263,10 +1219,14 @@ def get_gammaIA_cov(rp_bins, rp_bins_c, fudgeczA, fudgeczB, fudgeFA, fudgeFB, fu
 	
 def gamma_fid(rp):
 	""" Returns the fiducial gamma_IA from a combination of terms from different models which are valid at different scales """
-	wgg_rp = ws.wgg_full(rp, pa.fsky, pa.bd, pa.bs, './txtfiles/wgg_1h_survey='+pa.survey+'_extl_Aug28.txt', './txtfiles/wgg_2h_survey='+pa.survey+'_kpts='+str(pa.kpts_wgg)+'_extl_Aug28.txt', './plots/wgg_full_Blazek_survey='+pa.survey+'_extl_Aug28.pdf', SURVEY)
-	wgp_rp = ws.wgp_full(rp, pa.bd, pa.Ai, pa.ah, pa.q11, pa.q12, pa.q13, pa.q21, pa.q22, pa.q23, pa.q31, pa.q32, pa.q33, './txtfiles/wgp_1h_survey='+pa.survey+'_extl_Aug28.txt','./txtfiles/wgp_2hsurvey='+pa.survey+'_extl_Aug28.txt', './plots/wgp_full_Blazek_survey='+pa.survey+'_extl_Aug28.pdf', SURVEY)
+	wgg_rp = ws.wgg_full(rp, pa.fsky, pa.bd, pa.bs, './txtfiles/wgg_1h_survey='+pa.survey+'.txt', './txtfiles/wgg_2h_survey='+pa.survey+'_kpts='+str(pa.kpts_wgg)+'.txt', './plots/wgg_full_Blazek_survey='+pa.survey+'.pdf', SURVEY)
+	wgp_rp = ws.wgp_full(rp, pa.bd, pa.Ai, pa.ah, pa.q11, pa.q12, pa.q13, pa.q21, pa.q22, pa.q23, pa.q31, pa.q32, pa.q33, './txtfiles/wgp_1h_survey='+pa.survey+'.txt','./txtfiles/wgp_2hsurvey='+pa.survey+'.txt', './plots/wgp_full_Blazek_survey='+pa.survey+'.pdf', SURVEY)
 	
-	gammaIA = wgp_rp / (wgg_rp + 2. * pa.close_cut) 
+	# Get the red fraction for the full source sample (A+B)
+	f_red = get_fred('A+B')
+	print "red fraction=", f_red
+
+	gammaIA = (f_red * wgp_rp) / (wgg_rp + 2. * pa.close_cut)  # We assume wgg is the same for red and blue galaxies.
 	
 	plt.figure()
 	plt.loglog(rp, gammaIA, 'go')
@@ -1274,7 +1234,7 @@ def gamma_fid(rp):
 	plt.ylabel('$\gamma_{IA}$')
 	plt.xlabel('$r_p$')
 	plt.title('Fiducial values of $\gamma_{IA}$')
-	plt.savefig('./plots/gammaIA_Blazek_survey='+pa.survey+'_MvirFix.pdf')
+	plt.savefig('./plots/gammaIA_Blazek_survey='+pa.survey+'.pdf')
 	plt.close()
 	
 	return gammaIA
@@ -1333,21 +1293,13 @@ rp_cent		=	setup.rp_bins_mid(rp_bins)
 # Set up a function to get z as a function of comoving distance
 (z_of_com, com_of_z) = setup.z_interpof_com(SURVEY) 
 
-# Get the red fraction as a function of z and interpolate in advance (this takes a while)
-z = np.linspace(pa.zsmin, pa.zsmax, 5000)
-fred_setup = setup.get_fred_ofz(z, SURVEY)
-fred_interp = scipy.interpolate.interp1d(z, fred_setup)
-
 #get_Pkgm_1halo()
 #exit()
 
-"""DeltaSigma_theoretical = get_DeltaSig_theory(rp_bins, rp_cent)
+DeltaSigma_theoretical = get_DeltaSig_theory(rp_bins, rp_cent)
 
-#StoNstat = get_gammaIA_cov(rp_bins, rp_cent, 0., 0., 0., 0., 0., 0.)
-#print "StoNstat", np.sqrt(StoNstat)
-#StoNstat_save = [StoNstat]
-#np.savetxt('./txtfiles/StoNstat_Blazek_withCV_SNanalytic_survey='+SURVEY+'rpts=2500.txt', StoNstat_save)
-#exit()
+# Get fiducial gamma_IA
+g_IA_fid = gamma_fid(rp_cent)
 
 StoN_cza = np.zeros(len(pa.fudge_frac_level))
 StoN_czb = np.zeros(len(pa.fudge_frac_level))
@@ -1355,14 +1307,16 @@ StoN_Fa = np.zeros(len(pa.fudge_frac_level))
 StoN_Fb = np.zeros(len(pa.fudge_frac_level))
 StoN_Siga = np.zeros(len(pa.fudge_frac_level))
 StoN_Sigb = np.zeros(len(pa.fudge_frac_level))
+StoN_sysz_stat_cza = np.zeros(len(pa.fudge_frac_level))
 
 for i in range(0,len(pa.fudge_frac_level)):
 
-	print "Running, systematic level #"+str(i+1)
+	#print "Running, systematic level #"+str(i+1)
+	#print "sys level=", pa.fudge_frac_level[i]
 	
 	# Get the statistical error on gammaIA
 	(StoNstat, StoN_cza[i], StoN_stat_sysB) = get_gammaIA_cov(rp_bins, rp_cent, pa.fudge_frac_level[i], 0., 0., 0., 0., 0.)
-	print "StoNstat, StoNczb, StoNstatsysb=", np.sqrt(StoNstat), np.sqrt(StoN_cza[i]), np.sqrt(StoN_stat_sysB)
+	print "StoNstat, StoNcza, StoNstatsysa=", np.sqrt(StoNstat), np.sqrt(StoN_cza[i]), np.sqrt(StoN_stat_sysB)
 	(StoNstat, StoN_czb[i], StoN_stat_sysB) = get_gammaIA_cov(rp_bins, rp_cent, 0., pa.fudge_frac_level[i], 0., 0., 0., 0.)
 	print "StoNstat, StoNczb, StoNstatsysb=", np.sqrt(StoNstat), np.sqrt(StoN_czb[i]), np.sqrt(StoN_stat_sysB)
 	(StoNstat, StoN_Fa[i], StoN_stat_sysB)  = get_gammaIA_cov(rp_bins, rp_cent, 0., 0., pa.fudge_frac_level[i], 0., 0., 0.)
@@ -1372,141 +1326,120 @@ for i in range(0,len(pa.fudge_frac_level)):
 	(StoNstat, StoN_Siga[i], StoN_stat_sysB)= get_gammaIA_cov(rp_bins, rp_cent, 0., 0., 0., 0., pa.fudge_frac_level[i], 0.)
 	print "StoNstat, StoNSiga, StoNstatsysb=", np.sqrt(StoNstat), np.sqrt(StoN_Siga[i]), np.sqrt(StoN_stat_sysB)
 	(StoNstat, StoN_Sigb[i],StoN_stat_sysB)= get_gammaIA_cov(rp_bins, rp_cent, 0., 0., 0., 0., 0., pa.fudge_frac_level[i])
-	print "StoNstat, StoNSiga, StoNstatsysb=", np.sqrt(StoNstat), np.sqrt(StoN_Sigb[i]), np.sqrt(StoN_stat_sysB)
+	print "StoNstat, StoNSiga, StoNstatsysb=", np.sqrt(StoNstat), np.sqrt(StoN_Sigb[i]), np.sqrt(StoN_stat_sysB)	
 
 # Save the statistical-only S-to-N   
 StoNstat_save = [StoNstat]
-print "StoNstat=", StoNstat
-np.savetxt('./txtfiles/StoNstat_Blazek_extl_'+SURVEY+'_deltaz='+str(pa.delta_z)+'.txt', StoNstat_save)
+np.savetxt('./txtfiles/StoNstat_Blazek_LSST_DESI_deltaz='+str(pa.delta_z)+'.txt', StoNstat_save)
 
 # Save the statistical + sysB S-to-N   
 StoNstat_sysB_save = [StoN_stat_sysB]
-print "StoNstat_sysB=", StoN_stat_sysB
-np.savetxt('./txtfiles/StoN_stat_sysB_Blazek_extl_'+SURVEY+'_deltaz='+str(pa.delta_z)+'.txt', StoNstat_sysB_save)
+np.savetxt('./txtfiles/StoN_stat_sysB_Blazek_'+SURVEY+'_deltaz='+str(pa.delta_z)+'.txt', StoNstat_sysB_save)
 
 # Save the sysZ stuff	
 saveSN_sysZ = np.column_stack(( pa.fudge_frac_level, StoN_cza, StoN_czb, StoN_Fa, StoN_Fb, StoN_Siga, StoN_Sigb))
-np.savetxt('./txtfiles/StoN_SysToStat_Blazek_'+SURVEY+'_deltaz='+str(pa.delta_z)+'.txt', saveSN_sysZ)"""
+np.savetxt('./txtfiles/StoN_SysToStat_Blazek_'+SURVEY+'_deltaz='+str(pa.delta_z)+'.txt', saveSN_sysZ)
 
-
-# Uncomment this to load ratios from file and plot. To plot directly use the below case.
-"""frac_levels, StoNratio_sqrt_cza, StoNratio_sqrt_czb, StoNratio_sqrt_Fa,  StoNratio_sqrt_Fb, StoNratio_sqrt_Siga, StoNratio_sqrt_Sigb = np.loadtxt('./plots/SN_ratios.txt', unpack=True)
-plt.figure()
-plt.loglog(pa.fudge_frac_level, StoNratio_sqrt_cza, 'ko', label='$c_z^a$')
-plt.hold(True)
-plt.loglog(pa.fudge_frac_level, StoNratio_sqrt_czb, 'mo', label='$c_z^b$')
-plt.hold(True)
-plt.loglog(pa.fudge_frac_level, StoNratio_sqrt_Fa, 'bo', label='$F_a$')
-plt.hold(True)
-plt.loglog(pa.fudge_frac_level, StoNratio_sqrt_Fb, 'ro', label='$F_b$')
-plt.hold(True)
-plt.loglog(pa.fudge_frac_level, StoNratio_sqrt_Siga, 'go', label='$<\\Sigma_{IA}^a>$')
-plt.hold(True)
-plt.loglog(pa.fudge_frac_level, StoNratio_sqrt_Sigb, 'yo', label='$<\\Sigma_{IA}^b>$')
-plt.legend()
-plt.xlabel('Fractional error level')
-plt.ylabel('$\\frac{S/N_{\\rm sys}}{S/N_{\\rm stat}}$')
-plt.xlim(0.005, 10)
-plt.ylim(0.01, 1000)
-plt.legend()
-plt.title('Ratio, S/N, sys vs stat')
-plt.savefig('./plots/ratio_StoN.pdf')
-plt.close()"""	
-
-# Load the Ncorr information from the other method to include this in the plot:
-#(frac_level, SNsys_squared_ncorr, SNstat_squared_ncorr) = np.loadtxt('./txtfiles/save_Ncorr_StoNsqSys_survey='+SURVEY+'.txt', unpack=True)
 # Load information for Ncorr from other method to use in this plot. StoN(stat) and StoN(sysz).
 #Both are 2D matrices. The sysz one is a function of a and fraclevel - pick the a value we want to use. The stat one is a function of a and rho - pick the value of a and rho we want to use.
-StoNsq_sysz_Ncorr_mat = np.loadtxt('./txtfiles/StoNsq_sysz_shapes_extl_survey='+SURVEY+'.txt')
-StoNsq_stat_Ncorr_mat = np.loadtxt('./txtfiles/StoNsq_stat_shapes_extl_survey='+SURVEY+'.txt')
+StoNsq_sysz_Ncorr_mat = np.loadtxt('./txtfiles/StoNsq_sysz_shapes_survey='+SURVEY+'.txt')
+StoNsq_stat_Ncorr_mat = np.loadtxt('./txtfiles/StoNsq_stat_shapes_survey='+SURVEY+'.txt')
 avec = np.loadtxt('./txtfiles/a_survey='+SURVEY+'.txt')
 rhovec = np.loadtxt('./txtfiles/rho_survey='+SURVEY+'.txt')
 
 # here we pick our a and rho values and find their indices:
-a = 0.7; rho = 0.7
+a = 0.3; rho = 0.7
 ind_a = next(j[0] for j in enumerate(avec) if j[1]>=a)
 ind_rho = next(j[0] for j in enumerate(rhovec) if j[1]>=rho)
-print "For Ncorr sysz: a=", avec[ind_a], "rho=", rhovec[ind_rho]
+#print "For Ncorr sysz: a=", avec[ind_a], "rho=", rhovec[ind_rho]
 
 StoN_sq_sysz_Ncorr = StoNsq_sysz_Ncorr_mat[ind_a, :]
 StoN_sq_stat_Ncorr = StoNsq_stat_Ncorr_mat[ind_a, ind_rho]
 
 # If necessary, load the stuff from this method:
-levels, StoN_cza, StoN_czb, StoN_Fa, StoN_Fb, StoN_Siga, StoN_Sigb = np.loadtxt('./txtfiles/StoN_SysToStat_Blazek_'+SURVEY+'_deltaz='+str(pa.delta_z)+'.txt', unpack=True)
-StoNstat = np.loadtxt('./txtfiles/StoNstat_Blazek_extl_'+SURVEY+'_deltaz='+str(pa.delta_z)+'.txt')
+#levels, StoN_cza, StoN_czb, StoN_Fa, StoN_Fb, StoN_Siga, StoN_Sigb = np.loadtxt('./txtfiles/StoN_SysToStat_Blazek_'+SURVEY+'_deltaz='+str(pa.delta_z)+'.txt', unpack=True)
+#StoNstat = np.loadtxt('./txtfiles/StoNstat_Blazek_'+SURVEY+'_deltaz='+str(pa.delta_z)+'.txt')
+print "fudge frac level="
+print pa.fudge_frac_level
+print "slope, cza="
+print (np.sqrt(StoNstat) / np.sqrt(StoN_cza)) / pa.fudge_frac_level
+print "slope, czb="
+print (np.sqrt(StoNstat) / np.sqrt(StoN_czb)) / pa.fudge_frac_level
+print "slope, Fa="
+print (np.sqrt(StoNstat) / np.sqrt(StoN_Fa)) / pa.fudge_frac_level
+print "slope, Fb="
+print (np.sqrt(StoNstat) / np.sqrt(StoN_Fb)) / pa.fudge_frac_level
+print "slope, Siga="
+print (np.sqrt(StoNstat) / np.sqrt(StoN_Siga)) / pa.fudge_frac_level
+print "slope, Sigb="
+print (np.sqrt(StoNstat) / np.sqrt(StoN_Sigb)) / pa.fudge_frac_level
+print "slope, A_ph=", (np.sqrt(StoN_sq_stat_Ncorr) / np.sqrt(StoN_sq_sysz_Ncorr))/ pa.fudge_frac_level
 
-print "(np.sqrt(StoNstat) / np.sqrt(StoN_cza)) / pa.fudge_frac_level=",(np.sqrt(StoNstat) / np.sqrt(StoN_cza)) / pa.fudge_frac_level
-print "(np.sqrt(StoNstat) / np.sqrt(StoN_Siga)) / pa.fudge_frac_level=",(np.sqrt(StoNstat) / np.sqrt(StoN_Siga)) / pa.fudge_frac_level
-
-# Make plot of (S/N)_sys / (S/N)_stat as a function of fractional z-related systematic error on each relevant parameter.
+"""# Make plot of (S/N)_sys / (S/N)_stat as a function of fractional z-related systematic error on each relevant parameter.
 if (SURVEY=='SDSS'):
 	plt.figure()
-	plt.loglog(pa.fudge_frac_level,  (np.sqrt(StoNstat) / np.sqrt(StoN_cza)) / pa.fudge_frac_level, 's', color='#006cc0', label='$c_z^a$')
+	plt.rc('font', family='serif', size=16)
+	plt.loglog(pa.fudge_frac_level,  (np.sqrt(StoNstat) / np.sqrt(StoN_cza)) / pa.fudge_frac_level, linewidth='3', color='#006cc0', label='$c_z^a$')
 	plt.hold(True)
-	plt.loglog(pa.fudge_frac_level,  (np.sqrt(StoNstat) / np.sqrt(StoN_czb))/ pa.fudge_frac_level, '^',color='#006cc0', label='$c_z^b$')
+	#plt.axvline(x=0.19, linewidth='3', color='#006cc0')
+	plt.loglog(pa.fudge_frac_level,  (np.sqrt(StoNstat) / np.sqrt(StoN_czb)) / pa.fudge_frac_level, linewidth='3', linestyle='--',color='#006cc0', label='$c_z^b$')
 	plt.hold(True)
-	plt.loglog(pa.fudge_frac_level, (np.sqrt(StoN_sq_stat_Ncorr) / np.sqrt(StoN_sq_sysz_Ncorr)) / pa.fudge_frac_level, 'mo', label='$N_{\\rm corr}$')
+	#plt.axvline(x=0.19, linewidth='3', color='#006cc0', linestyle='--')
+	#plt.hold(True)
+	plt.loglog(pa.fudge_frac_level,  (np.sqrt(StoNstat) / np.sqrt(StoN_Fa)) / pa.fudge_frac_level, 'g', linewidth='3', label='$F_a$')
 	plt.hold(True)
-	plt.loglog(pa.fudge_frac_level,  (np.sqrt(StoNstat) / np.sqrt(StoN_Fa)) / pa.fudge_frac_level, 'gs', linewidth='2', label='$F_a$')
+	#plt.axvline(x=353., linewidth='3', color='g')
+	#plt.hold(True)
+	plt.loglog(pa.fudge_frac_level,(np.sqrt(StoNstat) /  np.sqrt(StoN_Fb)) / pa.fudge_frac_level, 'g',linestyle='--',linewidth='3', label='$F_b$')
 	plt.hold(True)
-	plt.loglog(pa.fudge_frac_level,(np.sqrt(StoNstat) /  np.sqrt(StoN_Fb)) / pa.fudge_frac_level, 'g^',linewidth='2', label='$F_b$')
+	#plt.axvline(x=4009., linewidth='3', color='g', linestyle='--')
+	#plt.hold(True)
+	plt.loglog(pa.fudge_frac_level, (np.sqrt(StoNstat) / np.sqrt(StoN_Siga))/ pa.fudge_frac_level, linewidth='3', color='#FFA500', label='$<\\Sigma_{IA}^a>$')
 	plt.hold(True)
-	plt.loglog(pa.fudge_frac_level, (np.sqrt(StoNstat) / np.sqrt(StoN_Siga)) / pa.fudge_frac_level, 's',linewidth='2', color='#FFA500', label='$<\\Sigma_{IA}^a>$')
+	#plt.axvline(x=25., linewidth='3', color='#FFA500')
+	#plt.hold(True)
+	plt.loglog(pa.fudge_frac_level,  (np.sqrt(StoNstat) / np.sqrt(StoN_Sigb))/ pa.fudge_frac_level, linestyle='--', linewidth='3',color='#FFA500', label='$<\\Sigma_{IA}^b>$')
 	plt.hold(True)
-	plt.loglog(pa.fudge_frac_level,  (np.sqrt(StoNstat) / np.sqrt(StoN_Sigb)) / pa.fudge_frac_level, '^', linewidth='2',color='#FFA500', label='$<\\Sigma_{IA}^b>$')
+	#plt.axvline(x=283., linewidth='3', color='#FFA500', linestyle='--')
+	#plt.hold(True)
+	#plt.loglog(pa.fudge_frac_level, (np.sqrt(StoN_sq_stat_Ncorr) / np.sqrt(StoN_sq_sysz_Ncorr))/ pa.fudge_frac_level , 'm', linewidth='3',label='$A_{ph}$')
 	plt.hold(True)
-	plt.axhline(y=1, color='k', linewidth=2, linestyle='--')
-	plt.xlabel('Fractional error', fontsize=25)
-	plt.ylabel('$\\frac{S/N_{\\rm stat}}{S/N_{\\rm sys}} / {\\rm Frac err}$', fontsize=25)
+	#plt.axhline(y=1, color='k', linewidth=2, linestyle='--')
+	plt.xlabel('Fractional error', fontsize=20)
+	plt.ylabel('$\left(\\frac{S/N_{\\rm stat}}{S/N_{\\rm sys}}\\right) \div {\\rm Fractional \, error}$', fontsize=20)
 	plt.tick_params(axis='both', which='major', labelsize=18)
 	plt.tick_params(axis='both', which='minor', labelsize=18)
-	plt.xlim(0.008, 10)
-	plt.ylim(0.03, 100)
-	plt.legend(ncol=4, numpoints=1, fontsize=14, loc='upper center', bbox_to_anchor=(0.5, 1.05))
+	#plt.xlim(0.008, 0.35)
+	plt.ylim(0.001, 300)
+	plt.legend(ncol=4, numpoints=1, fontsize=16, loc='upper center', bbox_to_anchor=(0.5, 1.05))
 	plt.tight_layout()
-	plt.savefig('./plots/SysNoiseToStatNoise_'+SURVEY+'_extl_.png')
+	plt.savefig('./plots/SysNoiseToStatNoise_'+SURVEY+'.png')
 	plt.close()
 elif(SURVEY=='LSST_DESI'):
 	plt.figure()
-	plt.loglog(pa.fudge_frac_level, np.sqrt(StoNstat) / np.sqrt(StoN_cza) / pa.fudge_frac_level , 's', color='#006cc0', label='$c_z^a$')
+	plt.rc('font', family='serif', size=16)
+	plt.loglog(pa.fudge_frac_level, np.sqrt(StoNstat) / np.sqrt(StoN_cza)/ pa.fudge_frac_level,linewidth='3',  color='#006cc0', label='$c_z^a$')
 	plt.hold(True)
-	plt.loglog(pa.fudge_frac_level, np.sqrt(StoNstat) / np.sqrt(StoN_czb)  / pa.fudge_frac_level, '^',color='#006cc0', label='$c_z^b$')
+	plt.loglog(pa.fudge_frac_level, np.sqrt(StoNstat) / np.sqrt(StoN_czb)/ pa.fudge_frac_level , linewidth='3', linestyle='--', color='#006cc0', label='$c_z^b$')
 	plt.hold(True)
-	plt.loglog(pa.fudge_frac_level, np.sqrt(StoNstat) /np.sqrt(StoN_Fa) / pa.fudge_frac_level, 'gs', label='$F_a$')
+	plt.loglog(pa.fudge_frac_level, np.sqrt(StoNstat) /np.sqrt(StoN_Fa)/ pa.fudge_frac_level, 'g', linewidth='3',  label='$F_a$')
 	plt.hold(True)
-	plt.loglog(pa.fudge_frac_level, np.sqrt(StoNstat) / np.sqrt(StoN_Fb)  / pa.fudge_frac_level, 'g^', label='$F_b$')
+	plt.loglog(pa.fudge_frac_level, np.sqrt(StoNstat) / np.sqrt(StoN_Fb)/ pa.fudge_frac_level , 'g',linewidth='3', linestyle='--', label='$F_b$')
 	plt.hold(True)
-	plt.loglog(pa.fudge_frac_level, np.sqrt(StoNstat) / np.sqrt(StoN_Siga) / pa.fudge_frac_level , 's', color='#FFA500', label='$<\\Sigma_{IA}^a>$')
+	plt.loglog(pa.fudge_frac_level, np.sqrt(StoNstat) / np.sqrt(StoN_Siga)/ pa.fudge_frac_level, linewidth='3',color='#FFA500', label='$<\\Sigma_{IA}^a>$')
 	plt.hold(True)
-	plt.loglog(pa.fudge_frac_level, np.sqrt(StoNstat) / np.sqrt(StoN_Sigb) / pa.fudge_frac_level, '^', color='#FFA500', label='$<\\Sigma_{IA}^b>$')
+	plt.loglog(pa.fudge_frac_level, np.sqrt(StoNstat) / np.sqrt(StoN_Sigb)/ pa.fudge_frac_level , linewidth='3',  linestyle='--', color='#FFA500', label='$<\\Sigma_{IA}^b>$')
 	plt.hold(True)
-	plt.loglog(pa.fudge_frac_level, (np.sqrt(StoN_sq_stat_Ncorr) / np.sqrt(StoN_sq_sysz_Ncorr)) / pa.fudge_frac_level, 'mo', label='$N_{\\rm corr}$')
-	plt.axhline(y=1, color='k', linewidth=2, linestyle='--')
-	plt.xlabel('Fractional error', fontsize=25)
-	plt.ylabel('$\\frac{S/N_{\\rm stat}}{S/N_{\\rm sys}}$', fontsize=25)
+	plt.loglog(pa.fudge_frac_level, (np.sqrt(StoN_sq_stat_Ncorr) / np.sqrt(StoN_sq_sysz_Ncorr))/ pa.fudge_frac_level, 'm', linewidth='3', label='$A_{ph}$')
+	#plt.axhline(y=1, color='k', linewidth=2, linestyle='--')
+	plt.xlabel('Fractional error', fontsize=20)
+	plt.ylabel('$\left(\\frac{S/N_{\\rm stat}}{S/N_{\\rm sys}}\\right) \div {\\rm Fractional \, error}$', fontsize=20)
 	plt.tick_params(axis='both', which='major', labelsize=18)
 	plt.tick_params(axis='both', which='minor', labelsize=18)
-	plt.xlim(0.008, 2.)
-	plt.legend(ncol=4, numpoints=1, fontsize=14, loc='upper center', bbox_to_anchor=(0.5, 1.05))
-	plt.ylim(0.001, 10)
+	plt.xlim(0.008, 0.35)
+	plt.legend(ncol=4, numpoints=1, fontsize=16, loc='upper center', bbox_to_anchor=(0.5, 1.05))
+	plt.ylim(0.001, 300)
 	plt.tight_layout()
-	plt.savefig('./plots/SysNoiseToStatNoise_'+SURVEY+'_extl.png')
-	plt.close()
+	plt.savefig('./plots/SysNoiseToStatNoise_'+SURVEY+'.png')
+	plt.close()"""
 
-exit()
-# Below this is Fisher matrix stuff - don't worry about it for now.
-
-# Get the parameter derivatives required to construct the Fisher matrix
-ders		=	par_derivs(pa.par, rp_cent)
-
-# Get the Fisher matrix
-fish 		=	get_Fisher(ders, Cov_gIA)
-
-# If desired, cut parameters which you want to fix from Fisher matrix:
-fish_cut 	=	cut_Fisher(fish, None)
-
-# Get the covariance matrix from either fish or fish_cut, and marginalise over any desired parameters
-parCov		=	get_par_Cov(fish_cut, None)
-
-# Output whatever we want to know about the parameters:
-par_const_output(fish_cut, parCov)

@@ -103,7 +103,7 @@ def z_interpof_com(survey):
 
 	# NO DEPENDENCE ON Z_L
 
-	z_vec = scipy.linspace(0., 10., 10000) # This hardcodes that we don't care about anything over z=2100
+	z_vec = scipy.linspace(0., 20., 10000) # This hardcodes that we don't care about anything over z=2100
 
 	com_vec = com(z_vec, survey)
 

@@ -1,6 +1,6 @@
 # This is a script which forecasts constraints on IA using multiple shape measurement methods.
 
-SURVEY = 'LSST_DESI'  # Set the survey here; this tells everything which parameter file to import.
+SURVEY = 'SDSS'  # Set the survey here; this tells everything which parameter file to import.
 print "SURVEY=", SURVEY
 
 import numpy as np
@@ -126,14 +126,69 @@ def get_ns_partial():
 	print "frac=", frac
 	
 	return frac * ns_tot
+
+def get_fred(photoz_samp):
+	""" This function returns the zl- and zph- averaged red fraction for the given sample."""
+	
+	zL = np.linspace(pa.zLmin, pa.zLmax, 200)
+	
+	dndzl = setup.get_dNdzL(zL, SURVEY)
+	chiL = com_of_z(zL)
+	if (min(chiL)> (pa.close_cut + com_of_z(pa.zsmin))):
+		zminclose = z_of_com(chiL - pa.close_cut)
+	else:
+		zminclose = np.zeros(len(chiL))
+		for cli in range(0,len(chiL)):
+			if (chiL[cli]>pa.close_cut + com_of_z(pa.zsmin)):
+				zminclose[cli] = z_of_com(chiL[cli] - pa.close_cut)
+			else:
+				zminclose[cli] = pa.zsmin
+		
+		
+	zmaxclose = z_of_com(chiL + pa.close_cut)
+	
+	(zs, dNdzs) = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, 0.02, pa.zsmax, 500) # 0.02 is to stay within the range of interpolation for e- and k- corrections - this is so far below the photoz range it shouldn't matter much.
+	
+	fred_of_z = setup.get_fred_ofz(zs, SURVEY)
+	
+	ans2 = np.zeros(len(zL))
+	norm = np.zeros(len(zL))
+	for zi in range(0, len(zL)):
+		
+		if (photoz_samp=='close'):
+			
+			zph = np.linspace(zminclose[zi], zmaxclose[zi], 500)
+		elif (photoz_sampe =='full'):
+			zph = np.linspace(pa.zphmin, pa.zphmax, 500)
+		else:
+			print "That photo-z cut is not supported; exiting."
+			exit()
+		
+		ans1 = np.zeros(len(zph))
+		norm1 = np.zeros(len(zph))
+		for zpi in range(0,len(zph)):
+			pz = setup.p_z(zph[zpi], zs, pa.pzpar_fid, pa.pztype)
+			ans1[zpi] = scipy.integrate.simps(pz * dNdzs * fred_of_z, zs)
+			norm1[zpi] = scipy.integrate.simps(pz * dNdzs, zs)
+		ans2[zi] = scipy.integrate.simps(ans1, zph)
+		norm[zi] = scipy.integrate.simps(norm1, zph)
+		
+	dndzl = setup.get_dNdzL(zL, SURVEY)
+	
+	fred_avg = scipy.integrate.simps(dndzl * ans2 / norm, zL)
+	return fred_avg
 	
 def gamma_fid(rp):
 	""" Returns the fiducial gamma_IA from a combination of terms from different models which are valid at different scales """
 	
-	wgg_rp = ws.wgg_full(rp, pa.fsky, pa.bd, pa.bs, './txtfiles/wgg_1h_survey='+pa.survey+'_extl_Aug28.txt', './txtfiles/wgg_2h_survey='+pa.survey+'_kpts='+str(pa.kpts_wgg)+'_extl_Aug28.txt', './plots/wgg_full_Blazek_survey='+pa.survey+'_extl_Aug28.pdf', SURVEY)
-	wgp_rp = ws.wgp_full(rp, pa.bd, pa.Ai, pa.ah, pa.q11, pa.q12, pa.q13, pa.q21, pa.q22, pa.q23, pa.q31, pa.q32, pa.q33, './txtfiles/wgp_1h_survey='+pa.survey+'_extl_Aug28.txt','./txtfiles/wgp_2hsurvey='+pa.survey+'_extl_Aug28.txt', './plots/wgp_full_Blazek_survey='+pa.survey+'_extl_Aug28.pdf', SURVEY)
+	wgg_rp = ws.wgg_full(rp, pa.fsky, pa.bd, pa.bs, './txtfiles/wgg_1h_survey='+pa.survey+'.txt', './txtfiles/wgg_2h_survey='+pa.survey+'_kpts='+str(pa.kpts_wgg)+'.txt', './plots/wgg_full_Blazek_survey='+pa.survey+'.pdf', SURVEY)
+	wgp_rp = ws.wgp_full(rp, pa.bd, pa.Ai, pa.ah, pa.q11, pa.q12, pa.q13, pa.q21, pa.q22, pa.q23, pa.q31, pa.q32, pa.q33, './txtfiles/wgp_1h_survey='+pa.survey+'.txt','./txtfiles/wgp_2hsurvey='+pa.survey+'.txt', './plots/wgp_full_Blazek_survey='+pa.survey+'.pdf', SURVEY)
 	
-	gammaIA = wgp_rp / (wgg_rp + 2. * pa.close_cut) 
+	# Get the red fraction for the source sample
+	f_red = get_fred('close')
+	print "red fraction=", f_red
+	
+	gammaIA = (f_red * wgp_rp) / (wgg_rp + 2. * pa.close_cut) 
 	
 	plt.figure()
 	plt.loglog(rp, gammaIA, 'go')
@@ -143,7 +198,6 @@ def gamma_fid(rp):
 	plt.title('Fiducial values of $\gamma_{IA}$')
 	plt.savefig('./plots/gammaIA_shapes_survey='+pa.survey+'.pdf')
 	plt.close()
-	
 	
 	return gammaIA
 
@@ -234,26 +288,22 @@ def f_red_rand():
 def N_corr(boost, dNdzpar, pzpar):
 	""" Computes the correction factor which accounts for the fact that some of the galaxies in the photo-z defined source sample are actually higher-z and therefore not expected to be affected by IA. """
 	
-	sumW_insamp = sum_weights('close', 'close', 'red', dNdzpar, pzpar)
+	sumW_insamp = sum_weights('close', 'close', 'all', dNdzpar, pzpar)
 	sumW_intotal = sum_weights('close', 'nocut', 'all', dNdzpar, pzpar)
 	
-	fred = f_red_rand()
-	
-	Corr_fac = fred - (1. / boost) * ( fred - (sumW_insamp / sumW_intotal)) # fraction of the galaxies in the source sample which have spec-z in the photo-z range of interest.
+	Corr_fac = 1. - (1. / boost) * ( 1. - (sumW_insamp / sumW_intotal)) # fraction of the galaxies in the source sample which have spec-z in the photo-z range of interest.
 	
 	return Corr_fac
 
 def N_corr_err(boost, dNdzpar, pzpar):
 	""" Gets the error on N_corr from systemtic error on the boost. We have checked the statistical error on the boost is negligible. """
 	
-	sumW_insamp = sum_weights('close', 'close', 'red', dNdzpar, pzpar)
+	sumW_insamp = sum_weights('close', 'close', 'all', dNdzpar, pzpar)
 	sumW_intotal = sum_weights('close', 'nocut', 'all', dNdzpar, pzpar)
 	
-	boost_err_sys = (pa.boost_sys - 1.) * boost
+	boost_err_sys = (pa.boost_sys - 1.) * (boost - 1.)
 	
-	fred = f_red_rand()
-	
-	sig_Ncorr = (boost_err_sys / boost**2) * np.sqrt(fred - (sumW_insamp/ sumW_intotal))
+	sig_Ncorr = (boost_err_sys / boost**2) * np.sqrt(1. - (sumW_insamp/ sumW_intotal))
 
 	return sig_Ncorr
 	
@@ -284,8 +334,8 @@ def get_gammaIA_cov(rp_cents_, rp_bins_, gIA_fid, boost, Ncorr_fid, Ncorr_err, c
 	cov_gam_diff = get_combined_covariance(Clggterm_1, covperc)
 	
 	# Uncomment this section to check covariance matrix against the version calculated in real space (shape-noise only)
-	"""# This gets the shape-noise from real-space methods for comparison - this matrix is diagonal by definition so it is output only as a vector of the diagonal elements
-	shear_cov_1 = shapenoise_cov(pa.e_rms_a, rp_bins_, pa.dNdzpar_fid, pa.pzpar_fid) 
+	# This gets the shape-noise from real-space methods for comparison - this matrix is diagonal by definition so it is output only as a vector of the diagonal elements
+	"""shear_cov_1 = shapenoise_cov(pa.e_rms_a, rp_bins_, pa.dNdzpar_fid, pa.pzpar_fid) 
 	shear_cov_2 = shear_cov_1
 	shear_covar = get_cov_btw_methods(shear_cov_1, shear_cov_2, covperc)
 	cov_old=np.zeros((pa.N_bins, pa.N_bins))
@@ -328,6 +378,11 @@ def get_gammaIA_cov(rp_cents_, rp_bins_, gIA_fid, boost, Ncorr_fid, Ncorr_err, c
 	cov_mat_stat_sysz = cov_mat_stat + cov_mat_sysz_Ncorr
 	# And the covariance matrix for the case of stat + sys due to boost
 	cov_mat_stat_sysB = cov_mat_stat + cov_mat_sysB
+	
+	"""# Output the per-bin StoN to compare with other methods for one choice of a and rho
+	SN_stat_sysB = gIA_fid / (np.sqrt(np.diag(cov_mat_stat_sysB)))
+	save_SN = np.column_stack((rp_cents_, SN_stat_sysB))
+	np.savetxt('./txtfiles/StoN_sysB_stat_shapes_'+SURVEY+'_a0pt7_rho0pt3.txt', save_SN)"""
 	
 	# Compute associated signal to noise quantities
 	
@@ -374,32 +429,6 @@ def check_convergence():
 	return
 	
 
-####### PLOTTING / OUTPUT #######
-
-def plot_variance(cov_1, fidvalues_1, bin_centers, covperc, a_con):
-	""" Takes a covariance matrix, a vector of the fiducial values of the object in question, and the edges of the projected radial bins, and makes a plot showing the fiducial values and 1-sigma error bars from the diagonal of the covariance matrix. Outputs this plot to location 'filename'."""
-
-	fig_sub=plt.subplot(111)
-	plt.rc('font', family='serif', size=20)
-	#fig_sub=fig.add_subplot(111) #, aspect='equal')
-	fig_sub.set_xscale("log")
-	fig_sub.set_yscale("log")
-	fig_sub.errorbar(bin_centers,fidvalues_1*(1-a_con), yerr = np.sqrt(np.diag(cov_1)), fmt='mo')
-	#fig_sub.errorbar(bin_centers,fidvalues_1, yerr = np.sqrt(np.diag(cov_1)), fmt='mo')
-	fig_sub.set_xlabel('$r_p$')
-	fig_sub.set_ylabel('$\gamma_{IA}(1-a)$')
-	#fig_sub.set_ylabel('$\gamma_{IA}$')
-	fig_sub.set_ylim(10**(-5), 0.05)
-	#fig_sub.set_ylim(10**(-4), 0.1)
-	fig_sub.tick_params(axis='both', which='major', labelsize=12)
-	fig_sub.tick_params(axis='both', which='minor', labelsize=12)
-	fig_sub.set_title('a='+str(a_con)+', cov='+str(covperc))
-	plt.tight_layout()
-	plt.savefig('./plots/errorplot_stat+sys_shapemethod_LRG+shapes_a='+str(a_con)+'covperc='+str(covperc)+'_fudgeNcorr='+str(pa.fudge_Ncorr)+'.pdf')
-	plt.close()
-
-	return  
-
 
 ######## MAIN CALLS ##########
 
@@ -427,11 +456,6 @@ rp_cents	=	setup.rp_bins_mid(rp_bins) # Centers
 # Set up to get z as a function of comoving distance and vice-versa
 z_of_com, com_of_z 	= 	setup.z_interpof_com(SURVEY)
 
-# Get the red fraction as a function of z and interpolate in advance (this takes a while)
-z = np.linspace(pa.zsmin, pa.zsmax, 5000)
-fred_setup = setup.get_fred_ofz(z, SURVEY)
-fred_interp = scipy.interpolate.interp1d(z, fred_setup)
-
 ns = get_ns_partial()
 
 # Get the fiducial value of gamma_IA in each projected radial bin 
@@ -439,7 +463,8 @@ fid_gIA		=	gamma_fid(rp_cents)
 
 # Get the values of Ncorr, the boost, and the error on Ncorr - these take some time and don't depend on the stuff we loop over so just do it once.
 boost_fid = get_boost(rp_cents, pa.boost_assoc)
-Ncorr_fid = N_corr(boost_fid, pa.dNdzpar_fid, pa.pzpar_fid) 
+Ncorr_fid = N_corr(boost_fid, pa.dNdzpar_fid, pa.pzpar_fid)
+
 Ncorr_err = N_corr_err(boost_fid, pa.dNdzpar_fid, pa.pzpar_fid)
 
 # Get the desired S-to_N ratios for the case of stat error plus sys error from the boost (sys error due to z subdominant), for the case of sys error due to z, and for the case of statistical only.
@@ -453,35 +478,20 @@ for i in range(0,len(pa.a_con)):
 		StoNsquared_stat[i,j] = StoNsq_stat
 		StoNsquared_stat_sysB[i,j] = StoNsq_stat_sysB
 		
-# The level of StoN due to sys errors related to z is independent of rho, don't loop over this, just pass a dummy value		
+"""# The level of StoN due to sys errors related to z is independent of rho, don't loop over this, just pass a dummy value		
 StoNsquared_sysz = np.zeros((len(pa.a_con), len(pa.fudge_frac_level)))		
 for i in range(0,len(pa.a_con)):
 	for k in range(0,len(pa.fudge_frac_level)):	
 		print "Running, a #"+str(i+1)+" frac sys err level #" + str(k+1)
 		(nonsense, StoNsq_sysz, nonsense)	=	get_gammaIA_cov(rp_cents, rp_bins, fid_gIA, boost_fid, Ncorr_fid, Ncorr_err, 0.1, pa.a_con[i], pa.fudge_frac_level[k])
 		StoNsquared_sysz[i,k] = StoNsq_sysz
+		print "frac level=", pa.fudge_frac_level[k],"StoN=", 1./np.sqrt(StoNsq_sysz)"""
 		
-np.savetxt('./txtfiles/StoNsq_stat_shapes_extl_survey='+SURVEY+'.txt', StoNsquared_stat)
-np.savetxt('./txtfiles/StoNsq_stat_sysB_shapes_extl_survey='+SURVEY+'.txt', StoNsquared_stat_sysB)
-np.savetxt('./txtfiles/StoNsq_sysz_shapes_extl_survey='+SURVEY+'.txt', StoNsquared_sysz)
+np.savetxt('./txtfiles/StoNsq_stat_shapes_survey='+SURVEY+'.txt', StoNsquared_stat)
+np.savetxt('./txtfiles/StoNsq_stat_sysB_shapes_survey='+SURVEY+'.txt', StoNsquared_stat_sysB)
+np.savetxt('./txtfiles/StoNsq_sysz_shapes_survey='+SURVEY+'.txt', StoNsquared_sysz)
 
 np.savetxt('./txtfiles/a_survey='+SURVEY+'.txt', pa.a_con)	
 np.savetxt('./txtfiles/rho_survey='+SURVEY+'.txt', pa.cov_perc)	
 np.savetxt('./txtfiles/fudgelevels_survey='+SURVEY+'.txt', pa.fudge_frac_level)	
-
-	
-
-#StoNsquared_sys = np.zeros((len(pa.fudge_frac_level)))
-#StoNsquared_stat = np.zeros((len(pa.fudge_frac_level)))
-#for i in range(0, len(pa.fudge_frac_level)):
-#	print "Running,  Ncorr fudge #"+str(i+1)
-#	(StoNsquared_stat[i], StoNsquared_sys[i])	=	get_gammaIA_cov(rp_cents, rp_bins, fid_gIA, 0.8, 0.7, pa.fudge_frac_level[i])
-#	print "StoNsq_sys=", StoNsquared_sys[i], "stat=", StoNsquared_stat[i]
-	
-#save_Ncorr_sys = np.column_stack((pa.fudge_frac_level, StoNsquared_sys, StoNsquared_stat))
-#np.savetxt('./txtfiles/save_Ncorr_StoNsqSys_survey='+SURVEY+'.txt', save_Ncorr_sys)
-		
-
-# Output a plot showing the 1-sigma error bars on gamma_IA in projected radial bins
-#plot_variance(Cov_tot, fid_gIA, rp_cents, pa.cov_perc[j], pa.a_con)
 	

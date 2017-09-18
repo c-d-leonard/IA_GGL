@@ -293,7 +293,7 @@ def Rhalo(M_insol, survey):
 	#rho_crit = 3. * 10**10 * pa.mperMpc / (8. * np.pi * pa.Gnewt * pa.Msun * (pa. HH0 / 100.)) # Msol h^3 / Mpc^3, for use with M in Msol.
 	rho_crit = 3. * 10**10 * pa.mperMpc / (8. * np.pi * pa.Gnewt * pa.Msun)  # Msol h^2 / Mpc^3, for use with M in Msol / h
 	rho_m = rho_crit * pa.OmM
-	Rvir = ( 3. * M_insol / (4. * np.pi * rho_m * 180.))**(1./3.)
+	Rvir = ( 3. * M_insol / (4. * np.pi * rho_m * 200.))**(1./3.) # We use the 200 * rho_M overdensity definition. 
 	
 	return Rvir
 
@@ -345,11 +345,11 @@ def wgg_1halo_Four(rp_cents_, fsky, savefile, survey):
 	# This function loads the xi_{gg}1h function computed from FFTlog externallyE.
 	(rvec_xi, xi_gg_1h) = get_xi_1h(survey)
 	
-	plt.figure()
-	plt.loglog(rvec_xi, xi_gg_1h, 'm+')
-	plt.xlim(10**(-4), 10**3)
-	plt.savefig('./plots/xigg_1h_extl_survey='+survey+'_Aug28.pdf')
-	plt.close()
+	#plt.figure()
+	#plt.loglog(rvec_xi, xi_gg_1h, 'm+')
+	#plt.xlim(10**(-4), 10**3)
+	#plt.savefig('./plots/xigg_1h_extl_survey='+survey+'_testnsrc.pdf')
+	#plt.close()
 	
 	# Get the max R associated to our max M
 	Rmax = Rhalo(10**Mmax, survey)
@@ -388,7 +388,7 @@ def wgg_1halo_Four(rp_cents_, fsky, savefile, survey):
 def get_xi_1h(survey):
 	""" Returns the 1 halo galaxy correlation function including cen-sat and sat-sat terms, from the power spectrum via Fourier transform."""
 	
-	(r, xi) = np.loadtxt('./txtfiles/xi_survey='+survey+'_extl_Aug28.txt', unpack=True)
+	(r, xi) = np.loadtxt('./txtfiles/xi_survey='+survey+'.txt', unpack=True)
 	
 	return (r, xi)
 	
@@ -406,7 +406,9 @@ def get_Pkgg_1halo(kvec_ft, fsky, Mmax, survey):
 	# Get the combined redshift window function of lens and source samples.
 	(z, W_z) = window(survey)
 	
+	# Set up the vector of halo masses
 	Mhalo = np.logspace(9., Mmax, 30)
+	
 	# Get the lower stellar mass cutoff for source satelites corresponding to the total empirical volume density of the source sample:
 	tot_nsrc = vol_dens(pa.fsky, pa.N_shapes, survey)
 	Mstarlow = get_Mstar_low(survey, tot_nsrc)
@@ -418,33 +420,31 @@ def get_Pkgg_1halo(kvec_ft, fsky, Mmax, survey):
 	for zi in range(0,len(z)):
 		HMF[:, zi] = ccl.massfunction.massfunc(cosmo, Mhalo / (pa.HH0/100.), 1./ (1. + z[zi]), odelta=200.)
 	
-	# We're going to use, for the centrals and satelite lenses, either the Reid & Spergel 2008 HOD (SDSS LRGs) or the CMASS More et al. 2014 HOD (DESI LRGS).
-	# For the satellite sources, we use either the Zu & Mandelbaum 2015 model (SDSS shape sample) or the CMASS HOD again. We assume none of the sources are centrals in galaxies with satellites from the lenses.
+	# Get the mean number of centrals and satelites for he appropriate HOD. We assume none of the sources are centrals in galaxies with satellites from the lenses.
 	if (survey == 'SDSS'):
-		Ncen_lens = get_Ncen_Reid(Mhalo, survey)  # Reid & Spergel
-		Nsat_lens = get_Nsat_Reid(Mhalo, survey)  # Reid & Spergel 
-		Nsat_src = get_Nsat(Mhalo, Mstarlow, survey)  # Zu & Mandelbaum 2015
-		Ncen_src = get_Ncen(Mhalo, Mstarlow, survey)  # Zu & Mandelbaum 2015
+		Ncen_lens 	= 	get_Ncen_Reid(Mhalo, survey)  		# Reid & Spergel
+		Nsat_lens 	= 	get_Nsat_Reid(Mhalo, survey)  		# Reid & Spergel 
+		Nsat_src 	= 	get_Nsat(Mhalo, Mstarlow, survey)  	# Zu & Mandelbaum 2015
+		Ncen_src 	= 	get_Ncen(Mhalo, Mstarlow, survey)  	# Zu & Mandelbaum 2015
+		
 	elif (survey== 'LSST_DESI'):
-		Ncen_lens = get_Ncen(Mhalo, 'nonsense', survey) # CMASS
-		Nsat_lens = get_Nsat(Mhalo, 'nonsense', survey) # CMASS for both
-		Nsat_src = get_Nsat(Mhalo, 'nonsense', survey)  # CMASS for both
+		Ncen_lens 	= 	get_Ncen(Mhalo, 'nonsense', survey) # CMASS
+		Nsat_lens 	= 	get_Nsat(Mhalo, 'nonsense', survey) # CMASS 
+		Nsat_src 	= 	get_Nsat(Mhalo, 'nonsense', survey)  # CMASS 
 		
 	# Get the number density predicted by the halo model (not the one for the actual survey)
-	tot_ng = np.zeros(len(z)); tot_nsrc_sat=np.zeros(len(z))
+	tot_ng = np.zeros(len(z)); tot_nsrc_sat=np.zeros(len(z)); tot_nsrc_hod = np.zeros(len(z))
 	for zi in range(0, len(z)):
 		tot_ng[zi] = scipy.integrate.simps( ( Ncen_lens + Nsat_lens) * HMF[:, zi], np.log10(Mhalo / (pa.HH0/100.) ) ) / (pa.HH0 / 100.)**3
-		tot_nsrc_sat[zi] = scipy.integrate.simps(( Nsat_src ) * HMF[:, zi], np.log10(Mhalo / (pa.HH0/100.) ) ) / (pa.HH0 / 100.)**3
+		tot_nsrc_sat[zi] = scipy.integrate.simps(( Nsat_src) * HMF[:, zi], np.log10(Mhalo / (pa.HH0/100.) ) ) / (pa.HH0 / 100.)**3  # Only satelites because central sources don't contribute to lxs.
 	
 	# Get the density of matter in comoving coordinates
 	rho_crit = 3. * 10**10 * pa.mperMpc / (8. * np.pi * pa.Gnewt * pa.Msun)  # Msol h^2 / Mpc^3, for use with M in Msol / h (comoving distances)
 	rho_m = pa.OmM * rho_crit # units of Msol h^2 / Mpc^3 (comoving distances)
 	
-	#alpha_sq = get_alpha_sq(Mhalo) # The number which accounts for deviation from Poisson statisticsal
-	alpha_sq = np.ones(len(Mhalo))
-	print "WE ARE USING ALPHA=1 IN PKGG - IS THIS RIGHT?"
-	NcNs = NcenNsat(alpha_sq, Ncen_lens, Nsat_src) # The average number of central-satelite pairs in a halo of mass M
-	NsNs = NsatNsat(alpha_sq, Nsat_lens, Nsat_src) # The average number of satelite-satelite pairs in a halo of mass M
+	# We assume Poisson statistics because it doesn't make much difference for us..
+	NcNs = NcenNsat(1., Ncen_lens, Nsat_src) # The average number of central-satelite pairs in a halo of mass M
+	NsNs = NsatNsat(1., Nsat_lens, Nsat_src) # The average number of satelite-satelite pairs in a halo of mass M
 	
 	# Get a downsampled kvec for these calculations:
 	kvec_short = np.logspace(np.log10(kvec_ft[0]), np.log10(kvec_ft[-1]), 40)
@@ -466,18 +466,18 @@ def get_Pkgg_1halo(kvec_ft, fsky, Mmax, survey):
 	# Get the answer in terms of the full k vector for fourier transforming.
 	Pkgg_interp = scipy.interpolate.interp1d(np.log(kvec_short), np.log(Pkgg_zavg))
 	logPkgg = Pkgg_interp(np.log(kvec_ft))
-	Pkgg = np.exp(logPkgg)
+	Pkgg_ft = np.exp(logPkgg)
 	
-	Pkgg_save = np.column_stack((kvec_ft, Pkgg))
-	np.savetxt('./txtfiles/Pkgg_1h_dndM_'+survey+'_extl_Aug28.txt', Pkgg_save)
+	Pkgg_save = np.column_stack((kvec_ft, Pkgg_ft))
+	np.savetxt('./txtfiles/Pkgg_1h_'+survey+'.txt', Pkgg_save)
 	
 	plt.figure()
-	plt.loglog(kvec_ft, 4* np.pi * kvec_ft**3 * Pkgg / (2* np.pi)**3, 'mo')
+	plt.loglog(kvec_short, 4* np.pi * kvec_short**3 * Pkgg_zavg / (2* np.pi)**3, 'm+')
 	plt.ylim(0.001, 100000)
-	plt.xlim(0.01, 10000)
+	plt.xlim(0.01, 100)
 	plt.ylabel('$4\pi k^3 P_{gg}^{1h}(k)$, $(Mpc/h)^3$, com')
 	plt.xlabel('$k$, h/Mpc, com')
-	plt.savefig('./plots/Pkgg_1halo_longerkvec_Mmax16.pdf')
+	plt.savefig('./plots/Pkgg_1halo_'+survey+'.pdf')
 	plt.close()
 	
 	return Pkgg
@@ -522,8 +522,7 @@ def get_Pkgg_ll_1halo_kz(kvec, zvec, survey):
 	rho_crit = 3. * 10**10 * pa.mperMpc / (8. * np.pi * pa.Gnewt * pa.Msun)  # Msol h^2 / Mpc^3, for use with M in Msol / h (comoving distances)
 	rho_m = pa.OmM * rho_crit # units of Msol h^2 / Mpc^3 (comoving distances)
 	
-	#alpha_sq = get_alpha_sq(Mhalo) # The number which accounts for deviation from Poisson statisticsal
-	alpha_sq = np.ones(len(Mhalo))
+	alpha_sq = np.ones(len(Mhalo)) # We assume Poisson statistics because it doesn't make much difference for us.
 	NcNs = NcenNsat(alpha_sq, Ncen_lens, Nsat_lens) # The average number of central-satelite pairs in a halo of mass M
 	NsNs = NsatNsat(alpha_sq, Nsat_lens, Nsat_lens) # The average number of satelite-satelite pairs in a halo of mass M
 	
@@ -692,145 +691,7 @@ def gety(Mvec, kvec_gety, survey):
 			u_[ki, mi] = 4. * np.pi / Mvec[mi] * scipy.integrate.simps( rvec[mi] * np.sin(kvec_gety[ki]*rvec[mi])/ kvec_gety[ki] * rho[mi], rvec[mi]) # unitless / dimensionless.
 	
 	return u_
-	
-def get_alpha_sq(M):
-	""" Gets the parameter that accounts for the deviation from Poisson statistics. M is in Msol / h. """
-	
-	alpha = np.zeros(len(M))
-	for Mi in range(0,len(M)):
-		if (M[Mi]<10**11):
-			alpha[Mi] = np.log(M[Mi] / 10**11)
-		else:
-			alpha[Mi] = 1.
 		
-	return alpha
-
-def get_Mh_avg(Mlow_star, ngvol, survey):
-	""" This function gets the average halo mass for the sample """
-	
-	# Get the high and low edges of halo mass distribution for this sample
-	Mh_low = get_Mhlow( Mlow_star, survey )
-	Mh_high = 10**16 # This is the max value included in calculating M*; alternatively just use a very large value, large enough the HMF is practically 0.
-	
-	# Get the average halo mass:
-	if (survey == 'SDSS'):
-		import params as pa
-	elif (survey == 'LSST_DESI'):
-		import params_LSST_DESI as pa
-	else:
-		print "We don't have support for that survey yet; exiting."
-		exit()
-	
-	Mh_test = np.logspace(np.log10(Mh_low), np.log10(Mh_high), 10000)
-	# Get the halo mass function (from CCL) to integrate over (dn / dlog10M, Tinker 2010 I think)
-	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = pa.A_s, n_s=pa.n_s_cosmo)
-	cosmo = ccl.Cosmology(p)
-	HMF = ccl.massfunction.massfunc(cosmo, Mh_test / (pa.HH0/100.), 1./ (1. + pa.zeff), odelta=200.)
-	#Ncen = get_Ncen_src(Mh_test, Mlow_star, survey)
-	if (survey=='SDSS'):
-		if ((pa.Use_Reid_HOD)==True):
-			Ncen = get_Ncen_Reid(Mh_test, survey)
-			print "Using Reid HOD for SDSS LRGs"
-		else:
-			Ncen= get_Ncen(Mh_test, Mlow_star, survey)
-			print "Using Zu&Mandelbaum HOD"
-	else:
-		if ((pa.Use_Reid_HOD)==True):
-			Ncen = get_Ncen_Reid(Mh_test, survey)
-			print "Using Reid HOD for SDSS LRGs"
-		else:
-			Ncen = get_Ncen(Mh_test, Mlow_star, survey)
-			print "Using Zu&Mandelbaum HOD"
-	
-	logMh_bins = np.linspace(np.log10(Mh_low), np.log10(Mh_high),20)
-	
-	n_in_bin = np.zeros(len(logMh_bins)-1) # Number density of halos with at least a central galaxy in this bin.
-	for i in range(0, len(logMh_bins)-1):
-		ind_low = next(j[0] for j in enumerate(Mh_test) if j[1]>=10**(logMh_bins[i]))
-		ind_high = next(j[0] for j in enumerate(Mh_test) if j[1]>=10**(logMh_bins[i+1]))
-		n_in_bin[i] = scipy.integrate.simps(HMF[ind_low:ind_high]*Ncen[ind_low:ind_high], np.log10(Mh_test)[ind_low:ind_high])
-	
-	logMcentres = np.zeros(len(logMh_bins)-1)
-	for i in range(0,len(logMcentres)):
-		logMcentres[i] = logMh_bins[i] + (logMh_bins[i+1] - logMh_bins[i])
-		
-	avg = 10**(np.sum( n_in_bin * logMcentres) / np.sum(n_in_bin))
-	
-	return avg
-
-def get_Mhlow( Mlow_star, survey):
-	""" This function gets the lowest value of the halo mass for which the halo is at all likely to host a galaxy, for this sample """
-	
-	if (survey == 'SDSS'):
-		import params as pa
-	elif (survey == 'LSST_DESI'):
-		import params_LSST_DESI as pa
-	else:
-		print "We don't have support for that survey yet; exiting."
-		exit()
-	
-	
-	Mh_test = np.logspace(9., 16., 1000)
-	if (survey=='SDSS'):
-		if ((pa.Use_Reid_HOD)==True):
-			Ncen_of_Mh = get_Ncen_Reid(Mh_test, survey)
-			Nsat_of_Mh = get_Nsat_Reid(Mh_test, survey)
-		else:
-			Ncen_of_Mh = get_Ncen(Mh_test, Mlow_star, survey)
-			Nsat_of_Mh = get_Nsat(Mh_test, Mlow_star, survey)
-	else:
-		Ncen_of_Mh = get_Ncen(Mh_test, Mlow_star, survey)
-		Nsat_of_Mh = get_Nsat(Mh_test, Mlow_star, survey)
-	
-	not_zero = 0.0001
-	ind = next(j[0] for j in enumerate(Ncen_of_Mh) if j[1]>=not_zero)
-	
-	Mhlow = Mh_test[ind]
-	print "Mhalo lower bound=", Mhlow
-	
-	return Mhlow
-	
-def get_Mhhigh( Mh_low, Mlow_star, ngvol, survey ):
-	""" This function gets the max value of the halos mass that should be included to match the galaxy density of the sample. """
-	""" Turns out this is definitionally the highest value of the halo mass includes when computing the stellar mass cutoff, so I'm not using this function, but I'm going to keep hold of it for now in case I need it."""
-	
-	if (survey == 'SDSS'):
-		import params as pa
-	elif (survey == 'LSST_DESI'):
-		import params_LSST_DESI as pa
-	else:
-		print "We don't have support for that survey yet; exiting."
-		exit()
-	
-	Mh_test = np.logspace(np.log10(Mh_low), 16., 1000)
-	if (survey=='SDSS'):
-		if ((pa.Use_Reid_HOD)==True):
-			Ncen_of_Mh = get_Ncen_Reid(Mh_test, survey)
-			Nsat_of_Mh = get_Nsat_Reid(Mh_test, survey)
-		else:
-			Ncen_of_Mh = get_Ncen(Mh_test, Mlow_star, survey)
-			Nsat_of_Mh = get_Nsat(Mh_test, Mlow_star, survey)
-	else:
-		Ncen_of_Mh = get_Ncen(Mh_test, Mlow_star, survey)
-		Nsat_of_Mh = get_Nsat(Mh_test, Mlow_star, survey)
-	
-	# Get the halo mass function (from CCL) to integrate over (dn / dlog10M, Tinker 2010 I think)
-	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = pa.A_s, n_s=pa.n_s_cosmo)
-	cosmo = ccl.Cosmology(p)
-	HMF = ccl.massfunction.massfunc(cosmo, Mh_test / (pa.HH0/100.), 1./ (1. + pa.zeff), odelta=200.)
-	
-	ng_of_Mh = np.zeros(len(Mh_test))
-	for i in range(1,len(Mh_test)):
-		#ng_of_Mh[i] = scipy.integrate.simps(HMF[0:i] * (Ncen_of_Mh[0:i] + Nsat_of_Mh[0:i]), np.log10(Mh_test)[0:i])
-		ng_of_Mh[i] = scipy.integrate.simps(HMF * (Ncen_of_Mh + Nsat_of_Mh), np.log10(Mh_test))
-	print "ng=", ng_of_Mh
-		
-	ind = next(j[0] for j in enumerate(ng_of_Mh) if j[1]>=ngvol)
-	
-	Mhigh = Mh_test[ind]
-	
-	return Mhigh
-	
 def get_Mstar_low(survey, ngal):
 	""" For a given number density of source galaxies (calculated in the vol_dens function), get the appropriate choice for the lower bound of Mstar """
 	
@@ -874,23 +735,25 @@ def get_Mstar_low(survey, ngal):
 	return Mstarlow
 	
 def get_Nsat(M_h, Mstar, survey):
-	""" Gets the fraction of source galaxies that are satelites in halos associated with the lens sample, for stellars masses AT OR ABOVE the average one for our source sample using the HOD model from Zu & Mandelbaum 2015."""
+	""" Gets the number of source galaxies that are satelites in halos."""
 	
 	if (survey == 'SDSS'):
 		import params as pa
 	
 		f_Mh = fSHMR_inverse(Mstar, survey)
-		Ncen_src = get_Ncen(M_h, Mstar,survey)
+		Ncen_src = get_Ncen(M_h, Mstar,survey) # Do we want central sources here or do we want central lenses?
 		Msat = get_Msat(f_Mh, survey)
 		Mcut = get_Mcut(f_Mh, survey)
+		
+		Nsat = Ncen_src * (M_h / Msat)**(pa.alpha_sat) * np.exp(-Mcut / M_h)
 	
-		if ((type(M_h)==float) or (type(Mstar)==float) or(type(M_h)==np.float64) or (type(Mstar)==np.float64) ):
-			Nsat = Ncen_src * (M_h / Msat)**(pa.alpha_sat) * np.exp(-Mcut / M_h)
-		elif(((type(Mstar)==list) or isinstance(Mstar, np.ndarray)) and ((type(M_h)==list) or isinstance(M_h, np.ndarray))):
-			Nsat=np.zeros((len(M_h), len(Mstar)))
-			for i in range(0,len(Mstar)):
-				for j in range(0,len(M_h)):
-					Nsat[i,j] = Ncen_src[i,j] * (M_h[j] / Msat[i])**(pa.alpha_sat) * np.exp(-Mcut[i] / M_h[j])			
+		#if ((type(M_h)==float) or (type(Mstar)==float) or(type(M_h)==np.float64) or (type(Mstar)==np.float64) ):
+		#	Nsat = Ncen_src * (M_h / Msat)**(pa.alpha_sat) * np.exp(-Mcut / M_h)
+		#elif(((type(Mstar)==list) or isinstance(Mstar, np.ndarray)) and ((type(M_h)==list) or isinstance(M_h, np.ndarray))):
+		#	Nsat=np.zeros((len(M_h), len(Mstar)))
+		#	for i in range(0,len(Mstar)):
+		#		for j in range(0,len(M_h)):
+		#			Nsat[i,j] = Ncen_src[i,j] * (M_h[j] / Msat[i])**(pa.alpha_sat) * np.exp(-Mcut[i] / M_h[j])			
 	elif (survey == 'LSST_DESI'):
 		import params_LSST_DESI as pa
 		
@@ -978,6 +841,7 @@ def get_Nsat_Reid(Mh, survey):
 	
 	Nsat = np.zeros(len(Mh))
 	for i in range(0,len(Mh)):
+		# This if-statement just sets annoying tiny numbers to 0.
 		if ( (Mh[i] / (pa.HH0/100.)) >= pa.Mcut_reid):
 			Nsat[i] = Ncen[i] * ((Mh[i] / (pa.HH0/100.) - pa.Mcut_reid) / pa.M1_reid)**(pa.alpha_reid)
 		else:
@@ -1026,20 +890,6 @@ def get_fSHMR(Mh, survey):
 	Mstar = np.logspace(0, 14, 2000)
 	
 	Mh_vec = fSHMR_inverse(Mstar, survey)
-	
-	#plt.figure()
-	#plt.loglog(Mh_vec, Mstar)
-	#plt.xlim(10**11, 3*10**15)
-	#plt.ylim(7*10**8, 6*10**11)
-	#plt.savefig('./plots/infSHMR.pdf')
-	#plt.close()
-	
-	#plt.figure()
-	#plt.loglog(Mstar, Mh_vec)
-	#plt.ylim(10**11, 3*10**15)
-	#plt.xlim(7*10**8, 6*10**11)
-	#plt.savefig('./plots/infSHMR_inv.pdf')
-	#plt.close()
 	
 	Mh_interp = scipy.interpolate.interp1d(Mh_vec, Mstar)
 	
@@ -1195,49 +1045,7 @@ def wgg_full(rp_c, fsky, bd, bs, savefile_1h, savefile_2h, plotfile,survey):
 	plt.ylim(0., 10**4.)
 	plt.ylabel('$w_{gg}$, Mpc/h, com')
 	plt.xlabel('$r_p$, Mpc/h, com')
-	plt.savefig('./plots/wgg_tot_extl_survey='+survey+'.pdf')
+	plt.savefig(plotfile)
 	plt.close()
-	
-	plt.figure()
-	plt.loglog(rp_c, wgg_1h, 'go')
-	plt.xlim(0.05, 30.)
-	plt.ylim(0., 10**4.)
-	plt.ylabel('$w_{gg}$, Mpc/h, com')
-	plt.xlabel('$r_p$, Mpc/h, com')
-	plt.title('$w_{gg}$, 1halo')
-	plt.savefig('./plots/wgg_1h_extl_survey='+survey+'.pdf')
-	plt.close()
-	
-	
-	plt.figure()
-	plt.loglog(rp_c, wgg_2h, 'go')
-	plt.xlim(0.05, 30.)
-	plt.ylim(1, 5000.)
-	plt.ylabel('$w_{gg}$, Mpc/h, com')
-	plt.xlabel('$r_p$, Mpc/h, com')
-	plt.title('$w_{gg}$, 2halo')
-	plt.savefig('./plots/wgg_2h_LRG_extl_survey='+survey+'.pdf')
-	plt.close()
-	
-	#print "wgg=", zip(rp_c, wgg_tot)
-	
-	#plt.figure()
-	#plt.loglog(rp_c, wgg_tot, 'mo')
-	#plt.xlim(0.05, 30.)
-	#plt.ylim(1., 5000.)
-	#plt.ylabel('$w_{gg}$, Mpc/h, com')
-	#plt.xlabel('$r_p$, Mpc/h, com')
-	#plt.title('$w_{gg}$, 1halo + 2halo')
-	#plt.savefig(plotfile)
-	#plt.close()
-	
-	#plt.figure()
-	#plt.semilogx(rp_c, rp_c * wgg_tot, 'mo')
-	#plt.xlim(0.1, 200.)
-	#plt.ylim(0., 320.)
-	#plt.ylabel('$r_p w_{gg}$, Mpc/h, com')
-	#plt.xlabel('$r_p$, Mpc/h, com')
-	#plt.savefig('./plots/Rwgg_tot_LRG.png')
-	#plt.close()
-	
+
 	return wgg_tot

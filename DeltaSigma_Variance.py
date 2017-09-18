@@ -489,7 +489,7 @@ def doints_Pgg():
 	plt.savefig('./plots/clgg_compare_CCL.pdf')
 	plt.close()
 			
-	np.savetxt('./txtfiles/Pggterm_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'.txt', int_gg)
+	np.savetxt('./txtfiles/Pggterm_DeltaSig_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'.txt', int_gg)
 	
 	return int_gg
 
@@ -830,9 +830,9 @@ def doconstint():
 	
 def get_lint():
 	""" Gets the integral over ell at each R and R' """
-	Pgkterm		=	np.loadtxt('./txtfiles/Pgkterm_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'.txt')
-	PggPkkterm	=	np.loadtxt('./txtfiles/PggPkkterm_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'.txt')
-	Pkkterm		= 	np.loadtxt('./txtfiles/Pkkterm_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'.txt')
+	#Pgkterm		=	np.loadtxt('./txtfiles/Pgkterm_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'.txt')
+	#PggPkkterm	=	np.loadtxt('./txtfiles/PggPkkterm_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'.txt')
+	#Pkkterm		= 	np.loadtxt('./txtfiles/Pkkterm_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'.txt')
 	Pggterm		=	np.loadtxt('./txtfiles/Pggterm_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'.txt')
 	constterm	=	np.loadtxt('./txtfiles/const_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'.txt')
 	
@@ -970,8 +970,8 @@ def add_shape_noise(i_Rbin, j_Rbin, ravg):
 ####################################### SET UP ###########################################
 ##########################################################################################
 
-SURVEY = 'LSST_DESI'
-SAMPLE = 'B'
+SURVEY = 'SDSS'
+SAMPLE = 'A'
 # Import the parameter file:
 if (SURVEY=='SDSS'):
 	import params as pa
@@ -1030,20 +1030,19 @@ z_ofchi, com_of_z								=		setup.z_interpof_com(SURVEY)
 
 chiLmean = com_of_z(pa.zeff)
 
-
 # Do the integrals on each term up to the l integral (so chiS, bchiS, chiL, bchiL)
 
 doints_Pgg()
 print "Done with Pgg integrals. Now do Pgk:"
-Pgkints = doints_Pgk() 
-print "Done with Pgk integrals. Now do Pkk:"
-Pkkints = doints_Pkk() 
-print "Done with Pkk integrals. Now do constant:"
+#Pgkints = doints_Pgk() 
+#print "Done with Pgk integrals. Now do Pkk:"
+#Pkkints = doints_Pkk() 
+#print "Done with Pkk integrals. Now do constant:"
 constterm = doconstint() 
 print "Done with constant integrals. Now do PggPkk:"
 
-PggPkkints = doints_PggPkk()
-print "Done with PggPkk integrals. Now getting wbar:"
+#PggPkkints = doints_PggPkk()
+#print "Done with PggPkk integrals. Now getting wbar:"
 wbar = getwbar()
 print "wbar=", wbar
 print "Done with getting wbar. Now doing integrals over R:"""
