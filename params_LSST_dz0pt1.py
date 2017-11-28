@@ -2,10 +2,10 @@
 
 import numpy as np
 
+delta_z 		=	0.1
+
 run_quants		=	False
 survey 			=	'LSST_DESI'
-
-delta_z 		= 	0.1
 
 # Parameters associated with the sample / shape noise calcuation 
 e_rms_Bl_a 		= 	0.26 # rms ellipticity of sample a, Blazek method.  percomponent value (=0.26) given on confluence page for LSST forecasts, see Chang et al. 2013
@@ -17,15 +17,20 @@ n_l 			= 	300. # The number of lenses in the lens sample per square DEGREE. DESI
 Area_l 			=	3000. # Area associated with the lens sample in square DEGREES. Overlap with LSST given in "Spectroscopic Needs for Calibration of LSST Photometric Redshifts" whitepaper.
 fsky			=   Area_l / 41253. # Assumes the lens area is the limiting factor
 n_s 			=	26. # The effective number density of the full distribution of sources in the sample per square ARCMINUTE. In the abstract of Chang et al. 2013.
-S_to_N 			= 	15.6 # Per-galaxy signal-to-noise. Derived from Chang et al. 2013, eqn 9 + values in table 1
-a_con			=	[0.2]#[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]	# Fiducial constant offset, approximated from Singh 2016 assuming unprimed method isophotal and primed ReGaussianisation
-cov_perc 		= 	[0.8]#[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9] #percentage covariance between methods, shape measurement method
+S_to_N 			= 	11.8 # Per-galaxy signal-to-noise. Median value, Figure 3, Chang et al. 2013
+a_con			=	[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]	# Fiducial constant offset, approximated from Singh 2016 assuming unprimed method isophotal and primed ReGaussianisation
+cov_perc 		= 	[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9] #percentage covariance between methods, shape measurement method
 e_rms_mean 		=	np.abs((e_rms_b+e_rms_a)/2.) # This is the e_rms used in computing the shared weight for shapes methods
 N_shapes		= 	Area_l * 3600. * n_s # Number of galaxies in the shape sample.
 
 
 # Fractional errors on 'fudge factors' we are using to get a handle on the relative importance of different systematic errors.
-fudge_frac_level = np.logspace(-4, 0, 30)
+fudge_frac_level = np.logspace(-3, 0, 15)
+
+# With deltaz = 0.17, on August 24, 2017, with extended lens redshift 
+boost_assoc = 0.62  
+boost_far = 0.002   
+boost_close = 0.26
 
 # Parameters associated with the projected radial bins
 rp_max 	=	20.0 # The maximum projected radius (Mpc/h)
@@ -44,7 +49,7 @@ sigz_fid	=	0.05  # The photometric redshift error given a Gaussian photo_z model
 pzpar_fid 	=	[sigz_fid] # Make this a list to make it more generic to pass around
 
 #boost_sys	=	1.00 # Setting this to 1 for now because I want to ignore boost sys error at the moment.
-boost_sys	=	0.03 # Multiplier for the boost systematic error. This is the value given in Blazek et al. 2012. It is probably quite a conservative estimate for LSST + DESI.
+boost_sys	=	1.03 # Multiplier for the boost systematic error. This is the value given in Blazek et al. 2012. It is probably quite a conservative estimate for LSST + DESI.
 
 # Parameters related to the spec and photo z's of the source sample and other redshift cuts.
 zeff 	= 	0.77  # The effective redshift of the lens sample. Estimated from Figure 3.8 (COSMOS photo-z estimate) of the DESI final design report, see ./plotting_scripts/DESI_zeff.ipynb
@@ -58,7 +63,7 @@ zsmin 	=	0.02
 zsmax 	= 	6.0
 zphmin	=	0.
 zphmax	=	7.0
-#delta_z 	=	0.64
+#delta_z 	=	0.1
 zmin_dndz = zsmin
 zmax_dndz = 5.0 # The effective point at which the spectroscopic dNdz goes to 0 (input by looking at dNdz for now). For computing volume occupied by source sample.
 # Shape measurment case
@@ -91,7 +96,7 @@ kpts_wgg = 10000
 kpts_wgp = 2000
 bs = 1. # This is assumed to be 1 for "garden variety" galaxies similar to SDSS shapes.
 bd = 3.88 # Lens sample, integrating over lens redshift distribution and b = 1.7 / D(z), see ./calc_bias_LRG.ipynb .
-#Ai = 1.20 # Computed using the lumiosity functeion setup of Krause et al. 2015 with DEEP2 P & Q see ./ah_Ai_calculation_zLext.ipynb
+Ai = 0.93 # Computed using the lumiosity functeion setup of Krause et al. 2015 with DEEP2 P & Q see ./ah_Ai_calculation_zLext.ipynb
 C1rho = 0.0134
 
 # Here are the parameters for the CMASS HOD model of More et al. 2014 1407.1856. This is higher redshift so it's a better approximation for LSST+DESI
@@ -106,7 +111,7 @@ siglogM_CMASS = np.sqrt(0.22)
 # 1-halo IA term parameters.
 # These are for the model given by Schneider & Bridle 2010, 0903.3870, but for the parameters given in Table 1 of Singh et al. 2014.
 # The q_ij parameters are taken directly from this table. a_h is computed by taking the power law of a_h as a function of luminosity a_h(L) from Singh et al. 2014 and integrating it over the Schechter luminosity function from Krause et al. 2015 for the limiting magnitude of LSST shape sample (r<27.5) (see ./ah_Ai_calculation_zLext.ipynb)
-#ah =  0.016   # Derived using most of the GAMA parameters but DEEP2 scales P and Q from Krause et al. 2015#0.029 Derived using GAMA params
+ah =  0.013   # Derived using most of the GAMA parameters but DEEP2 scales P and Q from Krause et al. 2015#0.029 Derived using GAMA params
 q11 = 0.005    
 q12  = 5.909
 q13 = 0.3798
@@ -118,10 +123,7 @@ q32 = 0.1912
 q33 = 0.4368
 
 #Parameters required for computing the luminosity function (from Loveday 2012 / Krause et al. 2015 unless otherwise noted)
-mlim = 25.3 # See Chang et al. 2013; Science book Chapter 3 Gold sample (i band)
-#Ai =  1.2 #mlim 25.3 #1.68 mlim 24
-#ah =  0.016 #mlim 25.3  #0.024
-
+mlim = 27.5 # See Chang et al. 2013
 Mp = -22. # From Singh et al. 2014 (but this is kind of an arbitrary choice)
 
 Mr_s_red = -20.34

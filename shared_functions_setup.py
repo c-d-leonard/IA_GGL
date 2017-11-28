@@ -4,6 +4,8 @@ import numpy as np
 import scipy.interpolate
 import scipy.integrate
 import matplotlib.pyplot as plt
+import scipy.signal
+import astropy.convolution
 
 # Functions to set up the rp bins
 
@@ -73,8 +75,6 @@ def get_z_close(z_l, cut_MPc_h, survey):
 
 def com(z_, survey):
 	""" Gets the comoving distance in units of Mpc/h at a given redshift, z_ (assuming the cosmology defined in the params file). """
-	
-	# NO DEPENDENCE ON Z_L
 
 	if (survey == 'SDSS'):
 		import params as pa
@@ -101,8 +101,6 @@ def com(z_, survey):
 def z_interpof_com(survey):
 	""" Returns an interpolating function which can give z as a function of comoving distance. """
 
-	# NO DEPENDENCE ON Z_L
-
 	z_vec = scipy.linspace(0., 20., 10000) # This hardcodes that we don't care about anything over z=2100
 
 	com_vec = com(z_vec, survey)
@@ -124,23 +122,55 @@ def p_z(z_ph, z_sp, pzpar, pztype):
 		
 	return p_z_
 	
-def get_NofZ_unnormed(dNdzpar, dNdztype, z_min, z_max, zpts):
+def get_NofZ_unnormed(dNdzpar, dNdztype, z_min, z_max, zpts, survey):
 	""" Returns the dNdz of the sources as a function of photometric redshift, as well as the z points at which it is evaluated."""
+	
+	if (survey == 'SDSS'):
+		import params as pa
+	elif (survey == 'LSST_DESI'):
+		import params_LSST_DESI as pa
+	else:
+		print "We don't have support for that survey yet; exiting."
+		exit()
 
 	z = scipy.linspace(z_min, z_max, zpts)
 	
-	if (dNdztype == 'Nakajima'):
+	#if (survey=='SDSS'): # There's only one magnitude limit here we are considering for now, so we just take the parameters fit to data from that magnitude limit.
+	if (dNdztype=='Nakajima'):
 		# dNdz takes form like in Nakajima et al. 2011 equation 3
 		a = dNdzpar[0]
 		zs = dNdzpar[1]
 	
 		nofz_ = (z / zs)**(a-1.) * np.exp( -0.5 * (z / zs)**2)
-	elif (dNdztype == 'Smail'):
-		# dNdz take form like in Smail et al. 1994
-		alpha = dNdzpar[0]
-		z0 = dNdzpar[1]
-		beta = dNdzpar[2]
-		nofz_ = z**alpha * np.exp( - (z / z0)**beta)
+	#elif (survey=='LSST_DESI'):
+	elif (dNdztype=='Smail'):
+		if (np.abs(pa.mlim - 25.3)<10**(-15)): # if rlim = 25.3 use the Chang et al. 2013 parameters directly
+			# dNdz take form like in Smail et al. 1994
+			alpha = dNdzpar[0]
+			z0 = dNdzpar[1]
+			beta = dNdzpar[2]
+			nofz_ = z**alpha * np.exp( - (z / z0)**beta)
+		else: # if rlim != 25.3 we have to compute the redshift distribution from the luminosity function
+			print "dNdz (sources) for rlim != 25.3 is not working yet."
+			exit()
+		#(L, phi_normed, phi) = get_phi(z, pa.lumparams_all, survey)
+		#(L_red, phi_normed_red, phi_red) = get_phi(z, pa.lumparams_red, survey)
+		
+		#OmL = 1. - pa.OmC - pa.OmB - pa.OmR - pa.OmN	
+		#phi_ofz = np.zeros(len(z))
+		#phi_of_z_red = np.zeros(len(z))
+		#nofz_ = np.zeros(len(z))
+		#for zi in range(0,len(z)):
+		#	phi_ofz[zi] = scipy.integrate.simps(phi[zi], L[zi])
+			#phi_of_z_red[zi] = scipy.integrate.simps(phi_red[zi], L[zi])
+		#	c_over_H = 1. / (pa.H0 * ( (pa.OmC+pa.OmB)*(1.+z[zi])**3 + OmL + (pa.OmR+pa.OmN) * (1.+z[zi])**4 )**(0.5))
+		#	nofz_[zi] = phi_ofz[zi] #4. * np.pi * pa.fsky * com(z[zi], survey)**2 * c_over_H  * phi_ofz[zi]  # See notes October 12 2017 for this expression.
+			
+		"""plt.figure()
+		plt.plot(z, phi_of_z_red[:] / phi_ofz[:], 'm+')
+		plt.savefig('./plots/testfred.pdf')
+		plt.close()"""
+			
 	else:
 		print "dNdz type "+str(dNdztype)+" not yet supported; exiting."
 		exit()
@@ -160,6 +190,16 @@ def get_dNdzL(zvec, survey):
 		
 	z, dNdz = np.loadtxt('./txtfiles/'+pa.dNdzL_file, unpack=True)
 	
+	# If we're dealing with SDSS, we need to smooth the noisy data curve and convert from n(z) (comoving number density) to dNdz
+	if (survey == 'SDSS'):
+		# Filter the curve 
+		nofz_filt = astropy.convolution.convolve(dNdz, astropy.convolution.Box1DKernel(10))
+		# Convert to dNdz
+		OmL = 1. - pa.OmC - pa.OmB - pa.OmR - pa.OmN
+		c_over_H = 1. / (pa.H0 * ( (pa.OmC+pa.OmB)*(1.+z)**3 + OmL + (pa.OmR+pa.OmN) * (1.+z)**4 )**(0.5))
+		dNdz = nofz_filt * 4. * np.pi * pa.fsky * com(z, survey)**2 * c_over_H # See notes October 12 2017 for this expression.
+	#print "NOT SMOOTHING OVER NOFZ FOR LENSES."
+		
 	interpolation = scipy.interpolate.interp1d(z, dNdz)
 	
 	# Create a well-sampled redshift vector to make sure we can get the normalization without numerical problems
@@ -175,7 +215,7 @@ def get_dNdzL(zvec, survey):
 		print "You have asked for dN/dzl at redshifts out of the known range."
 		exit()
 	
-	return dNdz_return / norm
+	return  dNdz_return / norm
 	
 def get_phi(z, lum_params, survey):
 	
@@ -215,7 +255,7 @@ def get_phi(z, lum_params, survey):
 	Mlim = pa.mlim - (5. * np.log10(dl) + 25. + kcorr + ecorr)
 	Llim = 10.**(-0.4 * (Mlim-pa.Mp))
 	
-	# Get the luminosity vectos - there will be a list of these, one for each redshift, because the limiting values are z-dependent
+	# Get the luminosity vectors - there will be a list of these, one for each redshift, because the limiting values are z-dependent
 	L = [0] * len(z)
 	for zi in range(0,len(z)):
 		L[zi] = scipy.logspace(np.log10(Llim[zi]), 2., 1000)
@@ -232,7 +272,6 @@ def get_phi(z, lum_params, survey):
 	norm= np.zeros(len(z))
 	phi_func_normed = [0]*len(z)
 	for zi in range(len(z)):
-		phi_func_normed[zi] = np.zeros(len(L[zi]))
 		norm[zi] = scipy.integrate.simps(phi_func[zi], L[zi])
 		phi_func_normed[zi] = phi_func[zi] / norm[zi]
 

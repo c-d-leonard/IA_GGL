@@ -210,12 +210,12 @@ def doints_Pgg():
 	# Do the integral over dndzl. This includes the 1/ ns term that goes into this term, because it needs integrating over the lens distribution.
 	ns = get_ns_partial()
 	int_gg = np.zeros(len(lvec_less))
-	clgg= np.zeros(len(lvec_less))
+	#clgg= np.zeros(len(lvec_less))
 	for li in range(0,len(lvec_less)):
 		int_gg[li] = scipy.integrate.simps( dndzl**2 * H * Pdelta[li, :] / (chi**2 * ns), zL)
-		clgg[li] = scipy.integrate.simps( dndzl**2 * H * Pdelta[li, :] / (chi**2), zL)
+		#clgg[li] = scipy.integrate.simps( dndzl**2 * H * Pdelta[li, :] / (chi**2), zL)
 	
-	# Compare to CCL	
+	"""# Compare to CCL	
 	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = pa.A_s, n_s=pa.n_s_cosmo)
 	cosmo = ccl.Cosmology(p)
 	b_of_z = bias * np.ones(len(zL))
@@ -228,9 +228,9 @@ def doints_Pgg():
 	plt.loglog(lvec_less, Clgg_ccl, 'g+')
 	#plt.ylim(10**(-11), 10**(-3))
 	plt.savefig('./plots/clgg_compare_CCL.pdf')
-	plt.close()
+	plt.close()"""
 			
-	np.savetxt('./txtfiles/Pggterm_gammat_extl_survey='+SURVEY+'_method='+METHOD+'.txt', int_gg)
+	np.savetxt('./txtfiles/Pggterm_gammat_extl_survey='+SURVEY+'_method='+METHOD+'_mlim24.txt', int_gg)
 	
 	return int_gg
 
@@ -243,18 +243,15 @@ def doconstint():
 	save=[0]
 	save[0]= gam ** 2 / nl / ns
 	
-	print "gam=", gam
-	print "nl=", nl
-	
-	np.savetxt('./txtfiles/const_gammat_extl_survey='+SURVEY+'_method='+METHOD+'.txt', save)
+	np.savetxt('./txtfiles/const_gammat_extl_survey='+SURVEY+'_method='+METHOD+'_mlim24.txt', save)
 	
 	return gam ** 2 / nl  / ns
 
 def get_lint():	
 #def get_lint(Pgkterm, PggPkkterm, Pkkterm, Pggterm, constterm):
 	""" Gets the integral over ell at each R and R' """
-	Pggterm		=	np.loadtxt('./txtfiles/Pggterm_gammat_extl_'+endfilename+'_survey='+SURVEY+'_method='+METHOD+'.txt')
-	constterm	=	np.loadtxt('./txtfiles/const_gammat_extl_'+endfilename+'_survey='+SURVEY+'_method='+METHOD+'.txt')
+	Pggterm		=	np.loadtxt('./txtfiles/Pggterm_gammat_extl_survey='+SURVEY+'_method='+METHOD+'_mlim24.txt')
+	constterm	=	np.loadtxt('./txtfiles/const_gammat_extl_survey='+SURVEY+'_method='+METHOD+'_mlim24.txt')
 	
 	print "constterm=", constterm
 	
@@ -270,7 +267,7 @@ def get_lint():
 	plt.xlabel('$l$')
 	plt.title('Survey='+SURVEY)
 	plt.legend()
-	plt.savefig('./plots/compareterms_gammat_extl_survey='+SURVEY+'_method='+METHOD+'.pdf')
+	plt.savefig('./plots/compareterms_gammat_extl_survey='+SURVEY+'_method='+METHOD+'_fixdNdzl_mlim24.pdf')
 	plt.close()
 	
 	# Interpolate these things to get the result in terms of the more highly sampled lvec
@@ -339,7 +336,7 @@ def do_outsideints_SigR(i_Rbin, j_Rbin, lint_ans):
 ####################################### SET UP ###########################################
 ##########################################################################################
 
-SURVEY = 'SDSS_DESI'
+SURVEY = 'LSST_DESI'
 METHOD = '1'
 
 print "Survey=", SURVEY
@@ -415,10 +412,10 @@ z_of_com, com_of_z								=		setup.z_interpof_com(SURVEY)
 ns = get_ns_partial()
 
 # Do the integrals on each term up to the l integral (so chiS, bchiS, chiL, bchiL)
-Pggints = doints_Pgg() 
-print "Done with Pgg integrals. Now do constant:"
-constterm = doconstint()
-print "Done with constant integrals."
+#Pggints = doints_Pgg() 
+#print "Done with Pgg integrals. Now do constant:"
+#constterm = doconstint()
+#print "Done with constant integrals."
 # First, get the l integral in terms of R and R'. This is the long part, and needs only to be done once instead of over and over for each bin.
 lint = get_lint()
 

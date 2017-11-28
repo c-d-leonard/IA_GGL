@@ -358,41 +358,6 @@ def Pmm_1h2h(xivec):
 
 ##############################################
 
-def getwbar():
-	""" This function computes wbar, the integral over the SigmaC factors associated with the weights."""
-	
-	# Define redshift vector for lenses
-	zLvec = np.linspace(pa.zLmin, pa.zLmax, 1000)
-	dndzl = setup.get_dNdzL(zLvec, SURVEY)
-	
-	# Get integral in source (photometric) redshift 
-	chiSans = np.zeros(len(zLvec))
-	for zi in range(0,len(zLvec)):
-	
-		# Get zph, dNdzph: 
-		if (SAMPLE=='A'):
-			(z_ph, Nofzph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, zLvec[zi], zLvec[zi] + pa.delta_z, zLvec[zi], zLvec[zi] + pa.delta_z, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
-		elif (SAMPLE =='B'):
-			(z_ph, Nofzph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, zLvec[zi] + pa.delta_z, pa.zphmax, zLvec[zi] + pa.delta_z, pa.zphmax,  pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
-		else:
-			print "We do not have support for that sample. Exiting."
-			exit()
-	
-		Sigma_inv = get_SigmaC_inv(z_ph, zLvec[zi])
-		chiSans[zi] = scipy.integrate.simps(Sigma_inv**2 * Nofzph, z_ph)
-	
-	# Integrate answer over dndzl. This squared will be the value we need (because the integrals in primed and unprimed quantities are exactly symmetric).
-	wbar = scipy.integrate.simps(chiSans * dndzl, zLvec)
-	
-	print "denom=", np.sqrt(wbar)
-	
-	# Save wbar
-	save=[0]
-	save[0]= wbar
-	np.savetxt('./txtfiles/wbar_extl'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_fixdNdzl.txt', save)
-	
-	return wbar
-
 def get_ns_partial(zL):
 	""" Gets the fractional value of ns appropriate for this subsample."""
 	
@@ -429,47 +394,16 @@ def doints_Pgg():
 	Pdelta = Pgg_1h2h(chi)
 	H = getHconf(chi) * (1. + zL)
 	
-	int_over_zph = np.zeros(len(zL))
-	for zi in range(0, len(zL)):
-		# Get the photo-z dndzph at this zL - it's different depending on the sample.
-		if (SAMPLE =='A'):
-			# Get dNdzph: 
-			(z_ph, Nofzph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, zL[zi], zL[zi] + pa.delta_z, zL[zi], zL[zi] + pa.delta_z, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
-		elif (SAMPLE == 'B'):
-			(z_ph, Nofzph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, zL[zi] + pa.delta_z, pa.zphmax, zL[zi] + pa.delta_z, pa.zphmax, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
-	
-		# Do the integral in photo-z
-		Sigma_inv = get_SigmaC_inv(z_ph, zL[zi])
-		int_over_zph[zi] = scipy.integrate.simps( Nofzph * Sigma_inv, z_ph )
-	
 	# Get the lens redshift distribution.	
 	dndzl = setup.get_dNdzL(zL, SURVEY)
 	
-	# Do the final integral over dndzl. This includes the 1/ ns term that goes into this term, because it needs integrating over the lens distribution.
+	# Do the integral over dndzl. This includes the 1/ ns term that goes into this term, because it needs integrating over the lens distribution.
 	ns = get_ns_partial(zL)
 	int_gg = np.zeros(len(lvec_less))
-	#clgg= np.zeros(len(lvec_less))
 	for li in range(0,len(lvec_less)):
-		int_gg[li] = scipy.integrate.simps( dndzl**2 * H * int_over_zph**2 * Pdelta[li, :] / (chi**2 * ns), zL)
-		#clgg[li] = scipy.integrate.simps( dndzl**2 * H * Pdelta[li, :] / (chi**2), zL)
-	
-	# Compare to CCL	
-	"""p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = pa.A_s, n_s=pa.n_s_cosmo)
-	cosmo = ccl.Cosmology(p)
-	b_of_z = bias * np.ones(len(zL))
-	gtracer = ccl.cls.ClTracerNumberCounts(cosmo = cosmo, has_rsd = False, has_magnification = False, n = dndzl, bias = b_of_z, z = zL)
-	Clgg_ccl = ccl.cls.angular_cl(cosmo, gtracer, gtracer, lvec_less)  
-	
-		
-	plt.figure()
-	plt.loglog(lvec_less, clgg, 'm+')
-	plt.hold(True)
-	plt.loglog(lvec_less, Clgg_ccl, 'g+')
-	#plt.ylim(10**(-11), 10**(-3))
-	plt.savefig('./plots/clgg_compare_CCL.pdf')
-	plt.close()"""
+		int_gg[li] = scipy.integrate.simps( dndzl**2 * H * Pdelta[li, :] / (chi**2 * ns), zL)
 			
-	np.savetxt('./txtfiles/Pggterm_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_mlim24.txt', int_gg)
+	np.savetxt('./txtfiles/Pggterm_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_fixSigC.txt', int_gg)
 	
 	return int_gg
 
@@ -487,10 +421,9 @@ def doints_Pgk():
 	
 	# Get the norm of the spectroscopic redshift dNdzs - Use this only for computing Clgk to compare with CCL
 	(zsnorm, dNdzsnorm) = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, pa.zsmin, pa.zsmax, 500)
-	normzs = scipy.integrate.simps(dNdzsnorm, zsnorm)
+	#normzs = scipy.integrate.simps(dNdzsnorm, zsnorm)
 	
 	int_in_zl = np.zeros(len(zL))
-	#int_in_zs_clgk = np.zeros(len(zL))
 	z_ph = [0] * len(zL)
 	for zi in range(0, len(zL)):
 		# Define the photo-z vector:
@@ -507,10 +440,7 @@ def doints_Pgk():
 			int_in_zs[zpi] = scipy.integrate.simps(pz*dNdzs*(com_of_z(zs) - chi[zi])/(com_of_z(zs)), zs)
 			
 		# Get the integral over photo z
-		Sigma_inv = get_SigmaC_inv(z_ph[zi], zL[zi])
-		int_in_zl[zi] = scipy.integrate.simps(int_in_zs * Sigma_inv, z_ph[zi])
-		
-		#int_in_zs_clgk[zi] = scipy.integrate.simps(dNdzs / normzs *(com_of_z(zs) - chi[zi])/(com_of_z(zs)), zs)
+		int_in_zl[zi] = scipy.integrate.simps(int_in_zs, z_ph[zi])
 		
 	# Get the normalization we want for dNdzph
 	zphnorm = np.zeros(len(zL))
@@ -526,29 +456,10 @@ def doints_Pgk():
 	
 	# Do the integral over the lens redshift distribution:
 	int_gk = np.zeros(len(lvec_less)) 
-	#clgk = np.zeros(len(lvec_less))
 	for li in range(0,len(lvec_less)):
 		int_gk[li] = H0**2 * scipy.integrate.simps(1.5 * dndzl * Omz * (H / H0)**2 * Pdelta[li, :] * int_in_zl / (chi * zphnorm), zL)
-		#clgk[li] = H0**2 * scipy.integrate.simps(1.5 * dndzl * Omz * (H / H0)**2 * Pdelta[li, :] * int_in_zs_clgk / (chi ), zL)
-		
-	# Compare with CCL
-	"""p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = pa.A_s, n_s=pa.n_s_cosmo)
-	cosmo = ccl.Cosmology(p)
-	gtracer = ccl.cls.ClTracerNumberCounts(cosmo = cosmo, has_rsd = False, has_magnification = False, n = dndzl, bias = pa.bd*np.ones(len(zL)), z = zL)
-	(zs, dNdzs_unnormed) = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, pa.zsmin, pa.zsmax, 500)
-	dNdzs = dNdzs_unnormed / normzs
-	ltracer = ccl.cls.ClTracerLensing(cosmo=cosmo,has_intrinsic_alignment=False, n=dNdzs, z= zs)
-	Clgk_ccl = ccl.cls.angular_cl(cosmo, gtracer, ltracer, lvec_less) 
 	
-	plt.figure()
-	plt.loglog(lvec_less, clgk, 'm+')
-	plt.hold(True)
-	plt.loglog(lvec_less, Clgk_ccl, 'g+')
-	#plt.ylim(10**(-11), 10**(-3))
-	plt.savefig('./plots/clgk_compare_CCL.pdf')
-	plt.close()"""
-	
-	np.savetxt('./txtfiles/Pgkterm_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_fixdNdzl.txt', int_gk**2 )
+	np.savetxt('./txtfiles/Pgkterm_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_fixSigC.txt', int_gk**2 )
 		
 	return int_gk**2
 	
@@ -599,9 +510,8 @@ def doints_Pkk():
 		for ci in range(0,len(chiLext)):
 			interp_zph = scipy.interpolate.interp1d(zph_long, zs_int[:, ci])
 			zs_int_zphvec = interp_zph(zph_shorter[zi])
-			
-			Sigma_inv = get_SigmaC_inv(zph_shorter[zi], zlens[zi])
-			zph_int[zi, ci] = scipy.integrate.simps( Sigma_inv * zs_int_zphvec, zph_shorter[zi])
+		
+			zph_int[zi, ci] = scipy.integrate.simps( zs_int_zphvec, zph_shorter[zi] )
 			
 	# Get the normalization of dNdzph
 	zph_norm = np.zeros(len(zlens))
@@ -622,25 +532,8 @@ def doints_Pkk():
 	#clkk = np.zeros(len(lvec_less))
 	for li in range(0,len(lvec_less)):
 		int_kk[li] = (9. / 4.) * H0**4 * scipy.integrate.simps( (H/H0)**4 * Omz**2 * Pof_lx[li, :] * (zl_int)**2, chiLext)
-		#clkk[li] = (9. / 4.) * H0**4 * scipy.integrate.simps( (H/H0)**4 * Omz**2 * Pof_lx[li, :] * (zs_int_clkk)**2, chiLext)
-		
-	"""# Compare with CCL
-	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = pa.A_s, n_s=pa.n_s_cosmo)
-	cosmo = ccl.Cosmology(p)
-	(zs, dNdzs_unnormed) = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, pa.zsmin, pa.zsmax, 500)
-	dNdzs = dNdzs_unnormed / norm_zs
-	ltracer = ccl.cls.ClTracerLensing(cosmo=cosmo,has_intrinsic_alignment=False, n=dNdzs, z= zs)
-	Clkk_ccl = ccl.cls.angular_cl(cosmo, ltracer, ltracer, lvec_less) 
-		
-	plt.figure()
-	plt.loglog(lvec_less, clkk, 'm+')
-	plt.hold(True)
-	plt.loglog(lvec_less, Clkk_ccl, 'g+')
-	plt.ylim(10**(-20), 10**(-7))
-	plt.savefig('./plots/clkk_compare_CCL.pdf')
-	plt.close()"""
 	
-	np.savetxt('./txtfiles/Pkkterm_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_fixdNdzl.txt', int_kk)
+	np.savetxt('./txtfiles/Pkkterm_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_fixSigC.txt', int_kk)
 	
 	return int_kk
 	
@@ -663,16 +556,14 @@ def doints_PggPkk():
 	
 	# Get the norm of the spectroscopic redshift source distribution - this is used only for getting clkk and clgg to compare with CCL, for the actual answer we normalize over dNdzph.
 	(zs_norm, dNdzs_norm) = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, pa.zsmin, pa.zsmax, 1000)
-	norm_zs = scipy.integrate.simps(dNdzs_norm, zs_norm)
+	#norm_zs = scipy.integrate.simps(dNdzs_norm, zs_norm)
 	
 	# First, do the first integral in spectroscopic redshift over chiext->inf. Use a zph vector that is the longest possible necessary one for this to avoid having to keep track of three things.
 	zph_long = np.linspace(pa.zLmin, pa.zphmax, 500)
 	zs_int = np.zeros((len(zph_long), len(chiLext)))
-	#zs_int_clkk = np.zeros(len(chiLext))
 	for ci in range(0,len(chiLext)):
 		(zs, dNdzs) = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, zLext[ci], pa.zsmax, 1000)
 		chis = com_of_z(zs)
-		#zs_int_clkk[ci] = scipy.integrate.simps(dNdzs/norm_zs * (chis - chiLext[ci]) / chis, zs)
 		for zpi in range(0,len(zph_long)):
 			pz = setup.p_z(zph_long[zpi], zs, pa.pzpar_fid, pa.pztype)
 			zs_int[zpi, ci] = scipy.integrate.simps(pz * dNdzs * (chis - chiLext[ci]) / chis, zs)
@@ -691,13 +582,11 @@ def doints_PggPkk():
 			exit()
 			
 		zph_shorter[zi] = np.linspace(zphmin, zphmax, 1000)
-			
-		Sigma_inv = get_SigmaC_inv(zph_shorter[zi], zlens[zi])
 		for ci in range(0,len(chiLext)):
 			interp_zph = scipy.interpolate.interp1d(zph_long, zs_int[:, ci])
 			zs_int_zphvec = interp_zph(zph_shorter[zi])
 			
-			zph_int[zi, ci] = scipy.integrate.simps( Sigma_inv * zs_int_zphvec, zph_shorter[zi])
+			zph_int[zi, ci] = scipy.integrate.simps( zs_int_zphvec, zph_shorter[zi])
 	
 	# Get the normalization of dNdzph that we need
 	(zs, dNdzs) = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, pa.zsmin, pa.zsmax, 1000)
@@ -715,63 +604,23 @@ def doints_PggPkk():
 		for zi in range(0,len(zlens)):
 			chiLext_int[li, zi] = 9./4. * H0**4 * scipy.integrate.simps( (H/H0)**4 * Omz**2 * Pof_lx_ext[li, :] * zph_int[zi, :]**2 / (zph_norm[zi])**2, chiLext)
 	
-	# Finally, do the integral over zl		
-	# Now do the first integral in zl
 	int_kkgg = np.zeros(len(lvec_less))
-	#clgg = np.zeros(len(lvec_less))
-	#clkk = np.zeros(len(lvec_less))
 	for li in range(0,len(lvec_less)):
 		int_kkgg[li] = scipy.integrate.simps(dndzl**2 * Hlens * (1. + zlens) * chiLext_int[li, :] * Pof_lx_lens[li, :] / chilens**2, zlens)
-		#clgg[li] = scipy.integrate.simps(dndzl**2 * Hlens * (1. + zlens) * Pof_lx_lens[li, :] / chilens**2, zlens)
-		#clkk[li] = 9./4. * H0**4 * scipy.integrate.simps( (H/H0)**4 * Omz**2 * Pof_lx_ext[li, :] * zs_int_clkk**2, chiLext)
 	
-	np.savetxt(folderpath+outputfolder+'/PggPkkterm_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_fixdNdzl.txt', int_kkgg)
-	
-	"""# Compare to CCL	
-	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = pa.A_s, n_s=pa.n_s_cosmo)
-	cosmo = ccl.Cosmology(p)
-	gtracer = ccl.cls.ClTracerNumberCounts(cosmo = cosmo, has_rsd = False, has_magnification = False, n = dndzl, bias = pa.bd * np.ones(len(zlens)), z = zlens)
-	Clgg_ccl = ccl.cls.angular_cl(cosmo, gtracer, gtracer, lvec_less)  
-	dndz = dNdzs_norm / norm_zs
-	ltracer = ccl.cls.ClTracerLensing(cosmo=cosmo,has_intrinsic_alignment=False, n=dndz, z= zs_norm)
-	Clkk_ccl = ccl.cls.angular_cl(cosmo, ltracer, ltracer, lvec_less) 
-	
-		
-	plt.figure()
-	plt.loglog(lvec_less, clgg, 'm+')
-	plt.hold(True)
-	plt.loglog(lvec_less, Clgg_ccl, 'g+')
-	#plt.ylim(10**(-11), 10**(-3))
-	plt.savefig('./plots/clgg_compare_CCL_ggkk.pdf')
-	plt.close()
-	
-	plt.figure()
-	plt.loglog(lvec_less, clkk, 'm+')
-	plt.hold(True)
-	plt.loglog(lvec_less, Clkk_ccl, 'g+')
-	#plt.ylim(10**(-11), 10**(-3))
-	plt.savefig('./plots/clkk_compare_CCL_ggkk.pdf')
-	plt.close()
-	
-	
-	plt.figure()
-	plt.loglog(lvec_less, int_kkgg)
-	plt.savefig('./plots/int_kkgg_extl.pdf')
-	plt.close()"""
+	np.savetxt(folderpath+outputfolder+'/PggPkkterm_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_fixSigC.txt', int_kkgg)
 	
 	return int_kkgg
+
+def SigCsq_avg():
+	""" Get Sigma C squared, averaged."""
 	
-def doconstint():
-	""" This function does the integrals for the constant term """
-	
-	# Define redshift vector for lenses
 	zLvec = np.linspace(pa.zLmin, pa.zLmax, 1000)
 	dndzl = setup.get_dNdzL(zLvec, SURVEY)
 	
-	# Get integral in source (photometric) redshift 
 	chiSans = np.zeros(len(zLvec))
 	for zi in range(0,len(zLvec)):
-	
+		
 		# Get zph, dNdzph: 
 		if (SAMPLE=='A'):
 			(z_ph, Nofzph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, zLvec[zi], zLvec[zi] + pa.delta_z, zLvec[zi], zLvec[zi] + pa.delta_z, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
@@ -782,31 +631,51 @@ def doconstint():
 		else:
 			print "We do not have support for that sample. Exiting."
 			exit()
-	
+		
 		Sigma_inv = get_SigmaC_inv(z_ph, zLvec[zi])
-		chiSans[zi] = scipy.integrate.simps(Sigma_inv * Nofzph, z_ph)
+		chiSans[zi] = scipy.integrate.simps(Sigma_inv**2 * Nofzph, z_ph)
+		
+	chiSint_zl = scipy.integrate.simps(chiSans * dndzl, zLvec)
+	
+	save_SigC2 = [1./chiSint_zl]
+	np.savetxt(folderpath+outputfolder+'/SigCsqterm_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_fixSigC.txt', save_SigC2)
+	
+	return save_SigC2
+	
+def doconstint():
+	""" This function does the integrals for the constant term """
+	
+	# Define redshift vector for lenses
+	zLvec = np.linspace(pa.zLmin, pa.zLmax, 1000)
+	dndzl = setup.get_dNdzL(zLvec, SURVEY)
 	
 	# Integrate answer over dndzl, including over ns for each zl. This squared will be the value we need (because the integrals in primed and unprimed quantities are exactly symmetric).
 	ns = get_ns_partial(zLvec)
-	
-	chiSint_zl = scipy.integrate.simps(chiSans * dndzl, zLvec)**2
-	
 	ns_avg = scipy.integrate.simps(ns * dndzl, zLvec)
 	
-	save=[0]
-	save[0]= gam ** 2 / nl  * chiSint_zl / ns_avg
+	if (SAMPLE=='A'):
+		gam = pa.e_rms_Bl_a
+	elif (SAMPLE =='B'):
+		gam = pa. e_rms_Bl_b
+	else:
+		print "We do not have support for that sample. Exiting."
+		exit()
 	
-	np.savetxt('./txtfiles/const_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_mlim24.txt', save)
+	save=[0]
+	save[0]= gam ** 2 / nl / ns_avg 
+	
+	np.savetxt('./txtfiles/const_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_fixSigC.txt', save)
 	
 	return
 	
 def get_lint():
 	""" Gets the integral over ell at each R and R' """
-	Pgkterm		=	np.loadtxt('./txtfiles/Pgkterm_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'.txt')
-	PggPkkterm	=	np.loadtxt('./txtfiles/PggPkkterm_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'.txt')
-	Pkkterm		= 	np.loadtxt('./txtfiles/Pkkterm_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'.txt')
-	Pggterm		=	np.loadtxt('./txtfiles/Pggterm_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_mlim24.txt')
-	constterm	=	np.loadtxt('./txtfiles/const_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_mlim24.txt')
+	Pgkterm		=	np.loadtxt('./txtfiles/Pgkterm_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_fixSigC.txt')
+	PggPkkterm	=	np.loadtxt('./txtfiles/PggPkkterm_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_fixSigC.txt')
+	Pkkterm		= 	np.loadtxt('./txtfiles/Pkkterm_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_fixSigC.txt')
+	Pggterm		=	np.loadtxt('./txtfiles/Pggterm_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_fixSigC.txt')
+	constterm	=	np.loadtxt('./txtfiles/const_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_fixSigC.txt')
+	SigCterm 	=	np.loadtxt('./txtfiles/SigCsqterm_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_fixSigC.txt')
 	
 	if (SAMPLE=='A'):
 		gam = pa.e_rms_Bl_a
@@ -836,23 +705,23 @@ def get_lint():
 	
 	# plot each thing to see what is dominating:
 	plt.figure()
-	plt.loglog(lvec_less, Pgkterm, 'b+', label='$\propto (C_{g \kappa})^2$')
+	plt.loglog(lvec_less, SigCterm * Pgkterm, 'b+', label='$\propto (C_{g \kappa})^2$')
 	plt.hold(True)
-	plt.loglog(lvec_less, PggPkkterm, 'r+', label='$\propto (C_{gg} C_{\kappa \kappa})$')
+	plt.loglog(lvec_less, SigCterm * PggPkkterm, 'r+', label='$\propto (C_{gg} C_{\kappa \kappa})$')
 	plt.hold(True)
-	plt.loglog(lvec_less, Pkkterm / nl, 'm+', label='$\propto C_{\kappa \kappa} / n_l$')
+	plt.loglog(lvec_less, SigCterm * Pkkterm / nl, 'm+', label='$\propto C_{\kappa \kappa} / n_l$')
 	plt.hold(True)
-	plt.loglog(lvec_less, Pggterm*gam**2 , 'g+', label='$\propto C_{gg} \gamma^2 / n_s$')
+	plt.loglog(lvec_less, SigCterm * Pggterm*gam**2 , 'g+', label='$\propto C_{gg} \gamma^2 / n_s$')
 	plt.hold(True)
-	plt.loglog(lvec_less, constterm * np.ones(len(lvec_less)), 'k+', label='$\gamma^2 / (n_l n_s)$')
+	plt.loglog(lvec_less, SigCterm * constterm * np.ones(len(lvec_less)), 'k+', label='$\gamma^2 / (n_l n_s)$')
 	plt.hold(True)
-	plt.loglog(lvec_less, ( Pgkterm + PggPkkterm + Pkkterm/nl + Pggterm*gam**2 + constterm), 'y+', label='tot')
-	plt.ylim(10**(-25), 10**(-16))
+	plt.loglog(lvec_less, SigCterm * ( Pgkterm + PggPkkterm + Pkkterm/nl + Pggterm*gam**2 + constterm), 'y+', label='tot')
+	#plt.ylim(10**(-22), 10**(-14))
 	plt.ylabel('Contributions to covariance')
 	plt.xlabel('$l$')
 	plt.title('Survey='+SURVEY+', sample='+SAMPLE)
 	plt.legend()
-	plt.savefig('./plots/compareterms_DeltaSigcov_extl_survey='+SURVEY+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'.pdf')
+	plt.savefig('./plots/compareterms_DeltaSigcov_extl_survey='+SURVEY+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_fixSigC.pdf')
 	plt.close()
 	
 	exit()
@@ -954,7 +823,7 @@ else:
 	exit()
 
 # Cosmological parameters from parameters file
-Nnu	= pa.Nnu; HH0 =	pa.HH0; OmegaR = pa.OmR; OmegaN	= pa.OmN; OmegaB =	pa.OmB; OmegaM = pa.OmC; OmegaK	= 0.0; h =	HH0/100.; 
+Nnu	= pa.Nnu; HH0 =	pa.HH0; OmegaR = pa.OmR; OmegaN	= pa.OmN; OmegaB =	pa.OmB; OmegaM = pa.OmC; OmegaK	= 0.0; h =	HH0/100.
 OmegaL		=	1.-OmegaM-OmegaB-OmegaR-OmegaN
 
 # Constants from parameter file 
@@ -1004,19 +873,19 @@ chiLmean = com_of_z(pa.zeff)
 
 # Do the integrals on each term up to the l integral (so chiS, bchiS, chiL, bchiL)
 
-doints_Pgg()
-#print "Done with Pgg integrals. Now do Pgk:"
-#Pgkints = doints_Pgk() 
-#print "Done with Pgk integrals. Now do Pkk:"
-#Pkkints = doints_Pkk() 
-#print "Done with Pkk integrals. Now do constant:"
+"""doints_Pgg()
+print "Done with Pgg integrals. Now do Pgk:"
+Pgkints = doints_Pgk() 
+print "Done with Pgk integrals. Now do Pkk:"
+Pkkints = doints_Pkk() 
+print "Done with Pkk integrals. Now do constant:"""
 constterm = doconstint() 
-#print "Done with constant integrals. Now do PggPkk:"
-#PggPkkints = doints_PggPkk()
-#print "Done with PggPkk integrals. Now getting wbar:"
-#wbar = getwbar()
-#print "wbar=", wbar
-#print "Done with getting wbar. Now doing integrals over R:"
+print "Done with constant integrals. Now do PggPkk:"
+PggPkkints = doints_PggPkk()
+print "Done with PggPkk integrals. Getting SigmaC^2 avg"
+SigC2_avg = SigCsq_avg()
+print "Done getting SigC term."
+
 
 # First, get the l integral in terms of R and R'. This is the long part, and needs only to be done once instead of over and over for each bin.
 lint = get_lint()

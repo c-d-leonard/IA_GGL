@@ -1,6 +1,6 @@
 # This is a script which forecasts constraints on IA using multiple shape measurement methods.
 
-SURVEY = 'SDSS'  # Set the survey here; this tells everything which parameter file to import.
+SURVEY = 'LSST_DESI'  # Set the survey here; this tells everything which parameter file to import.
 print "SURVEY=", SURVEY
 
 import numpy as np
@@ -34,6 +34,7 @@ def sum_weights(photoz_sample, specz_cut, color_cut, dNdz_par, pz_par):
 		
 		
 	zmaxclose = z_of_com(chiL + pa.close_cut)
+
 	
 	# Get norm, required for the color cut case:
 	zph_norm = np.linspace(pa.zphmin, pa.zphmax, 1000)
@@ -121,18 +122,15 @@ def sum_weights(photoz_sample, specz_cut, color_cut, dNdz_par, pz_par):
 
 def get_ns_partial():
 	""" Gets the fractional value of ns appropriate for this subsample."""
-	
 	# To do this, just get the fraction of dNdzph within the sample:
 	frac = sum_weights('close', 'nocut', 'all', pa.dNdzpar_fid, pa.pzpar_fid) / sum_weights('full', 'nocut', 'all', pa.dNdzpar_fid, pa.pzpar_fid)
-	
-	#print "frac=", frac
 	
 	return frac * ns_tot
 
 def get_fred(photoz_samp):
 	""" This function returns the zl- and zph- averaged red fraction for the given sample."""
 	
-	zL = np.linspace(pa.zLmin, pa.zLmax, 200)
+	zL = np.linspace(pa.zLmin, pa.zLmax, 100)
 	
 	dndzl = setup.get_dNdzL(zL, SURVEY)
 	chiL = com_of_z(zL)
@@ -149,13 +147,17 @@ def get_fred(photoz_samp):
 		
 	zmaxclose = z_of_com(chiL + pa.close_cut)
 	
-	(zs, dNdzs) = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, 0.02, pa.zsmax, 500, SURVEY) # 0.02 is to stay within the range of interpolation for e- and k- corrections - this is so far below the photoz range it shouldn't matter much.
+	#(zs, dNdzs) = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, 0.02, pa.zsmax, 500, SURVEY) # 0.02 is to stay within the range of interpolation for e- and k- corrections - this is so far below the photoz range it shouldn't matter much.
 	
-	fred_of_z = setup.get_fred_ofz(zs, SURVEY)
+	#fred_of_z = setup.get_fred_ofz(zs, SURVEY)
 	
 	ans2 = np.zeros(len(zL))
 	norm = np.zeros(len(zL))
 	for zi in range(0, len(zL)):
+		print "zi=", zi
+		
+		(zs, dNdzs) = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, zminclose[zi], zmaxclose[zi], 500, SURVEY)
+		fred_of_z = setup.get_fred_ofz(zs, SURVEY)
 		
 		if (photoz_samp=='close'):
 			
@@ -195,27 +197,24 @@ def gamma_fid(rp):
 		
 	elif (SURVEY=='LSST_DESI'):
 		
-		wgg1hfile = './txtfiles/wgg_1h_survey=SDSS_LSSTall.txt'
-		wgg2hfile = './txtfiles/wgg_2h_survey=SDSS_kpts='+str(pa.kpts_wgg)+'_LSSTall.txt'
-		
-		#wgg1hfile = './txtfiles/wgg_1h_survey='+pa.survey+'_SDSSfile.txt'
-		#wgg2hfile = './txtfiles/wgg_2h_survey='+pa.survey+'_kpts='+str(pa.kpts_wgg)+'_SDSSfile.txt'
+		wgg1hfile = './txtfiles/wgg_1h_survey='+pa.survey+'.txt'
+		wgg2hfile = './txtfiles/wgg_2h_survey='+pa.survey+'_kpts='+str(pa.kpts_wgg)+'.txt'
 		wgg_rp = ws.wgg_full(rp, pa.fsky, pa.bd, pa.bs, wgg1hfile, wgg2hfile, SURVEY)
 		
-		
-		wgp1hfile = './txtfiles/wgp_1h_survey=SDSS_rlim='+str(pa.mlim)+'_LSSTall.txt'
-		wgp2hfile = './txtfiles/wgp_2hsurvey=SDSS_rlim='+str(pa.mlim)+'_LSSTall.txt'
-		#wgp1hfile = './txtfiles/wgp_1h_survey='+pa.survey+'_rlim='+str(pa.mlim)+'_SDSSfile.txt'
-		#wgp2hfile = './txtfiles/wgp_2hsurvey='+pa.survey+'_rlim='+str(pa.mlim)+'_SDSSfile.txt'
+		wgp1hfile = './txtfiles/wgp_1h_survey='+pa.survey+'_rlim='+str(pa.mlim)+'.txt'
+		wgp2hfile = './txtfiles/wgp_2hsurvey='+pa.survey+'_rlim='+str(pa.mlim)+'.txt'
 		wgp_rp = ws.wgp_full(rp, pa.bd, pa.q11, pa.q12, pa.q13, pa.q21, pa.q22, pa.q23, pa.q31, pa.q32, pa.q33, wgp1hfile, wgp2hfile, SURVEY)
 	else:
 		print "We don't have support for that survey yet. Exiting."
 		exit()
 	
 	# Get the red fraction for the source sample
-	f_red = get_fred('close')
-	
-	print "fred=", f_red
+	#f_red = get_fred('close')
+	#print "f_red=", f_red
+	#fred_save = [0]
+	#fred_save[0] = f_red
+	#np.savetxt('./txtfiles/f_red/f_red_shapes_'+SURVEY+'_deltaz='+str(pa.delta_z)+'_rlim='+str(pa.mlim)+'.txt', fred_save)
+	f_red = np.loadtxt('./txtfiles/f_red/f_red_shapes_'+SURVEY+'_deltaz='+str(pa.delta_z)+'_rlim='+str(pa.mlim)+'.txt')
 	
 	gammaIA = (f_red * wgp_rp) / (wgg_rp + 2. * pa.close_cut) 
 	
@@ -273,8 +272,6 @@ def shapenoise_cov(e_rms, rp, dNdzpar, pzpar):
 	
 	cov = e_rms**2 / ( pa.n_l * pa.Area_l * bin_areas * ns_sq)
 	
-	print "cov=", cov
-	
 	return cov
 
 def get_cov_btw_methods(cov_a_, cov_b_, covperc):
@@ -296,33 +293,24 @@ def subtract_var(var_1, var_2, covar):
 def get_boost(rp_cents_, sample):
 	""" Returns the boost factor in radial bins. propfact is a tunable parameter giving the proportionality constant by which boost goes like projected correlation function (= value at 1 Mpc/h). """
 	
-	propfact = np.loadtxt('./txtfiles/boosts/Boost_'+str(sample)+'_survey='+str(SURVEY)+'_deltaz='+str(pa.delta_z)+'_LSSTdNdz_fixdN.txt')
+	propfact = np.loadtxt('./txtfiles/boosts/Boost_'+str(sample)+'_survey='+str(SURVEY)+'_deltaz='+str(pa.delta_z)+'.txt')
 
 	Boost = propfact *(rp_cents_)**(-0.8) + np.ones((len(rp_cents_)))# Empirical power law fit to the boost, derived from the fact that the boost goes like projected correlation function.
 
 	return Boost
 
-def N_corr(boost, dNdzpar, pzpar):
-	""" Computes the correction factor which accounts for the fact that some of the galaxies in the photo-z defined source sample are actually higher-z and therefore not expected to be affected by IA. """
-	
-	sumW_insamp = sum_weights('close', 'close', 'all', dNdzpar, pzpar)
-	sumW_intotal = sum_weights('close', 'nocut', 'all', dNdzpar, pzpar)
-	
-	Corr_fac = 1. - (1. / boost) * ( 1. - (sumW_insamp / sumW_intotal)) # fraction of the galaxies in the source sample which have spec-z in the photo-z range of interest.
-	
-	return Corr_fac
+def get_F(rp_bins_, dNdz_par, pz_par):
+	""" Returns F (the weighted fraction of lens-source pairs from the smooth dNdz which are contributing to IA) """
 
-def N_corr_err(boost, dNdzpar, pzpar):
-	""" Gets the error on N_corr from systemtic error on the boost. We have checked the statistical error on the boost is negligible. """
-	
-	sumW_insamp = sum_weights('close', 'close', 'all', dNdzpar, pzpar)
-	sumW_intotal = sum_weights('close', 'nocut', 'all', dNdzpar, pzpar)
-	
-	boost_err_sys = pa.boost_sys
-	
-	sig_Ncorr = (boost_err_sys / boost**2) * np.sqrt(1. - (sumW_insamp/ sumW_intotal))
+	# Sum over `rand-close'
+	numerator = sum_weights('close', 'close',  'all', dNdz_par, pz_par)
 
-	return sig_Ncorr
+	#Sum over all `rand'
+	denominator = sum_weights('close', 'nocut',  'all', dNdz_par, pz_par)
+
+	F = np.asarray(numerator) / np.asarray(denominator)
+
+	return F
 	
 def get_combined_covariance(Clggterm, corr):
 	""" Get the covariance matrix Cov(gammat(r) - gammat'(r), gamma(r') - gammat'(r'))"""
@@ -341,23 +329,24 @@ def get_combined_covariance(Clggterm, corr):
 	
 	return cov_comb
 
-def get_gammaIA_cov(rp_cents_, rp_bins_, gIA_fid, boost, Ncorr_fid, Ncorr_err, covperc, a_con, fudge_Ncorr):
+def get_gammaIA_cov(rp_cents_, rp_bins_, gIA_fid, covperc, a_con, fudge_F):
 	""" Takes the covariance matrices of the constituent elements of gamma_{IA} and combines them to get the covariance matrix of gamma_{IA} in projected radial bins."""
 	
 	# Import Clgg-related covariance terms from separate Fourier-space script
-	#Clggterm_1 = np.loadtxt('./txtfiles/covmats/cov_gamt_extl_'+SURVEY+'_method=same_rms_rpts2000_lpts90000_Clggterm_fixns.txt')
+	Clggterm_1 = np.loadtxt('./txtfiles/covmats/cov_gamt_extl_'+SURVEY+'_method=same_rms_rpts2000_lpts90000_Clggterm_fixns.txt')
 	
 	# Get the combined covariance Cov(gammat(r) - gammat'(r), gamma(r') - gammat'(r')):
-	#cov_gam_diff = get_combined_covariance(Clggterm_1, covperc)
 	
-	# Uncomment this section to check covariance matrix against the version calculated in real space (shape-noise only)
+	cov_gam_diff = get_combined_covariance(Clggterm_1, covperc)
+	
+	"""# Uncomment this section to check covariance matrix against the version calculated in real space (shape-noise only)
 	# This gets the shape-noise from real-space methods for comparison - this matrix is diagonal by definition so it is output only as a vector of the diagonal elements
 	shear_cov_1 = shapenoise_cov(pa.e_rms_a, rp_bins_, pa.dNdzpar_fid, pa.pzpar_fid) 
 	shear_cov_2 = shear_cov_1
 	shear_covar = get_cov_btw_methods(shear_cov_1, shear_cov_2, covperc)
 	cov_old=np.zeros((pa.N_bins, pa.N_bins))
 	for i in range(0, pa.N_bins):
-		cov_old[i,i] = subtract_var(shear_cov_1[i], shear_cov_2[i], shear_covar[i])
+		cov_old[i,i] = subtract_var(shear_cov_1[i], shear_cov_2[i], shear_covar[i])"""
 	
 	"""# Compare real-space shape noise only answer with fourier space answer (including CV)
 	plt.figure()
@@ -371,43 +360,40 @@ def get_gammaIA_cov(rp_cents_, rp_bins_, gIA_fid, boost, Ncorr_fid, Ncorr_err, c
 	plt.savefig('./plots/check_gammat_extl_'+SURVEY+'.pdf')
 	plt.close()"""
 	
-	cov_gam_diff = cov_old
+	#cov_gam_diff = cov_old
 	
-	#print "cov gam=", np.sqrt(np.diag(cov_gam_diff))
-	
-
-	# Get statistical covariance matrix for (1-a) gamma_IA (with factors of Ncorr)
+	# Get statistical covariance matrix for (1-a) gamma_IA 
 	cov_mat_stat = np.zeros((pa.N_bins, pa.N_bins))
 	for i in range(0,pa.N_bins):
 		for j in range(0,pa.N_bins):
-			cov_mat_stat[i,j] = cov_gam_diff[i,j] / Ncorr_fid[i] / Ncorr_fid[j]  # f_red needs to be incorporated here. 
-			
-	#print "cov stat=", np.sqrt(np.diag(cov_mat_stat))
+			cov_mat_stat[i,j] = cov_gam_diff[i,j] /(boost[i] -1. +F_fid) / (boost[j]-1. +F_fid) 
 	
 	# Get the covariance matrix terms due to the two sources of systematic error, redshifts and boost.
 	# First get diagonal elements
-	cov_mat_sysz_Ncorr = np.diag(np.zeros(pa.N_bins))
+	cov_mat_sysz_F = np.diag(np.zeros(pa.N_bins))
 	cov_mat_sysB = np.diag(np.zeros(pa.N_bins))
 	for i in range(0,pa.N_bins):	
-		cov_mat_sysz_Ncorr[i,i] = (1.-a_con)**2 * gIA_fid[i]**2 * ( (fudge_Ncorr)**2 )
-		cov_mat_sysB[i,i] = (1.-a_con)**2 * gIA_fid[i]**2 * ( Ncorr_err[i]**2 / Ncorr_fid[i]**2 )
+		cov_mat_sysz_F[i,i] = (1.-a_con)**2 * gIA_fid[i]**2 * ( F_fid**2 * (fudge_F)**2 ) / (boost[i]-1. + F_fid)**2
+		cov_mat_sysB[i,i] = (1.-a_con)**2 * gIA_fid[i]**2 * ( pa.boost_sys**2 / (boost[i]-1. + F_fid)**2)
 		
 	# Get off-diagonal elements by assuming full correlation for both	
 	for i in range(0,len((rp_cents_))):	
 		for j in range(0,len((rp_cents_))):
 			if (i != j):
-				cov_mat_sysz_Ncorr[i,j] = np.sqrt(cov_mat_sysz_Ncorr[i,i]) * np.sqrt(cov_mat_sysz_Ncorr[j,j])
+				cov_mat_sysz_F[i,j] = np.sqrt(cov_mat_sysz_F[i,i]) * np.sqrt(cov_mat_sysz_F[j,j])
 				cov_mat_sysB[i,j] = np.sqrt(cov_mat_sysB[i,i]) * np.sqrt(cov_mat_sysB[j,j])
 	
 	# Get the covariance matrix for the case of stat + sys due to z
-	cov_mat_stat_sysz = cov_mat_stat + cov_mat_sysz_Ncorr
+	cov_mat_stat_sysz = cov_mat_stat + cov_mat_sysz_F
 	# And the covariance matrix for the case of stat + sys due to boost
 	cov_mat_stat_sysB = cov_mat_stat + cov_mat_sysB
 	
 	# Output the per-bin StoN to compare with other methods for one choice of a and rho
-	#SN_stat_sysB = gIA_fid / (np.sqrt(np.diag(cov_mat_stat_sysB)))
+	SN_stat_sysB = gIA_fid * (1. - a_con) / (np.sqrt(np.diag(cov_mat_stat_sysB)))
+	
+	#print "Sn stat sysb=", SN_stat_sysB
 	#save_SN = np.column_stack((rp_cents_, SN_stat_sysB))
-	#np.savetxt('./txtfiles/StoN_sysB_stat_shapes_'+SURVEY+'_rlim='+str(pa.mlim)+'_a0pt8_rho0pt2.txt', save_SN)
+	#np.savetxt('./txtfiles/StoN/StoN_sysB_stat_shapes_'+SURVEY+'_rlim='+str(pa.mlim)+'_a0pt8_rho0pt2.txt', save_SN)
 	#exit()
 	
 	# Compute associated signal to noise quantities
@@ -485,17 +471,12 @@ z_of_com, com_of_z 	= 	setup.z_interpof_com(SURVEY)
 
 ns = get_ns_partial()
 
-print "ns=", ns
-exit()
-
 # Get the fiducial value of gamma_IA in each projected radial bin 
 fid_gIA		=	gamma_fid(rp_cents)
 
 # Get the values of Ncorr, the boost, and the error on Ncorr - these take some time and don't depend on the stuff we loop over so just do it once.
-boost_fid = get_boost(rp_cents, 'close')
-Ncorr_fid = N_corr(boost_fid, pa.dNdzpar_fid, pa.pzpar_fid)
-
-Ncorr_err = N_corr_err(boost_fid, pa.dNdzpar_fid, pa.pzpar_fid)
+boost = get_boost(rp_cents, 'close')
+F_fid = get_F(rp_bins, pa.dNdzpar_fid, pa.pzpar_fid)
 
 # Get the desired S-to_N ratios for the case of stat error plus sys error from the boost (sys error due to z subdominant), for the case of sys error due to z, and for the case of statistical only.
 StoNsquared_stat_sysB = np.zeros((len(pa.a_con), len(pa.cov_perc)))
@@ -505,30 +486,34 @@ StoNsquared_stat= np.zeros((len(pa.a_con), len(pa.cov_perc)))
 for i in range(0,len(pa.a_con)):
 	for j in range(0, len(pa.cov_perc)):
 		print "Running, a #"+str(i+1)+" rho #"+str(j+1)
-		(StoNsq_stat_sysB, nonsense, StoNsq_stat)	=	get_gammaIA_cov(rp_cents, rp_bins, fid_gIA, boost_fid, Ncorr_fid, Ncorr_err, pa.cov_perc[j], pa.a_con[i], 0.01)
+		(StoNsq_stat_sysB, nonsense, StoNsq_stat)	=	get_gammaIA_cov(rp_cents, rp_bins, fid_gIA, pa.cov_perc[j], pa.a_con[i], 0.01)
 		StoNsquared_stat[i,j] = StoNsq_stat
 		StoNsquared_stat_sysB[i,j] = StoNsq_stat_sysB
 		
+print "ston=", StoNsq_stat_sysB
+
+exit()
 		
-"""# The level of StoN due to sys errors related to z is independent of rho, don't loop over this, just pass a dummy value		
+		
+# The level of StoN due to sys errors related to z is independent of rho, don't loop over this, just pass a dummy value		
 StoNsquared_sysz = np.zeros((len(pa.a_con), len(pa.fudge_frac_level)))		
 for i in range(0,len(pa.a_con)):
 	for k in range(0,len(pa.fudge_frac_level)):	
 		print "Running, a #"+str(i+1)+" frac sys err level #" + str(k+1)
-		(nonsense, StoNsq_sysz, nonsense)	=	get_gammaIA_cov(rp_cents, rp_bins, fid_gIA, boost_fid, Ncorr_fid, Ncorr_err, 0.1, pa.a_con[i], pa.fudge_frac_level[k])
+		(nonsense, StoNsq_sysz, nonsense)	=	get_gammaIA_cov(rp_cents, rp_bins, fid_gIA, 0.1, pa.a_con[i], pa.fudge_frac_level[k])
 		StoNsquared_sysz[i,k] = StoNsq_sysz
-		print "frac level=", pa.fudge_frac_level[k],"StoN=", 1./np.sqrt(StoNsq_sysz)"""
+		print "frac level=", pa.fudge_frac_level[k],"StoN=", 1./np.sqrt(StoNsq_sysz)
 
-print StoNsquared_stat
+print np.sqrt(StoNsquared_stat_sysB)
 
 if (SURVEY=='SDSS'):		
-	np.savetxt('./txtfiles/StoNsq_stat_shapes_survey='+SURVEY+'_rlim='+str(pa.mlim)+'_SNonly_LSST_dN_pz_SN_bd_fixdN.txt', StoNsquared_stat)
-	np.savetxt('./txtfiles/StoNsq_stat_sysB_shapes_survey='+SURVEY+'_rlim='+str(pa.mlim)+'_SNonly_LSST_dN_pz_SN_bd_fixdN.txt', StoNsquared_stat_sysB)
-	#np.savetxt('./txtfiles/StoNsq_sysz_shapes_survey='+SURVEY+'_rlim='+str(pa.mlim)+'_SNonly.txt', StoNsquared_sysz)
+	np.savetxt('./txtfiles/StoN/StoNsq_stat_shapes_survey='+SURVEY+'_rlim='+str(pa.mlim)+'_fixB_SNonly.txt', StoNsquared_stat)
+	np.savetxt('./txtfiles/StoN/StoNsq_stat_sysB_shapes_survey='+SURVEY+'_rlim='+str(pa.mlim)+'_fixB_SNonly.txt', StoNsquared_stat_sysB)
+	np.savetxt('./txtfiles/StoN/StoNsq_sysz_shapes_survey='+SURVEY+'_rlim='+str(pa.mlim)+'_fixB_SNonly.txt', StoNsquared_sysz)
 elif (SURVEY=='LSST_DESI'):
-	np.savetxt('./txtfiles/StoNsq_stat_shapes_survey='+SURVEY+'_rlim='+str(pa.mlim)+'_SNonly_SDSSfile_fidLSSTall.txt', StoNsquared_stat)
-	np.savetxt('./txtfiles/StoNsq_stat_sysB_shapes_survey='+SURVEY+'_rlim='+str(pa.mlim)+'_SNonly_SDSSfile_fidLSSTall.txt', StoNsquared_stat_sysB)
-	#np.savetxt('./txtfiles/StoNsq_sysz_shapes_survey='+SURVEY+'_rlim='+str(pa.mlim)+'_SNonly.txt', StoNsquared_sysz)
+	np.savetxt('./txtfiles/StoN/StoNsq_stat_shapes_survey='+SURVEY+'_rlim='+str(pa.mlim)+'_fixStoN.txt', StoNsquared_stat)
+	np.savetxt('./txtfiles/StoN/StoNsq_stat_sysB_shapes_survey='+SURVEY+'_rlim='+str(pa.mlim)+'_fixStoN.txt', StoNsquared_stat_sysB)
+	np.savetxt('./txtfiles/StoN/StoNsq_sysz_shapes_survey='+SURVEY+'_rlim='+str(pa.mlim)+'_fixStoN.txt', StoNsquared_sysz)
 else:
 	print "We don't have support for that survey yet. Exiting."
 	exit()

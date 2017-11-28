@@ -3,20 +3,20 @@
 import numpy as np
 
 run_quants 		=	False # For the Blazek case, whether you want to recompute F, cz, and SigIA
-survey			=	'SDSS'
+survey			=	'LSST_DESI'
 
 # Parameters associated with the sample / shape noise calcuation 
-e_rms 			= 	0.21
+e_rms 			= 	0.26 #0.21
 e_rms_Bl_a 		= 	e_rms # rms ellipticity of sample a, Blazek method   # from Reyes et al. 2012 (reports in terms of distortion = 0.36)
 e_rms_Bl_b		=	e_rms # rms ellipticity of sample b, Blazek method
 e_rms_Bl_full	=	e_rms # rms ellipticity of the full sample, Blazek method
 e_rms_a 		= 	e_rms # rms ellipticity of sample measured with method a, shapes method  
 e_rms_b 		= 	e_rms # rms ellipticity of sample measured with method b, shapes method
-n_l 			= 	8.7 # The number of lenses in the lens sample per square DEGREE
-Area_l 			=	7131 # Area associated with the lens sample in square DEGREES
+n_l 			= 	300. #8.7 # The number of lenses in the lens sample per square DEGREE
+Area_l 			=	3000. #7131 # Area associated with the lens sample in square DEGREES
 fsky			=   Area_l / 41253. # Assumes the lens area is the limiting factor
-n_s 			=	1. # The EFFECTIVE number density of sources in the sample per square ARCMINUTE - 1.2 is unweighted. This number is from Rachel in an email June 7.
-S_to_N 			= 	15. # The per-galaxy signal to noise- necessary for estimating sigma_e
+n_s 			=	26. #1. # The EFFECTIVE number density of sources in the sample per square ARCMINUTE - 1.2 is unweighted. This number is from Rachel in an email June 7.
+S_to_N 			= 	11.8 #15 # The per-galaxy signal to noise- necessary for estimating sigma_e
 a_con			=	[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9] # Fiducial constant offset, approximated from Singh 2016 assuming unprimed method isophotal and primed ReGaussianisation
 cov_perc 		= 	[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9] #percentage covariance between methods, shape measurement method
 e_rms_mean 		=	np.abs((e_rms_b+e_rms_a)/2.) # This is the e_rms used in computing the shared weight for shapes methods
@@ -28,35 +28,34 @@ rp_min	=	0.05 # The minimum projected radius (Mpc/h)
 N_bins	=	7 # The number of bins of projected radius 
 
 #Parameters of the dNdz of sources, if using an analytic distribution. 'fid' = the fiducial value, 'sys' = 1sigma off from fid value to evaluate systematic error.
-dNdztype	=	'Nakajima'
+"""dNdztype	=	'Nakajima'
 alpha_fid 	= 	2.338
 zs_fid 		=	0.303
-dNdzpar_fid	=	[alpha_fid, zs_fid] #Put these in a list to facilitate passing around 
-
-"""dNdztype	=	'Smail'  # Fiducial sample from Chang 2013
+dNdzpar_fid	=	[alpha_fid, zs_fid] #Put these in a list to facilitate passing around"""
+dNdztype	=	'Smail'  # Fiducial sample from Chang 2013
 alpha_fid 	= 	1.24	 # Fiducial sample from Chang 2013
 z0_fid 		=	0.51	 # Fiducial sample from Chang 2013
 beta_fid	= 	1.01	 # Fiducial sample from Chang 2013
-dNdzpar_fid	=	[alpha_fid, z0_fid, beta_fid] #Put these in a list to facilitate passing around"""
+dNdzpar_fid	=	[alpha_fid, z0_fid, beta_fid] #Put these in a list to facilitate passing around
 
 pztype		=	'Gaussian'
-sigz_fid	=	0.11 # The photometric redshift error given a Gaussian photo_z model
+sigz_fid	=	0.05 #0.11 # The photometric redshift error given a Gaussian photo_z model
 pzpar_fid 	=	[sigz_fid] # Make this a list to make it more generic to pass around
 boost_sys	=	0.03 # Boost systematic error. This value is given in Blazek et al. 2012.
 
 # Parameters related to the spec and photo z's of the source sample and other redshift cuts.
-zeff 	= 	0.28  # See table 1, Kazin 2010, 0908.2598, DR7-Dim sample. 
+"""zeff 	= 	0.28  # See table 1, Kazin 2010, 0908.2598, DR7-Dim sample. 
 zLmin	= 	0.16  # See Kazin 2010
 zLmax	=	0.36  # See Kazin 2010. 
-dNdzL_file	=  'SDSS_LRG_DR7dim_nofz.txt' 
-"""zeff 	= 	0.77  # The effective redshift of the lens sample. Estimated from Figure 3.8 (COSMOS photo-z estimate) of the DESI final design report, see ./plotting_scripts/DESI_zeff.ipynb
+dNdzL_file	=  'SDSS_LRG_DR7dim_nofz.txt'"""
+zeff 	= 	0.77  # The effective redshift of the lens sample. Estimated from Figure 3.8 (COSMOS photo-z estimate) of the DESI final design report, see ./plotting_scripts/DESI_zeff.ipynb
 zLmin	=	0.025   # From same figure as above
 zLmax	=	1.175   # From same figure as above. 
-dNdzL_file	=	'DESI_redshifts_2col.txt' """
+dNdzL_file	=	'DESI_redshifts_2col.txt'
 
 close_cut = 100.# Mpc/h # The maximum separation from a lens to consider part of `rand-close', in Mpc/h
 #Blazek et al. case
-zsmin 	=	0.02
+"""zsmin 	=	0.02
 zsmax 	= 	3.0
 zphmin	=	0.
 zphmax	=	5.0
@@ -69,10 +68,10 @@ zmin 	=	0.0 # Minimum spec-z
 zmax 	= 	3.0 # Maximum spec-z
 zmin_ph	=	0.0 # Minimu photo-z
 zmax_ph	=	5.0 # Maximum photo-zboost
-delta_z = 0.17 
+delta_z = 0.17"""
 
 #Blazek et al. case
-"""zsmin 	=	0.02
+zsmin 	=	0.02
 zsmax 	= 	6.0
 zphmin	=	0.
 zphmax	=	7.0
@@ -84,7 +83,7 @@ zmin 	=	zsmin # Minimum spec-z
 zmax 	= 	zsmax # Maximum spec-z
 zmin_ph	=	0.0 # Minimum photo-z
 zmax_ph	=	zphmax # Maximum photo-z
-delta_z	=	0.1 """
+delta_z	=	0.1
 
 # Fractional errors on 'fudge factors' we are using to get a handle on the relative importance of different systematic errors.
 fudge_frac_level = np.logspace(-4, 0, 30)
@@ -112,7 +111,7 @@ n_s_cosmo	=	0.9652
 kpts_wgg = 10000
 kpts_wgp = 2000
 bs = 1. # SDSS shape sample - "garden variety" galaxies.
-bd = 2.07#
+bd = 3.88 #2.07#
 #Ai= 0.60 # Calcuated using luminosity function procedure from Krause et al. 2015 (P&Q use DEEP2 scales values) and power law from Singh et al. 2014, see ah_Ai_calculation_zLext.ipynb
 C1rho = 0.0134
 
@@ -142,13 +141,13 @@ alpha_reid = 1.035
 Mmin_reid = 8.05*10**13 # Msol
 sigLogM_reid = 0.7
 
-"""kappa_CMASS = 1.25
+kappa_CMASS = 1.25
 Mmin_CMASS = 10**(13.13)
 M1_CMASS = 10**(14.21)
 alpha_CMASS = 1.13
 alphainc_CMASS = 0.44
 Minc_CMASS = 10**(13.57)
-siglogM_CMASS = np.sqrt(0.22)"""
+siglogM_CMASS = np.sqrt(0.22)
 
 # 1-halo IA term parameters.
 # These are for the model given by Schneider & Bridle 2010, 0903.3870, but for the parameters given in Table 1 of Singh et al. 2014.
@@ -165,7 +164,7 @@ q32 = 0.1912
 q33 = 0.4368
 
 #Parameters required for computing the luminosity function (from Loveday 2012 / Krause et al. 2015 unless otherwise noted)
-mlim = 22.0 # See Figure 3 of Reyes et al. 2012.
+mlim = 25.3 #22. # See Figure 3 of Reyes et al. 2012.
 Mp = -22. # From Singh et al. 2014 (but this is kind of an arbitrary choice)
 
 Mr_s_red = -20.34
