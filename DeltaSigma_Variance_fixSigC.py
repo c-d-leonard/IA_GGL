@@ -1,6 +1,8 @@
 """ This script computes the covariance matrix of DeltaSigma_{gm} in bins in R.
 This version assumes an effective redshift for the lenses, parameterized by comoving distance chiLmean."""
 
+endfile= 'HOD_fully_updated'
+
 import numpy as np
 import scipy
 import scipy.interpolate
@@ -89,8 +91,8 @@ def get_SigmaC_inv(z_s_, z_l_):
 def N_of_zph(z_a_def_s, z_b_def_s, z_a_norm_s, z_b_norm_s, z_a_def_ph, z_b_def_ph, z_a_norm_ph, z_b_norm_ph, dNdzpar, pzpar, dNdztype, pztype):
 	""" Returns dNdz_ph, the number density in terms of photometric redshift, defined over photo-z range (z_a_def_ph, z_b_def_ph), normalized over the photo-z range (z_a_norm_ph, z_b_norm_ph), normalized over the spec-z range (z_a_norm, z_b_norm), and defined on the spec-z range (z_a_def, z_b_def)"""
 	
-	(z, dNdZ) = setup.get_NofZ_unnormed(dNdzpar, dNdztype, z_a_def_s, z_b_def_s, src_spec_pts)
-	(z_norm, dNdZ_norm) = setup.get_NofZ_unnormed(dNdzpar, dNdztype, z_a_norm_s, z_b_norm_s, src_spec_pts)
+	(z, dNdZ) = setup.get_NofZ_unnormed(dNdzpar, dNdztype, z_a_def_s, z_b_def_s, src_spec_pts, SURVEY)
+	(z_norm, dNdZ_norm) = setup.get_NofZ_unnormed(dNdzpar, dNdztype, z_a_norm_s, z_b_norm_s, src_spec_pts, SURVEY)
 	
 	z_ph_vec = scipy.linspace(z_a_def_ph, z_b_def_ph, src_ph_pts)
 	z_ph_vec_norm = scipy.linspace(z_a_norm_ph, z_b_norm_ph, src_ph_pts)
@@ -242,7 +244,8 @@ def Pgm_1h2h(xivec):
 	zivec = z_ofchi(xivec)
 	aivec = 1./ (1. + zivec)
 	# Compute the power spectrum at a bunch of z's and k's from CCL
-	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = pa.A_s, n_s=pa.n_s_cosmo)
+	
+	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), sigma8 = pa.sigma8, n_s=pa.n_s_cosmo)
 	cosmo = ccl.Cosmology(p)
   
 	k = scipy.logspace(-4, 4, 1000)
@@ -253,7 +256,7 @@ def Pgm_1h2h(xivec):
 		P_2h[:, ai] = h**3 * ccl.nonlin_matter_power(cosmo, k * h, aivec[ai])
 		
 	# Now do 1-halo (this is done in a separate function)
-	P_1h = ws.get_Pkgm_1halo_kz(k, zivec, SURVEY)
+	P_1h = ws.get_Pkgm_1halo_kz(k, zivec, y_dm, Mh, kv, SURVEY)
 	
 	# Add 
 	Pofkz = P_1h + bias * P_2h 
@@ -282,8 +285,8 @@ def Pgg_1h2h(xivec):
 	# First do 2-halo
 	zivec = z_ofchi(xivec)
 	aivec = 1./ (1. + zivec)
-	# Compute the power spectrum at a bunch of z's and k's from CCL
-	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), A_s = pa.A_s, n_s=pa.n_s_cosmo)
+	
+	p = ccl.Parameters(Omega_c = pa.OmC_l, Omega_b = pa.OmB_l, h = (pa.HH0_l/100.), sigma8 = pa.sigma8_l, n_s=pa.n_s_cosmo)
 	cosmo = ccl.Cosmology(p)
   
 	k = scipy.logspace(-4, 4, 1000)
@@ -294,7 +297,7 @@ def Pgg_1h2h(xivec):
 		P_2h[:, ai] = h**3 * ccl.nonlin_matter_power(cosmo, k * h , aivec[ai])
 		
 	# Now do 1-halo (this is done in a separate function
-	P_1h = ws.get_Pkgg_ll_1halo_kz(k, zivec, SURVEY)
+	P_1h = ws.get_Pkgg_ll_1halo_kz(k, zivec,y_dm, Mh, kv, SURVEY)
 	
 	# Add 
 	Pofkz = P_1h + bias**2 * P_2h
@@ -333,7 +336,7 @@ def Pmm_1h2h(xivec):
 		P_2h[:, ai] = h**3 * ccl.nonlin_matter_power(cosmo, k * h , aivec[ai])
 		
 	# Now do 1-halo (this is done in a separate function
-	P_1h = ws.get_Pkmm_1halo_kz(k, zivec, SURVEY)
+	P_1h = ws.get_Pkmm_1halo_kz(k, zivec, y_dm, Mh, kv, SURVEY)
 	
 	# Add 
 	Pofkz = P_1h + P_2h
@@ -403,7 +406,7 @@ def doints_Pgg():
 	for li in range(0,len(lvec_less)):
 		int_gg[li] = scipy.integrate.simps( dndzl**2 * H * Pdelta[li, :] / (chi**2 * ns), zL)
 			
-	np.savetxt('./txtfiles/Pggterm_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_fixSigC.txt', int_gg)
+	np.savetxt('./txtfiles/Pgg/Pggterm_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_'+endfile+'.txt', int_gg)
 	
 	return int_gg
 
@@ -420,7 +423,7 @@ def doints_Pgk():
 	Pdelta = Pgm_1h2h(chi)
 	
 	# Get the norm of the spectroscopic redshift dNdzs - Use this only for computing Clgk to compare with CCL
-	(zsnorm, dNdzsnorm) = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, pa.zsmin, pa.zsmax, 500)
+	(zsnorm, dNdzsnorm) = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, pa.zsmin, pa.zsmax, 500, SURVEY)
 	#normzs = scipy.integrate.simps(dNdzsnorm, zsnorm)
 	
 	int_in_zl = np.zeros(len(zL))
@@ -433,7 +436,7 @@ def doints_Pgk():
 			z_ph[zi] = np.linspace(zL[zi] + pa.delta_z, pa.zphmax, 500)
 		
 		# Get the integral over spec z
-		(zs, dNdzs) = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, zL[zi], pa.zsmax, 500)
+		(zs, dNdzs) = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, zL[zi], pa.zsmax, 500, SURVEY)
 		int_in_zs = np.zeros(len(z_ph[zi]))
 		for zpi in range(0,len(z_ph[zi])):
 			pz = setup.p_z(z_ph[zi][zpi], zs, pa.pzpar_fid, pa.pztype)
@@ -459,7 +462,7 @@ def doints_Pgk():
 	for li in range(0,len(lvec_less)):
 		int_gk[li] = H0**2 * scipy.integrate.simps(1.5 * dndzl * Omz * (H / H0)**2 * Pdelta[li, :] * int_in_zl / (chi * zphnorm), zL)
 	
-	np.savetxt('./txtfiles/Pgkterm_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_fixSigC.txt', int_gk**2 )
+	np.savetxt('./txtfiles/Pgk/Pgkterm_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_'+endfile+'.txt', int_gk**2 )
 		
 	return int_gk**2
 	
@@ -478,7 +481,7 @@ def doints_Pkk():
 	dndzl = setup.get_dNdzL(zlens, SURVEY)
 	
 	# Get the norm of the spectroscopic redshift source distribution over the whole range - use this only for getting Clkk
-	(zs_norm, dNdzs_norm) = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, pa.zsmin, pa.zsmax, 1000)
+	(zs_norm, dNdzs_norm) = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, pa.zsmin, pa.zsmax, 1000, SURVEY)
 	#norm_zs = scipy.integrate.simps(dNdzs_norm, zs_norm)
 	
 	# First, do the first integral in spectroscopic redshift over chiext->inf. Use a zph vector that is the longest possible necessary one for this to avoid having to keep track of three things.
@@ -486,7 +489,7 @@ def doints_Pkk():
 	zs_int = np.zeros((len(zph_long), len(chiLext)))
 	#zs_int_clkk = np.zeros(len(chiLext))
 	for ci in range(0,len(chiLext)):
-		(zs, dNdzs) = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, zLext[ci], pa.zsmax, 1000)
+		(zs, dNdzs) = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, zLext[ci], pa.zsmax, 1000, SURVEY)
 		chis = com_of_z(zs)
 		#zs_int_clkk[ci] = scipy.integrate.simps(dNdzs / norm_zs * (chis - chiLext[ci]) / chis, zs)
 		for zpi in range(0,len(zph_long)):
@@ -533,7 +536,7 @@ def doints_Pkk():
 	for li in range(0,len(lvec_less)):
 		int_kk[li] = (9. / 4.) * H0**4 * scipy.integrate.simps( (H/H0)**4 * Omz**2 * Pof_lx[li, :] * (zl_int)**2, chiLext)
 	
-	np.savetxt('./txtfiles/Pkkterm_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_fixSigC.txt', int_kk)
+	np.savetxt('./txtfiles/Pkk/Pkkterm_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_'+endfile+'.txt', int_kk)
 	
 	return int_kk
 	
@@ -555,14 +558,14 @@ def doints_PggPkk():
 	Hlens = getHconf(chilens)
 	
 	# Get the norm of the spectroscopic redshift source distribution - this is used only for getting clkk and clgg to compare with CCL, for the actual answer we normalize over dNdzph.
-	(zs_norm, dNdzs_norm) = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, pa.zsmin, pa.zsmax, 1000)
+	(zs_norm, dNdzs_norm) = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, pa.zsmin, pa.zsmax, 1000, SURVEY)
 	#norm_zs = scipy.integrate.simps(dNdzs_norm, zs_norm)
 	
 	# First, do the first integral in spectroscopic redshift over chiext->inf. Use a zph vector that is the longest possible necessary one for this to avoid having to keep track of three things.
 	zph_long = np.linspace(pa.zLmin, pa.zphmax, 500)
 	zs_int = np.zeros((len(zph_long), len(chiLext)))
 	for ci in range(0,len(chiLext)):
-		(zs, dNdzs) = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, zLext[ci], pa.zsmax, 1000)
+		(zs, dNdzs) = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, zLext[ci], pa.zsmax, 1000, SURVEY)
 		chis = com_of_z(zs)
 		for zpi in range(0,len(zph_long)):
 			pz = setup.p_z(zph_long[zpi], zs, pa.pzpar_fid, pa.pztype)
@@ -589,7 +592,7 @@ def doints_PggPkk():
 			zph_int[zi, ci] = scipy.integrate.simps( zs_int_zphvec, zph_shorter[zi])
 	
 	# Get the normalization of dNdzph that we need
-	(zs, dNdzs) = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, pa.zsmin, pa.zsmax, 1000)
+	(zs, dNdzs) = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, pa.zsmin, pa.zsmax, 1000, SURVEY)
 	zph_norm = np.zeros(len(zlens))
 	for zi in range(0, len(zlens)):
 		zs_int_for_norm = np.zeros(len(zph_shorter[zi]))
@@ -608,7 +611,7 @@ def doints_PggPkk():
 	for li in range(0,len(lvec_less)):
 		int_kkgg[li] = scipy.integrate.simps(dndzl**2 * Hlens * (1. + zlens) * chiLext_int[li, :] * Pof_lx_lens[li, :] / chilens**2, zlens)
 	
-	np.savetxt(folderpath+outputfolder+'/PggPkkterm_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_fixSigC.txt', int_kkgg)
+	np.savetxt(folderpath+outputfolder+'/PggPkk/PggPkkterm_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_'+endfile+'.txt', int_kkgg)
 	
 	return int_kkgg
 
@@ -638,7 +641,7 @@ def SigCsq_avg():
 	chiSint_zl = scipy.integrate.simps(chiSans * dndzl, zLvec)
 	
 	save_SigC2 = [1./chiSint_zl]
-	np.savetxt(folderpath+outputfolder+'/SigCsqterm_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_fixSigC.txt', save_SigC2)
+	np.savetxt(folderpath+outputfolder+'/SigCsq/SigCsqterm_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_'+endfile+'.txt', save_SigC2)
 	
 	return save_SigC2
 	
@@ -664,18 +667,18 @@ def doconstint():
 	save=[0]
 	save[0]= gam ** 2 / nl / ns_avg 
 	
-	np.savetxt('./txtfiles/const_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_fixSigC.txt', save)
+	np.savetxt('./txtfiles/const/const_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_'+endfile+'.txt', save)
 	
 	return
 	
 def get_lint():
 	""" Gets the integral over ell at each R and R' """
-	Pgkterm		=	np.loadtxt('./txtfiles/Pgkterm_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_fixSigC.txt')
-	PggPkkterm	=	np.loadtxt('./txtfiles/PggPkkterm_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_fixSigC.txt')
-	Pkkterm		= 	np.loadtxt('./txtfiles/Pkkterm_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_fixSigC.txt')
-	Pggterm		=	np.loadtxt('./txtfiles/Pggterm_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_fixSigC.txt')
-	constterm	=	np.loadtxt('./txtfiles/const_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_fixSigC.txt')
-	SigCterm 	=	np.loadtxt('./txtfiles/SigCsqterm_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_fixSigC.txt')
+	Pgkterm		=	np.loadtxt('./txtfiles/Pgk/Pgkterm_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_'+endfile+'.txt')
+	PggPkkterm	=	np.loadtxt('./txtfiles/PggPkk/PggPkkterm_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_'+endfile+'.txt')
+	Pkkterm		= 	np.loadtxt('./txtfiles/Pkk/Pkkterm_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_'+endfile+'.txt')
+	Pggterm		=	np.loadtxt('./txtfiles/Pgg/Pggterm_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_'+endfile+'.txt')
+	constterm	=	np.loadtxt('./txtfiles/const/const_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_'+endfile+'.txt')
+	SigCterm 	=	np.loadtxt('./txtfiles/SigCsq/SigCsqterm_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_'+endfile+'.txt')
 	
 	if (SAMPLE=='A'):
 		gam = pa.e_rms_Bl_a
@@ -721,98 +724,18 @@ def get_lint():
 	plt.xlabel('$l$')
 	plt.title('Survey='+SURVEY+', sample='+SAMPLE)
 	plt.legend()
-	plt.savefig('./plots/compareterms_DeltaSigcov_extl_survey='+SURVEY+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_fixSigC.pdf')
+	plt.savefig('./plots/compareterms_DeltaSigcov_extl_survey='+SURVEY+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'_'+endfile+'.pdf')
 	plt.close()
 	
-	exit()
-	
-	# Interpolate these things to get the result in terms of the more highly sampled lvec
-	Pgg_interp = scipy.interpolate.interp1d(lvec_less, Pggterm)
-	Pgg_higher_res = Pgg_interp(lvec)
-	
-	Pgk_interp = scipy.interpolate.interp1d(lvec_less, Pgkterm)
-	Pgk_higher_res = Pgk_interp(lvec)
-	
-	PggPkk_interp = scipy.interpolate.interp1d(lvec_less, PggPkkterm)
-	PggPkk_higher_res = PggPkk_interp(lvec)
-	
-	Pkk_interp = scipy.interpolate.interp1d(lvec_less, Pkkterm)
-	Pkk_higher_res = Pkk_interp(lvec)
-	
-	exit()
-
-	
-	# It might be faster to contruct the bessel function as an array in l and r just once, since it's hte same for both factors just with different r values, then you don't have to call it so often:
-	Bessel_two = np.zeros((len(lvec), len(Rvec)))
-	for ri in range(0,len(Rvec)):
-		print "ri=", ri
-		for li in range(0,len(lvec)):
-			Bessel_two[li, ri] = scipy.special.jv(2, Rvec[ri] * lvec[li] / chiLmean)
-	lint_ans=np.zeros((len(Rvec), len(Rvec)))
-	for ri in range(0,len(Rvec)):
-		print "ri, outside ints R=", ri
-		for rip in range(ri,len(Rvec)):	
-			lint_ans[ri, rip] = scipy.integrate.trapz((constterm) * Bessel_two[:, ri] * Bessel_two[:, rip] * lvec, lvec)
-			#lint_ans[ri, rip] = scipy.integrate.simps(( Pgkterm + PggPkkterm + Pkkterm/nl + Pggterm*gam**2 / ns + constterm) * scipy.special.jv(2, Rvec[ri] * lvec) * scipy.special.jv(2, Rvec[rip] * lvec) * lvec, lvec)
-			#lint_ans[ri, rip] = scipy.integrate.simps(( Pgkterm + PggPkkterm + Pkkterm/nl + Pggterm*gam**2 / ns + constterm) * scipy.special.jv(2, Rvec[ri] * lvec / chiLmean) * scipy.special.jv(2, Rvec[rip] * lvec / chiLmean) * lvec, lvec)
-			#lint_ans[ri, rip] = scipy.integrate.trapz((constterm) * scipy.special.jv(2, Rvec[ri] * lvec / chiLmean) * scipy.special.jv(2, Rvec[rip] * lvec / chiLmean) * lvec, lvec)
-			#print "rip=",rip, "lint=", lint_ans[ri, rip]
-		#exit()
-			#print "lint_ans[ri, rip]=", lint_ans[ri, rip]
-			
-	for ri in range(0, len(Rvec)):
-		for rip in range(0, ri):
-			lint_ans[ri,rip] = lint_ans[rip,ri]
-	
-	return lint_ans
-	
-def do_outsideints_SigR(i_Rbin, j_Rbin, lint_ans):
-	""" This function does the integrals in l, R, and R' for the Delta Sigma(R) term """
-		
-	# Now do the Rprime integral.
-	Rlowind_bini    =       next(j[0] for j in enumerate(Rvec) if j[1]>=Redges[i_Rbin])
-	Rhighind_bini   =       next(j[0] for j in enumerate(Rvec) if j[1]>=Redges[i_Rbin+1])
-		
-	Rprime_intans=np.zeros(len(Rvec))	
-	for ri in range(len(Rvec)):
-		Rprime_intans[ri] = scipy.integrate.simps(lint_ans[ri,:][Rlowind_bini:Rhighind_bini], Rvec[Rlowind_bini:Rhighind_bini]) / (Rvec[Rhighind_bini] - Rvec[Rlowind_bini])
-
-	# Now the r integral:
-	Rlowind_binj    =       next(j[0] for j in enumerate(Rvec) if j[1]>=Redges[j_Rbin])
-	Rhighind_binj   =       next(j[0] for j in enumerate(Rvec) if j[1]>=Redges[j_Rbin+1])
-	Rintans = scipy.integrate.simps(Rprime_intans[Rlowind_binj:Rhighind_binj], Rvec[Rlowind_binj:Rhighind_binj]) / (Rvec[Rhighind_binj] - Rvec[Rlowind_binj])	
-
-	# Add factors:
-	ans_thisRbin	= Rintans  / (8. * np.pi**2) / fsky /wbar**2
-	print "ans_thisRbin=", ans_thisRbin
-	
-	return ans_thisRbin	
-	
-def add_shape_noise(i_Rbin, j_Rbin, ravg):
-        """ Adds the shape noise term to the diagonal elements """
-
-        wbar = np.loadtxt('./txtfiles/wbar_extl'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'.txt')
-
-        if (i_Rbin != j_Rbin):
-                shapenoise_alone = 0.
-        else:
-                constterm      =       np.loadtxt('./txtfiles/const_DeltaSig_extl_'+endfilename+'_sample='+SAMPLE+'_deltaz='+str(pa.delta_z)+'.txt')
-                Rlowind_bini    =       next(j[0] for j in enumerate(Rvec) if j[1]>=Redges[i_Rbin])
-                Rhighind_bini   =       next(j[0] for j in enumerate(Rvec) if j[1]>=Redges[i_Rbin+1])
-                Rlowind_binj    =       next(j[0] for j in enumerate(Rvec) if j[1]>=Redges[j_Rbin])
-                Rhighind_binj   =       next(j[0] for j in enumerate(Rvec) if j[1]>=Redges[j_Rbin+1])
-
-                shapenoise_alone = constterm*chiLmean**2 / (4.*np.pi**2*fsky*wbar**2 * (Rvec[Rhighind_bini]**2 - Rvec[Rlowind_bini]**2))
-
-        return (shapenoise_alone)
+	return 
 
 
 ##########################################################################################
 ####################################### SET UP ###########################################
 ##########################################################################################
 
-SURVEY = 'LSST_DESI'
-SAMPLE = 'B'
+SURVEY = 'SDSS'
+SAMPLE = 'A'
 # Import the parameter file:
 if (SURVEY=='SDSS'):
 	import params as pa
@@ -855,30 +778,36 @@ lmin			=	3
 lmax			=	10**6
 numRbins		=	pa.N_bins
 chiLext_min		=	0.001
-chiLext_max		=	setup.com(pa.zphmax, SURVEY)
+chiLext_max		=	setup.com(pa.zphmax, SURVEY, pa.cos_par_std)
 chiLextpts		=	250
 
 ##########################################################################################
 ################################  MAIN FUNCTION CALLS ####################################
 ##########################################################################################
 
-a = time.time()
 
 # Set up
 (lvec, lvec_less, Rvec, Redges, Rcentres)					= 		setup_vectors()
 z_ofchi, com_of_z								=		setup.z_interpof_com(SURVEY)
-(z_spec, dNdz_spec)								= 		setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, pa.zsmin, pa.zsmax, src_spec_pts)
+(z_spec, dNdz_spec)								= 		setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, pa.zsmin, pa.zsmax, src_spec_pts, SURVEY)
 
 chiLmean = com_of_z(pa.zeff)
 
 # Do the integrals on each term up to the l integral (so chiS, bchiS, chiL, bchiL)
 
-"""doints_Pgg()
+print "getting y"
+# For getting the Fourier transformed density profile
+Mh = np.logspace(7., 16., 30)
+kv = np.logspace(-4, 4, 40)
+y_dm = ws.gety_ldm(Mh, kv, SURVEY)
+print "got y"
+
+doints_Pgg()
 print "Done with Pgg integrals. Now do Pgk:"
 Pgkints = doints_Pgk() 
 print "Done with Pgk integrals. Now do Pkk:"
 Pkkints = doints_Pkk() 
-print "Done with Pkk integrals. Now do constant:"""
+print "Done with Pkk integrals. Now do constant:"
 constterm = doconstint() 
 print "Done with constant integrals. Now do PggPkk:"
 PggPkkints = doints_PggPkk()
@@ -889,16 +818,4 @@ print "Done getting SigC term."
 
 # First, get the l integral in terms of R and R'. This is the long part, and needs only to be done once instead of over and over for each bin.
 lint = get_lint()
-#This must be done for each set of bins
-cov_shapenoise_alone		=	np.zeros((numRbins, numRbins))
 
-for i_R in range(0, numRbins):
-	for j_R in range(0, numRbins):
-		print "i bin=", i_R, "j bin=", j_R
-		#covariance[i_R, j_R]	=	do_outsideints_SigR(i_R, j_R, lint)
-		cov_shapenoise_alone[i_R, j_R]    =       add_shape_noise(i_R, j_R, 0.)
-		
-#np.savetxt(folderpath+outputfolder+'/cov_Upgm_'+endfilename+'_sample='+SAMPLE+'_rpts'+str(Rpts)+'_lpts'+str(lpts)+'_TEST_ELL_DOWNSAMPLE.txt', covariance)
-np.savetxt('./txtfiles/shapenoiseonly_DelSig_zLext_'+endfilename+'_sample='+SAMPLE+'_rpts'+str(Rpts)+'_lpts'+str(lpts)+'_deltaz='+str(pa.delta_z)+'.txt', cov_shapenoise_alone)
-
-print '\nTime for completion:', '%.1f' % (time.time() - a), 'seconds'

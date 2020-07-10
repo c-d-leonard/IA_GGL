@@ -40,6 +40,14 @@ def average_in_bins(F_, R_, Rp_):
 	
 def get_areas(bins, z_eff, survey):
 	"""Gets the area of each projected radial bin, in square arcminutes. z_eff = effective lens redshift. """
+	
+	if (survey == 'SDSS'):
+		import params as pa
+	elif (survey == 'LSST_DESI'):
+		import params_LSST_DESI as pa
+	else:
+		print "We don't have support for that survey yet; exiting."
+		exit()
 
 	# Areas in units (Mpc/h)^2
 	areas_mpch = np.zeros(len(bins)-1)
@@ -47,7 +55,7 @@ def get_areas(bins, z_eff, survey):
 		areas_mpch[i] = np.pi * (bins[i+1]**2 - bins[i]**2) 
 
 	#Comoving distance out to effective lens redshift in Mpc/h
-	chi_eff = com(z_eff, survey)
+	chi_eff = com(z_eff, survey, pa.cos_par_std)
 
 	# Areas in square arcminutes (466560000 / pi = sqAM in a sphere)
 	areas_sqAM = areas_mpch * (466560000. / np.pi) / (4 * np.pi * chi_eff**2)
@@ -59,7 +67,7 @@ def get_areas(bins, z_eff, survey):
 def get_z_close(z_l, cut_MPc_h, survey):
 	""" Gets the z above z_l which is the highest z at which we expect IA to be present for that lens. cut_Mpc_h is that separation in Mpc/h."""
 
-	com_l = com(z_l, survey) # Comoving distance to z_l, in Mpc/h
+	com_l = com(z_l, survey, pa.cos_par_std) # Comoving distance to z_l, in Mpc/h
 
 	tot_com_high = com_l + cut_MPc_h
 	tot_com_low = com_l - cut_MPc_h
@@ -73,8 +81,10 @@ def get_z_close(z_l, cut_MPc_h, survey):
 
 	return (z_cl_high, z_cl_low)
 
-def com(z_, survey):
+def com(z_, survey, cosmo_par):
 	""" Gets the comoving distance in units of Mpc/h at a given redshift, z_ (assuming the cosmology defined in the params file). """
+	
+	[HH0, OmC, OmB, sigma8] = cosmo_par
 
 	if (survey == 'SDSS'):
 		import params as pa
@@ -84,9 +94,9 @@ def com(z_, survey):
 		print "We don't have support for that survey yet; exiting."
 		exit()
 
-	OmL = 1. - pa.OmC - pa.OmB - pa.OmR - pa.OmN
+	OmL = 1. - OmC - OmB - pa.OmR - pa.OmN
 	def chi_int(z):
-	 	return 1. / (pa.H0 * ( (pa.OmC+pa.OmB)*(1+z)**3 + OmL + (pa.OmR+pa.OmN) * (1+z)**4 )**(0.5))
+	 	return 1. / (pa.H0 * ( (OmC+OmB)*(1+z)**3 + OmL + (pa.OmR+pa.OmN) * (1+z)**4 )**(0.5))
 
 	if hasattr(z_, "__len__"):
 		chi=np.zeros((len(z_)))
@@ -100,10 +110,18 @@ def com(z_, survey):
 
 def z_interpof_com(survey):
 	""" Returns an interpolating function which can give z as a function of comoving distance. """
+	
+	if (survey == 'SDSS'):
+		import params as pa
+	elif (survey == 'LSST_DESI'):
+		import params_LSST_DESI as pa
+	else:
+		print "We don't have support for that survey yet; exiting."
+		exit()
 
 	z_vec = scipy.linspace(0., 20., 10000) # This hardcodes that we don't care about anything over z=2100
 
-	com_vec = com(z_vec, survey)
+	com_vec = com(z_vec, survey, pa.cos_par_std)
 
 	z_of_com = scipy.interpolate.interp1d(com_vec, z_vec)
 	com_of_z =  scipy.interpolate.interp1d(z_vec, com_vec)
@@ -135,14 +153,13 @@ def get_NofZ_unnormed(dNdzpar, dNdztype, z_min, z_max, zpts, survey):
 
 	z = scipy.linspace(z_min, z_max, zpts)
 	
-	#if (survey=='SDSS'): # There's only one magnitude limit here we are considering for now, so we just take the parameters fit to data from that magnitude limit.
+	# There's only one magnitude limit here we are considering for now, so we just take the parameters fit to data from that magnitude limit.
 	if (dNdztype=='Nakajima'):
 		# dNdz takes form like in Nakajima et al. 2011 equation 3
 		a = dNdzpar[0]
 		zs = dNdzpar[1]
 	
 		nofz_ = (z / zs)**(a-1.) * np.exp( -0.5 * (z / zs)**2)
-	#elif (survey=='LSST_DESI'):
 	elif (dNdztype=='Smail'):
 		if (np.abs(pa.mlim - 25.3)<10**(-15)): # if rlim = 25.3 use the Chang et al. 2013 parameters directly
 			# dNdz take form like in Smail et al. 1994
@@ -197,7 +214,7 @@ def get_dNdzL(zvec, survey):
 		# Convert to dNdz
 		OmL = 1. - pa.OmC - pa.OmB - pa.OmR - pa.OmN
 		c_over_H = 1. / (pa.H0 * ( (pa.OmC+pa.OmB)*(1.+z)**3 + OmL + (pa.OmR+pa.OmN) * (1.+z)**4 )**(0.5))
-		dNdz = nofz_filt * 4. * np.pi * pa.fsky * com(z, survey)**2 * c_over_H # See notes October 12 2017 for this expression.
+		dNdz = nofz_filt * 4. * np.pi * pa.fsky * com(z, survey, pa.cos_par_std)**2 * c_over_H # See notes October 12 2017 for this expression.
 	#print "NOT SMOOTHING OVER NOFZ FOR LENSES."
 		
 	interpolation = scipy.interpolate.interp1d(z, dNdz)
@@ -220,7 +237,7 @@ def get_dNdzL(zvec, survey):
 def get_phi(z, lum_params, survey):
 	
 	""" This function outputs the Schechter luminosity function with parameters fit in Loveday 2012, following the same procedure as Krause et al. 2015, as a function of z and L 
-	The output is L[z][l], list of vectors of luminosity values in z, different at each z due to the different lowe luminosity limit, and phi[z][l], a list of luminosity functions at these luminosity vectors, at each z
+	The output is L[z][l], list of vectors of luminosity values in z, different at each z due to the different low luminosity limit, and phi[z][l], a list of luminosity functions at these luminosity vectors, at each z
 	lum_params are the parameters of the luminosity function that are different for different samples, e.g. red vs all. lumparams = [Mr_s, Q, alpha_lum, phi_0, P]
 	Note that the luminosity function is output both normalized (for getting Ai and ah) and unnormalized (for the red fraction)."""
 	
@@ -251,7 +268,7 @@ def get_phi(z, lum_params, survey):
 	ecorr = ecorr_interp(z)
 	
 	# Get the absolute magnitude and luminosity corresponding to limiting apparent magntiude (as a function of z)
-	dl = com(z, survey) * (1. + z)
+	dl = com(z, survey, pa.cos_par_std) * (1. + z)
 	Mlim = pa.mlim - (5. * np.log10(dl) + 25. + kcorr + ecorr)
 	Llim = 10.**(-0.4 * (Mlim-pa.Mp))
 	

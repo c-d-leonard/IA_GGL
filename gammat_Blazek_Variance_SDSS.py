@@ -3,6 +3,8 @@ This version assumes an effective redshift for the lenses, parameterized by como
 
 endfile = 'HOD_fully_updated'
 
+print "gammat SDSS"
+
 import numpy as np
 import scipy
 import scipy.interpolate

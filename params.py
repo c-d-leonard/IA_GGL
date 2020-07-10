@@ -2,7 +2,7 @@
 
 import numpy as np
 
-run_quants 		=	False # For the Blazek case, whether you want to recompute F, cz, and SigIA
+run_quants 		=	True # For the Blazek case, whether you want to recompute F, cz, and SigIA
 survey			=	'SDSS'
 
 # Parameters associated with the sample / shape noise calcuation 
@@ -33,12 +33,6 @@ alpha_fid 	= 	2.338
 zs_fid 		=	0.303
 dNdzpar_fid	=	[alpha_fid, zs_fid] #Put these in a list to facilitate passing around 
 
-"""dNdztype	=	'Smail'  # Fiducial sample from Chang 2013
-alpha_fid 	= 	1.24	 # Fiducial sample from Chang 2013
-z0_fid 		=	0.51	 # Fiducial sample from Chang 2013
-beta_fid	= 	1.01	 # Fiducial sample from Chang 2013
-dNdzpar_fid	=	[alpha_fid, z0_fid, beta_fid] #Put these in a list to facilitate passing around"""
-
 pztype		=	'Gaussian'
 sigz_fid	=	0.11 # The photometric redshift error given a Gaussian photo_z model
 pzpar_fid 	=	[sigz_fid] # Make this a list to make it more generic to pass around
@@ -48,11 +42,7 @@ boost_sys	=	0.03 # Boost systematic error. This value is given in Blazek et al. 
 zeff 	= 	0.28  # See table 1, Kazin 2010, 0908.2598, DR7-Dim sample. 
 zLmin	= 	0.16  # See Kazin 2010
 zLmax	=	0.36  # See Kazin 2010. 
-dNdzL_file	=  'SDSS_LRG_DR7dim_nofz.txt' 
-"""zeff 	= 	0.77  # The effective redshift of the lens sample. Estimated from Figure 3.8 (COSMOS photo-z estimate) of the DESI final design report, see ./plotting_scripts/DESI_zeff.ipynb
-zLmin	=	0.025   # From same figure as above
-zLmax	=	1.175   # From same figure as above. 
-dNdzL_file	=	'DESI_redshifts_2col.txt' """
+dNdzL_file	=  'SDSS_LRG_DR7dim_nofz.txt'
 
 close_cut = 100.# Mpc/h # The maximum separation from a lens to consider part of `rand-close', in Mpc/h
 #Blazek et al. case
@@ -71,23 +61,8 @@ zmin_ph	=	0.0 # Minimu photo-z
 zmax_ph	=	5.0 # Maximum photo-zboost
 delta_z = 0.17 
 
-#Blazek et al. case
-"""zsmin 	=	0.02
-zsmax 	= 	6.0
-zphmin	=	0.
-zphmax	=	7.0
-#delta_z 	=	0.64
-zmin_dndz = zsmin
-zmax_dndz = 5.0 # The effective point at which the spectroscopic dNdz goes to 0 (input by looking at dNdz for now). For computing volume occupied by source sample.
-# Shape measurment case
-zmin 	=	zsmin # Minimum spec-z
-zmax 	= 	zsmax # Maximum spec-z
-zmin_ph	=	0.0 # Minimum photo-z
-zmax_ph	=	zphmax # Maximum photo-z
-delta_z	=	0.1 """
-
 # Fractional errors on 'fudge factors' we are using to get a handle on the relative importance of different systematic errors.
-fudge_frac_level = np.logspace(-4, 0, 30)
+fudge_frac_level = np.logspace(-4, 0, 500)
 
 # Constants / conversions
 mperMpc = 3.0856776*10**22
@@ -97,23 +72,44 @@ c=2.99792458*10**(8)
 
 # Cosmological parameters. Planck 2015 results XIII: cosmological parameters. Table 1, column 6.
 Nnu	=	3.046    # Massless neutrinos
-HH0 = 67.26 
+HH0 =   67.26  
 OmR	=	2.47*10**(-5)/(HH0/100.)**2
 OmN	=	Nnu*(7./8.)*(4./11.)**(4./3.)*OmR
 OmB	=	0.02222/(HH0/100.)**2 
 OmC	=	0.1199/(HH0/100.)**2 
-OmM=  OmB+OmC
 H0	=	10**(5)/c
 A_s	=	2.2 * 10**(-9)
+sigma8 = 0.84
 n_s_cosmo	=	0.9652
+
+cos_par_std = [HH0, OmC, OmB, sigma8]
+
+# We also have two other sets of cosmological parameters:
+# one each for the lens and source sample to match the parameters
+# simultaneously fit or fixed in sims when fitting HOD parameters:
+# (From HOD papers)
+HH0_l = 72.0
+OmC_l = 0.216
+OmB_l = 0.044
+sigma8_l = 0.77
+n_s_l = 0.95
+
+cos_par_l = [HH0_l, OmC_l, OmB_l, sigma8_l]
+
+HH0_s = 72.0
+OmC_s = 0.216
+OmB_s = 0.044
+sigma8_s = 0.77
+n_s_s = 0.95
+
+cos_par_s = [HH0_s, OmC_s, OmB_s, sigma8_s]
 
 # Parameters for getting the fiducial gamma_IA
 # 2 halo term parmaeters
 kpts_wgg = 10000
 kpts_wgp = 2000
-bs = 1. # SDSS shape sample - "garden variety" galaxies.
-bd = 2.07#
-#Ai= 0.60 # Calcuated using luminosity function procedure from Krause et al. 2015 (P&Q use DEEP2 scales values) and power law from Singh et al. 2014, see ah_Ai_calculation_zLext.ipynb
+bs = 1.3 # Calculated using Zu & Mandelbaum 2015 HOD, see HOD_bias_check.ipynb
+bd = 2.2 # Calculated using Reid & Spergel 2008 HOD, see HOD bias_check.ipynb
 C1rho = 0.0134
 
 ##### Parameters of the HOD model, taken from Zu & Mandelbaum 2015, 1505.02781.  #####
@@ -142,18 +138,9 @@ alpha_reid = 1.035
 Mmin_reid = 8.05*10**13 # Msol
 sigLogM_reid = 0.7
 
-"""kappa_CMASS = 1.25
-Mmin_CMASS = 10**(13.13)
-M1_CMASS = 10**(14.21)
-alpha_CMASS = 1.13
-alphainc_CMASS = 0.44
-Minc_CMASS = 10**(13.57)
-siglogM_CMASS = np.sqrt(0.22)"""
-
 # 1-halo IA term parameters.
 # These are for the model given by Schneider & Bridle 2010, 0903.3870, but for the parameters given in Table 1 of Singh et al. 2014.
 # The q_ij parameters are taken directly from this table. a_h is computed by taking the power law of a_h as a function of luminosity a_h(L) from Singh et al. 2014 and integrating it over the Schechter luminosity function from Krause et al. 2015 for the limiting magnitude of SDSS shapes, r<22. (see ./ah_Ai_calculation_zLext.ipynb)
-#ah = 0.0051 # Computing using parameters from Krause et al. 2015, all GAMA except P&Q use DEEP2 scales values.
 q11 = 0.005    
 q12 = 5.909
 q13 = 0.3798

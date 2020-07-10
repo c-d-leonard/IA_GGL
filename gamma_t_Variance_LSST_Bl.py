@@ -12,6 +12,8 @@ import shared_functions_setup as setup
 import shared_functions_wlp_wls as ws
 import pyccl as ccl
 
+endfile = 'HOD_fully_updated'
+
 ##########################################################################################
 ######################################## FUNCTIONS #######################################
 ##########################################################################################
@@ -191,8 +193,6 @@ def get_ns_partial():
 	# To do this, just get the fraction of dNdzph within the sample:
 	frac = sum_weights('close', 'nocut', pa.dNdzpar_fid, pa.pzpar_fid) / sum_weights('full', 'nocut', pa.dNdzpar_fid, pa.pzpar_fid)
 	
-	print "frac=", frac
-	
 	return frac * ns_tot
 ############################# FUNCTIONS FOR DOING THE INTEGRALS #######################
 
@@ -253,7 +253,7 @@ def doconstint():
 def get_lint():	
 #def get_lint(Pgkterm, PggPkkterm, Pkkterm, Pggterm, constterm):
 	""" Gets the integral over ell at each R and R' """
-	Pggterm		=	np.loadtxt('./txtfiles/Pgg/Pggterm_gammat_extl_survey='+SURVEY+'_method='+METHOD+'_'+endfile+.'txt')
+	Pggterm		=	np.loadtxt('./txtfiles/Pgg/Pggterm_gammat_extl_survey='+SURVEY+'_method='+METHOD+'_'+endfile+'.txt')
 	constterm	=	np.loadtxt('./txtfiles/const/const_gammat_extl_survey='+SURVEY+'_method='+METHOD+'_'+endfile+'.txt')
 	
 	# plot each thing to see what is dominating:
@@ -279,7 +279,7 @@ def get_lint():
 ####################################### SET UP ###########################################
 ##########################################################################################
 
-SURVEY = 'SDSS'
+SURVEY = 'LSST_DESI'
 METHOD = '1'
 
 print "Survey=", SURVEY

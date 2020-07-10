@@ -3,6 +3,8 @@ This version assumes an effective redshift for the lenses, parameterized by como
 
 endfile = 'HOD_fully_updated'
 
+print "gammat LSST"
+
 import numpy as np
 import scipy
 import scipy.interpolate
@@ -678,7 +680,7 @@ def doconstint():
 ####################################### SET UP ###########################################
 ##########################################################################################
 
-SURVEY = 'SDSS'
+SURVEY = 'LSST_DESI'
 SAMPLE = 'assocBl'
 # Import the parameter file:
 if (SURVEY=='SDSS'):
