@@ -8,16 +8,17 @@ import os.path
 
 import shared_functions_setup as setup
 import shared_functions_wlp_wls as shared
+import pyccl as ccl
 
 SURVEY = 'LSST_DESI'
-endfile = 'fixDls'
+endfile = 'test_updates'
 
 if (SURVEY=='SDSS'):
     import params as pa
 elif (SURVEY=='LSST_DESI'):
     import params_LSST_DESI as pa
 else:
-    print "We don't have support for that survey yet; exiting."
+    print("We don't have support for that survey yet; exiting.")
     exit()
     
 # Set up rp vector
@@ -31,7 +32,7 @@ Boost_file_asc = './txtfiles/boosts/Boost_full_close_survey='+SURVEY+'_deltaz='+
 Boost_file_ascBl = './txtfiles/boosts/Boost_full_assocBl_survey='+SURVEY+'_deltaz='+str(pa.delta_z)+'_'+endfile+'.txt'
 
 if (os.path.isfile(Boost_file_a) and os.path.isfile(Boost_file_b) and os.path.isfile(Boost_file_asc) and os.path.isfile(Boost_file_ascBl)):
-    print "The boost files have previously been calculated for this endfile."
+    print("The boost files have previously been calculated for this endfile.")
     Boost_a = np.loadtxt('./txtfiles/boosts/Boost_full_A_survey='+SURVEY+'_deltaz='+str(pa.delta_z)+'_'+endfile+'.txt')
     Boost_b = np.loadtxt('./txtfiles/boosts/Boost_full_B_survey='+SURVEY+'_deltaz='+str(pa.delta_z)+'_'+endfile+'.txt')
     Boost_asc = np.loadtxt('./txtfiles/boosts/Boost_full_close_survey='+SURVEY+'_deltaz='+str(pa.delta_z)+'_'+endfile+'.txt')
@@ -39,9 +40,9 @@ if (os.path.isfile(Boost_file_a) and os.path.isfile(Boost_file_b) and os.path.is
     interp_B_b = scipy.interpolate.interp1d(np.log(rpvec), np.log(Boost_b))
     interp_B_close = scipy.interpolate.interp1d(np.log(rpvec), np.log(Boost_asc))
 
-    print "B_a 1 Mpc/h=", np.exp(interp_B_a(np.log(1.)))
-    print "B_b 1 Mpc/h=", np.exp(interp_B_b(np.log(1.)))
-    print "B_close 1 Mpc/h=", np.exp(interp_B_close(np.log(1.)))
+    print("B_a 1 Mpc/h=", np.exp(interp_B_a(np.log(1.))))
+    print("B_b 1 Mpc/h=", np.exp(interp_B_b(np.log(1.))))
+    print("B_close 1 Mpc/h=", np.exp(interp_B_close(np.log(1.))))
 	
     exit()
     
@@ -60,8 +61,10 @@ def get_SigmaC_inv(z_s_, z_l_):
     """ Returns the theoretical value of 1/Sigma_c, (Sigma_c = the critcial surface mass density).
     z_s_ and z_l_ can be 1d arrays, so the returned value will in general be a 2d array. """
 
-    com_s = chi_of_z(z_s_) 
-    com_l = chi_of_z(z_l_) 
+    #com_s = chi_of_z(z_s_) 
+    #com_l = chi_of_z(z_l_) 
+    com_s = ccl.comoving_radial_distance(cosmo, 1./(1.+z_s_)) * (pa.HH0 / 100.) # CCL returns in Mpc but we want Mpc/h
+    com_l = ccl.comoving_radial_distance(cosmo, 1./(1.+z_l_)) * (pa.HH0 / 100.) # CCL returns in Mpc but we want Mpc/h
 
     if ((hasattr(z_s_, "__len__")==True) and (hasattr(z_l_, "__len__")==True)):
         Sigma_c_inv = np.zeros((len(z_s_), len(z_l_)))
@@ -139,13 +142,14 @@ def get_NofZ_unnormed(dNdzpar, dNdztype, z):
         beta = dNdzpar[2]
         nofz_ = z**alpha * np.exp( - (z / z0)**beta)
     else:
-        print "dNdz type "+str(dNdztype)+" not yet supported; exiting."
+        print("dNdz type "+str(dNdztype)+" not yet supported; exiting.")
         exit()
 
     return  nofz_
-    
+
+# UPDATE - use CCL functions for this instead    
 # Set up interpolating functions for z(chi) and chi(z)
-(z_of_chi, chi_of_z) = setup.z_interpof_com(SURVEY)
+#(z_of_chi, chi_of_z) = setup.z_interpof_com(SURVEY)
 
 zLvec = np.linspace(pa.zLmin, pa.zLmax, 100)
 
@@ -166,7 +170,11 @@ xi_2h = pa.bd* pa.bs * xi_2h_mm
 xi = xi_1h + xi_2h
 
 # Get the comoving distance associated to the lens redshift
-chi_vec = chi_of_z(zLvec)
+#chi_vec = chi_of_z(zLvec)
+cosmo = ccl.Cosmology(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), sigma8 = pa.sigma8, n_s=pa.n_s)
+chi_vec = np.zeros(len(zLvec))
+for zi in range(0,len(zLvec)):
+    chi_vec[zi] = ccl.comoving_radial_distance(cosmo, 1./(1.+zLvec[zi])) * (pa.HH0/100.) # CCL returns in Mpc but we want Mpc/h
 
 # Figure out the min and max value of the * positive * part of the vector of projected distances
 
@@ -178,10 +186,11 @@ Pi_pos = scipy.logspace(np.log10(minPiPos), np.log10(maxPiPos), 3000)
 # Pi can be positive or negative, so now flip this and include the negative values, but only down to z=0
 # And avoid including multiple of the same values - this messes up some integration routines.
 Pi = [0]*len(zLvec)
+chismin = ccl.comoving_radial_distance(cosmo, 1./(1.+pa.zsmin)) * (pa.HH0 / 100.) # CCL returns in Mpc but we want Mpc/h
 for zi in range(0, len(zLvec)):
     Pi_pos_vec= list(Pi_pos)[1:]
     Pi_pos_vec.reverse()
-    index_cut = next(j[0] for j in enumerate(Pi_pos_vec) if j[1]<=(chi_vec[zi]-chi_of_z(pa.zsmin)))
+    index_cut = next(j[0] for j in enumerate(Pi_pos_vec) if j[1]<=(chi_vec[zi]-chismin))
     Pi[zi] = np.append(-np.asarray(Pi_pos_vec[index_cut:]), np.append([0],Pi_pos))
 
 
@@ -201,7 +210,8 @@ com_Pi = [0]*len(zLvec)
 z_Pi = [0]*len(zLvec)
 for zi in range(0,len(zLvec)):
     com_Pi[zi] = chi_vec[zi] + Pi[zi]
-    z_Pi[zi] = z_of_chi(com_Pi[zi])
+    #z_Pi[zi] = z_of_chi(com_Pi[zi])
+    z_Pi[zi] = (1./ccl.scale_factor_of_chi(cosmo, com_Pi[zi] / (pa.HH0/100.))) - 1.  # CCL wants distance in Mpc but we are working in Mpc/h
 
 # Now we have xi_{ls}(rp, Pi(z_s); z_L)
 
@@ -214,21 +224,26 @@ for zi in range(0,len(zLvec)):
     z_b[zi] = scipy.linspace(zLvec[zi]+pa.delta_z, pa.zphmax, lenzph)
     # For the "assoc" sample we need to get the z-edges
     if (pa.close_cut<chi_vec[zi]):
-        zasc_min = z_of_chi(chi_vec[zi] - pa.close_cut)
-        zasc_max = z_of_chi(chi_vec[zi] + pa.close_cut)
+        #zasc_min = z_of_chi(chi_vec[zi] - pa.close_cut)
+        #zasc_max = z_of_chi(chi_vec[zi] + pa.close_cut)
+        zasc_min = (1./ccl.scale_factor_of_chi(cosmo, (chi_vec[zi] - pa.close_cut) / (pa.HH0/100.) )) - 1.
+        zasc_max = (1./ccl.scale_factor_of_chi(cosmo, (chi_vec[zi] + pa.close_cut) / (pa.HH0/100.) )) - 1.
     else:
         zasc_min = 0.
-        zasc_max = z_of_chi(chi_vec[zi] + pa.close_cut)
+        #zasc_max = z_of_chi(chi_vec[zi] + pa.close_cut)
+        zasc_max = (1./ccl.scale_factor_of_chi(cosmo, (chi_vec[zi] + pa.close_cut) / (pa.HH0/100.) )) - 1.
     z_asc[zi] = scipy.linspace(zasc_min, zasc_max, lenzph)
     
     if (pa.delta_z<zLvec[zi]):
-        zasc_minBl = z_of_chi(chi_vec[zi]) - pa.delta_z
-        zasc_maxBl = z_of_chi(chi_vec[zi]) + pa.delta_z
+        #zasc_minBl = z_of_chi(chi_vec[zi]) - pa.delta_z
+        #zasc_maxBl = z_of_chi(chi_vec[zi]) + pa.delta_z
+        zasc_minBl = ((1./ccl.scale_factor_of_chi(cosmo, chi_vec[zi] / (pa.HH0/100.) )) - 1.) - pa.delta_z
+        zasc_maxBl = ((1./ccl.scale_factor_of_chi(cosmo, chi_vec[zi] / (pa.HH0/100.) )) - 1.) + pa.delta_z
     else:
         zasc_minBl = 0.
-        zasc_maxBl = z_of_chi(chi_vec[zi]) + pa.delta_z
+        zasc_maxBl = ((1./ccl.scale_factor_of_chi(cosmo, chi_vec[zi] / (pa.HH0/100.) )) - 1.) + pa.delta_z
     z_ascBl[zi] = scipy.linspace(zasc_minBl, zasc_maxBl, lenzph)
-    print "zasc=", z_ascBl[zi]
+    print("zasc=", z_ascBl[zi])
     
 z_Pi_norm = scipy.linspace(pa.zsmin, pa.zsmax, 1000)       
 
@@ -244,28 +259,28 @@ specint_num_a = np.zeros(((lenzph), len(zLvec), len(rpvec))); specint_num_b = np
 specint_num_ascBl = np.zeros(((lenzph), len(zLvec), len(rpvec)))
 specint_denom_a = np.zeros(((lenzph), len(zLvec))); specint_denom_b = np.zeros(((lenzph), len(zLvec))); specint_denom_asc = np.zeros(((lenzph), len(zLvec))); specint_denom_ascBl = np.zeros(((lenzph), len(zLvec)))
 for j in range(0,len(zLvec)):
-    print "zlj=", j
+    print("zlj=", j)
     for i in range(0, lenzph):
-		for ri in range(len(rpvec)):
-			#specint_num_a[i,j, ri] = scipy.integrate.simps(dNdz[j] * setup.p_z(z_a[j][i], z_Pi[j], pa.pzpar_fid, pa.pztype) * xi_ofPi[j][ri, :], z_Pi[j])
-			#specint_num_b[i,j, ri] = scipy.integrate.simps(dNdz[j] * setup.p_z(z_b[j][i], z_Pi[j], pa.pzpar_fid, pa.pztype) * xi_ofPi[j][ri, :], z_Pi[j])
-			#specint_num_asc[i,j, ri] = scipy.integrate.simps(dNdz[j] * setup.p_z(z_asc[j][i], z_Pi[j], pa.pzpar_fid, pa.pztype) * xi_ofPi[j][ri, :], z_Pi[j])
-			specint_num_ascBl[i,j, ri] = scipy.integrate.simps(dNdz[j] * setup.p_z(z_ascBl[j][i], z_Pi[j], pa.pzpar_fid, pa.pztype) * xi_ofPi[j][ri, :], z_Pi[j])
+        for ri in range(len(rpvec)):
+            specint_num_a[i,j, ri] = scipy.integrate.simps(dNdz[j] * setup.p_z(z_a[j][i], z_Pi[j], pa.pzpar_fid, pa.pztype) * xi_ofPi[j][ri, :], z_Pi[j])
+            specint_num_b[i,j, ri] = scipy.integrate.simps(dNdz[j] * setup.p_z(z_b[j][i], z_Pi[j], pa.pzpar_fid, pa.pztype) * xi_ofPi[j][ri, :], z_Pi[j])
+            specint_num_asc[i,j, ri] = scipy.integrate.simps(dNdz[j] * setup.p_z(z_asc[j][i], z_Pi[j], pa.pzpar_fid, pa.pztype) * xi_ofPi[j][ri, :], z_Pi[j])
+            specint_num_ascBl[i,j, ri] = scipy.integrate.simps(dNdz[j] * setup.p_z(z_ascBl[j][i], z_Pi[j], pa.pzpar_fid, pa.pztype) * xi_ofPi[j][ri, :], z_Pi[j])
 
             
 for j in range(0,len(zLvec)):
     for i in range(0,lenzph):
-        #specint_denom_a[i,j] = scipy.integrate.simps(dNdz_norm * setup.p_z(z_a[j][i], z_Pi_norm, pa.pzpar_fid, pa.pztype), z_Pi_norm)
-        #specint_denom_b[i,j] = scipy.integrate.simps(dNdz_norm * setup.p_z(z_b[j][i], z_Pi_norm, pa.pzpar_fid, pa.pztype), z_Pi_norm)
-        #specint_denom_asc[i,j] = scipy.integrate.simps(dNdz_norm * setup.p_z(z_asc[j][i], z_Pi_norm, pa.pzpar_fid, pa.pztype), z_Pi_norm)
+        specint_denom_a[i,j] = scipy.integrate.simps(dNdz_norm * setup.p_z(z_a[j][i], z_Pi_norm, pa.pzpar_fid, pa.pztype), z_Pi_norm)
+        specint_denom_b[i,j] = scipy.integrate.simps(dNdz_norm * setup.p_z(z_b[j][i], z_Pi_norm, pa.pzpar_fid, pa.pztype), z_Pi_norm)
+        specint_denom_asc[i,j] = scipy.integrate.simps(dNdz_norm * setup.p_z(z_asc[j][i], z_Pi_norm, pa.pzpar_fid, pa.pztype), z_Pi_norm)
         specint_denom_ascBl[i,j] = scipy.integrate.simps(dNdz_norm * setup.p_z(z_ascBl[j][i], z_Pi_norm, pa.pzpar_fid, pa.pztype), z_Pi_norm)
     
 # Now do the integrals in photo-z
 w_a = [0]*len(zLvec); w_b = [0]*len(zLvec); w_asc = [0]*len(zLvec); w_ascBl = [0]*len(zLvec)
 for zi in range(0,len(zLvec)):
-    #w_a[zi] = weights(pa.e_rms_Bl_a,z_a[zi], zLvec)
-    #w_b[zi] = weights(pa.e_rms_Bl_b,z_b[zi], zLvec)
-    #w_asc[zi] = weights_shapes(pa.e_rms_a,z_asc[zi])
+    w_a[zi] = weights(pa.e_rms_Bl_a,z_a[zi], zLvec)
+    w_b[zi] = weights(pa.e_rms_Bl_b,z_b[zi], zLvec)
+    w_asc[zi] = weights_shapes(pa.e_rms_a,z_asc[zi])
     w_ascBl[zi] = weights_shapes(pa.e_rms_a,z_ascBl[zi])
 
 B_1_a = np.zeros((len(zLvec), len(rpvec)))
@@ -273,41 +288,41 @@ B_1_b = np.zeros((len(zLvec), len(rpvec)))
 B_1_asc = np.zeros((len(zLvec), len(rpvec)))
 B_1_ascBl = np.zeros((len(zLvec), len(rpvec)))
 for zi in range(0,len(zLvec)):
-    print "zi=", zi
+    print("zi=", zi)
     for ri in range(len(rpvec)):
-        #B_1_a[zi, ri]= scipy.integrate.simps(w_a[zi][:, zi] * specint_num_a[:, zi, ri], z_a[zi]) / scipy.integrate.simps(w_a[zi][:, zi]* specint_denom_a[:, zi], z_a[zi])
-        #B_1_b[zi, ri] = scipy.integrate.simps(w_b[zi][:, zi] * specint_num_b[:, zi, ri], z_b[zi]) / scipy.integrate.simps(w_b[zi][:, zi]* specint_denom_b[:, zi], z_b[zi])
-        #B_1_asc[zi, ri] = scipy.integrate.simps(w_asc[zi]*specint_num_asc[:, zi, ri], z_asc[zi]) / scipy.integrate.simps(w_asc[zi]* specint_denom_asc[:,zi], z_asc[zi])
+        B_1_a[zi, ri]= scipy.integrate.simps(w_a[zi][:, zi] * specint_num_a[:, zi, ri], z_a[zi]) / scipy.integrate.simps(w_a[zi][:, zi]* specint_denom_a[:, zi], z_a[zi])
+        B_1_b[zi, ri] = scipy.integrate.simps(w_b[zi][:, zi] * specint_num_b[:, zi, ri], z_b[zi]) / scipy.integrate.simps(w_b[zi][:, zi]* specint_denom_b[:, zi], z_b[zi])
+        B_1_asc[zi, ri] = scipy.integrate.simps(w_asc[zi]*specint_num_asc[:, zi, ri], z_asc[zi]) / scipy.integrate.simps(w_asc[zi]* specint_denom_asc[:,zi], z_asc[zi])
         B_1_ascBl[zi, ri] = scipy.integrate.simps(w_ascBl[zi]*specint_num_ascBl[:, zi, ri], z_ascBl[zi]) / scipy.integrate.simps(w_ascBl[zi]* specint_denom_ascBl[:,zi], z_ascBl[zi])
 
 # Now integrate these over zl
 dndzl = setup.get_dNdzL(zLvec, SURVEY)
 
-#Boost_a = np.zeros(len(rpvec))
-#Boost_b = np.zeros(len(rpvec))
-#Boost_asc = np.zeros(len(rpvec))
+Boost_a = np.zeros(len(rpvec))
+Boost_b = np.zeros(len(rpvec))
+Boost_asc = np.zeros(len(rpvec))
 Boost_ascBl = np.zeros(len(rpvec))
 
 for ri in range(0,len(rpvec)):
-    #Boost_a[ri] = scipy.integrate.simps(B_1_a[:, ri] * dndzl, zLvec)
-    #Boost_b[ri] = scipy.integrate.simps(B_1_b[:,ri]* dndzl, zLvec)
-    #Boost_asc[ri]= scipy.integrate.simps(B_1_asc[:, ri]* dndzl, zLvec)
+    Boost_a[ri] = scipy.integrate.simps(B_1_a[:, ri] * dndzl, zLvec)
+    Boost_b[ri] = scipy.integrate.simps(B_1_b[:,ri]* dndzl, zLvec)
+    Boost_asc[ri]= scipy.integrate.simps(B_1_asc[:, ri]* dndzl, zLvec)
     Boost_ascBl[ri]= scipy.integrate.simps(B_1_ascBl[:, ri]* dndzl, zLvec)
 
-#np.savetxt(Boost_file_a, Boost_a)
-#np.savetxt(Boost_file_b, Boost_b)
-#np.savetxt(Boost_file_asc, Boost_asc)
+np.savetxt(Boost_file_a, Boost_a)
+np.savetxt(Boost_file_b, Boost_b)
+np.savetxt(Boost_file_asc, Boost_asc)
 np.savetxt(Boost_file_ascBl, Boost_ascBl)
 
-print "Boosts computed"
+print("Boosts computed")
 
-#interp_B_a = scipy.interpolate.interp1d(rpvec, Boost_a)
-#interp_B_b = scipy.interpolate.interp1d(rpvec, Boost_b)
-#interp_B_close = scipy.interpolate.interp1d(rpvec, Boost_asc)
+interp_B_a = scipy.interpolate.interp1d(rpvec, Boost_a)
+interp_B_b = scipy.interpolate.interp1d(rpvec, Boost_b)
+interp_B_close = scipy.interpolate.interp1d(rpvec, Boost_asc)
 
-#print "B_a 1 Mpc/h=", interp_B_a(1.)
-#print "B_b 1 Mpc/h=", interp_B_b(1.)
-#print "B_close 1 Mpc/h=", interp_B_close(1.)
+print("B_a 1 Mpc/h=", interp_B_a(1.))
+print("B_b 1 Mpc/h=", interp_B_b(1.))
+print("B_close 1 Mpc/h=", interp_B_close(1.))
 
 
 

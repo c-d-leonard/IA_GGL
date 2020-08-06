@@ -6,6 +6,7 @@ import scipy.integrate
 import matplotlib.pyplot as plt
 import scipy.signal
 import astropy.convolution
+import pyccl as ccl
 
 # Functions to set up the rp bins
 
@@ -46,7 +47,7 @@ def get_areas(bins, z_eff, survey):
 	elif (survey == 'LSST_DESI'):
 		import params_LSST_DESI as pa
 	else:
-		print "We don't have support for that survey yet; exiting."
+		print("We don't have support for that survey yet; exiting.")
 		exit()
 
 	# Areas in units (Mpc/h)^2
@@ -91,7 +92,7 @@ def com(z_, survey, cosmo_par):
 	elif (survey == 'LSST_DESI'):
 		import params_LSST_DESI as pa
 	else:
-		print "We don't have support for that survey yet; exiting."
+		print("We don't have support for that survey yet; exiting.")
 		exit()
 
 	OmL = 1. - OmC - OmB - pa.OmR - pa.OmN
@@ -116,7 +117,7 @@ def z_interpof_com(survey):
 	elif (survey == 'LSST_DESI'):
 		import params_LSST_DESI as pa
 	else:
-		print "We don't have support for that survey yet; exiting."
+		print("We don't have support for that survey yet; exiting.")
 		exit()
 
 	z_vec = scipy.linspace(0., 20., 10000) # This hardcodes that we don't care about anything over z=2100
@@ -135,7 +136,7 @@ def p_z(z_ph, z_sp, pzpar, pztype):
 		sigz = pzpar[0]
 		p_z_ = np.exp(-(z_ph - z_sp)**2 / (2.*(sigz*(1.+z_sp))**2)) / (np.sqrt(2.*np.pi)*(sigz*(1.+z_sp)))
 	else:
-		print "Photo-z probability distribution "+str(pztype)+" not yet supported; exiting."
+		print("Photo-z probability distribution "+str(pztype)+" not yet supported; exiting.")
 		exit()
 		
 	return p_z_
@@ -148,7 +149,7 @@ def get_NofZ_unnormed(dNdzpar, dNdztype, z_min, z_max, zpts, survey):
 	elif (survey == 'LSST_DESI'):
 		import params_LSST_DESI as pa
 	else:
-		print "We don't have support for that survey yet; exiting."
+		print("We don't have support for that survey yet; exiting.")
 		exit()
 
 	z = scipy.linspace(z_min, z_max, zpts)
@@ -168,7 +169,7 @@ def get_NofZ_unnormed(dNdzpar, dNdztype, z_min, z_max, zpts, survey):
 			beta = dNdzpar[2]
 			nofz_ = z**alpha * np.exp( - (z / z0)**beta)
 		else: # if rlim != 25.3 we have to compute the redshift distribution from the luminosity function
-			print "dNdz (sources) for rlim != 25.3 is not working yet."
+			print("dNdz (sources) for rlim != 25.3 is not working yet.")
 			exit()
 		#(L, phi_normed, phi) = get_phi(z, pa.lumparams_all, survey)
 		#(L_red, phi_normed_red, phi_red) = get_phi(z, pa.lumparams_red, survey)
@@ -189,50 +190,55 @@ def get_NofZ_unnormed(dNdzpar, dNdztype, z_min, z_max, zpts, survey):
 		plt.close()"""
 			
 	else:
-		print "dNdz type "+str(dNdztype)+" not yet supported; exiting."
+		print("dNdz type "+str(dNdztype)+" not yet supported; exiting.")
 		exit()
 
 	return (z, nofz_)
 	
 def get_dNdzL(zvec, survey):
-	""" Imports the lens redshift distribution from file, normalizes, interpolates, and outputs at the z vector that's passed."""
-	
-	if (survey == 'SDSS'):
-		import params as pa
-	elif (survey == 'LSST_DESI'):
-		import params_LSST_DESI as pa
-	else:
-		print "We don't have support for that survey yet; exiting."
-		exit()
+    """ Imports the lens redshift distribution from file, normalizes, interpolates, and outputs at the z vector that's passed."""
+
+    if (survey == 'SDSS'):
+        import params as pa
+    elif (survey == 'LSST_DESI'):
+        import params_LSST_DESI as pa
+    else:
+        print("We don't have support for that survey yet; exiting.")
+        exit()
 		
-	z, dNdz = np.loadtxt('./txtfiles/'+pa.dNdzL_file, unpack=True)
+    z, dNdz = np.loadtxt('./txtfiles/'+pa.dNdzL_file, unpack=True)
 	
-	# If we're dealing with SDSS, we need to smooth the noisy data curve and convert from n(z) (comoving number density) to dNdz
-	if (survey == 'SDSS'):
-		# Filter the curve 
-		nofz_filt = astropy.convolution.convolve(dNdz, astropy.convolution.Box1DKernel(10))
-		# Convert to dNdz
-		OmL = 1. - pa.OmC - pa.OmB - pa.OmR - pa.OmN
-		c_over_H = 1. / (pa.H0 * ( (pa.OmC+pa.OmB)*(1.+z)**3 + OmL + (pa.OmR+pa.OmN) * (1.+z)**4 )**(0.5))
-		dNdz = nofz_filt * 4. * np.pi * pa.fsky * com(z, survey, pa.cos_par_std)**2 * c_over_H # See notes October 12 2017 for this expression.
-	#print "NOT SMOOTHING OVER NOFZ FOR LENSES."
+    # If we're dealing with SDSS, we need to smooth the noisy data curve and convert from n(z) (comoving number density) to dNdz
+    if (survey == 'SDSS'):
+        # Filter the curve 
+        nofz_filt = astropy.convolution.convolve(dNdz, astropy.convolution.Box1DKernel(10))
+        # Convert to dNdz
+        OmL = 1. - pa.OmC - pa.OmB - pa.OmR - pa.OmN
+        c_over_H = 1. / (pa.H0 * ( (pa.OmC+pa.OmB)*(1.+z)**3 + OmL + (pa.OmR+pa.OmN) * (1.+z)**4 )**(0.5))
+        cosmo =ccl.Cosmology(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), sigma8 = pa.sigma8, n_s=pa.n_s)
+        com = np.zeros(len(z))
+        for zi in range(0,len(z)):
+            com = ccl.comoving_radial_distance(cosmo, 1./(1.+z[zi]))
+        #dNdz = nofz_filt * 4. * np.pi * pa.fsky * com(z, survey, pa.cos_par_std)**2 * c_over_H # See notes October 12 2017 for this expression.
+        dNdz = nofz_filt * 4. * np.pi * pa.fsky * com**2 * c_over_H # See notes October 12 2017 for this expression.
+    #print "NOT SMOOTHING OVER NOFZ FOR LENSES."
 		
-	interpolation = scipy.interpolate.interp1d(z, dNdz)
+    interpolation = scipy.interpolate.interp1d(z, dNdz)
 	
-	# Create a well-sampled redshift vector to make sure we can get the normalization without numerical problems
-	z_highres = np.linspace(z[0], z[-1], 1000)
+    # Create a well-sampled redshift vector to make sure we can get the normalization without numerical problems
+    z_highres = np.linspace(z[0], z[-1], 1000)
 	
-	dNdz_getnorm = interpolation(z_highres)
+    dNdz_getnorm = interpolation(z_highres)
 	
-	norm = scipy.integrate.simps(dNdz_getnorm, z_highres)
+    norm = scipy.integrate.simps(dNdz_getnorm, z_highres)
 	
-	if ((zvec[0]>=z[0]) and (zvec[-1]<=z[-1])):
-		dNdz_return = interpolation(zvec)
-	else:
-		print "You have asked for dN/dzl at redshifts out of the known range."
-		exit()
+    if ((zvec[0]>=z[0]) and (zvec[-1]<=z[-1])):
+        dNdz_return = interpolation(zvec)
+    else:
+        print("You have asked for dN/dzl at redshifts out of the known range.")
+        exit()
 	
-	return  dNdz_return / norm
+    return  dNdz_return / norm
 	
 def get_phi(z, lum_params, survey):
 	
@@ -246,7 +252,7 @@ def get_phi(z, lum_params, survey):
 	elif (survey == 'LSST_DESI'):
 		import params_LSST_DESI as pa
 	else:
-		print "We don't have support for that survey yet; exiting."
+		print("We don't have support for that survey yet; exiting.")
 		exit()
 		
 	[Mr_s, Q, alpha_lum, phi_0, P ] = lum_params
@@ -302,7 +308,7 @@ def get_fred_ofz(z, survey):
 	elif (survey == 'LSST_DESI'):
 		import params_LSST_DESI as pa
 	else:
-		print "We don't have support for that survey yet; exiting."
+		print("We don't have support for that survey yet; exiting.")
 		exit()
 
 	(L_red, nothing, phi_red) = get_phi(z, pa.lumparams_red, survey)

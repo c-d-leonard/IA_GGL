@@ -2,7 +2,7 @@
 
 SURVEY = 'LSST_DESI'
 print "SURVEY=", SURVEY
-endfile= 'fixDls'
+endfile= 'test_updates'
 
 import numpy as np
 import scipy
@@ -1452,7 +1452,7 @@ if (SURVEY=='SDSS'):
 elif (SURVEY=='LSST_DESI'):
 	import params_LSST_DESI as pa
 else:
-	print "We don't have support for that survey yet; exiting."
+	print("We don't have support for that survey yet; exiting.")
 	exit()
 
 # Uncomment these lines if you want to load two covariance matrices and check how well they have converged.

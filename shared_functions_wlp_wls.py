@@ -21,7 +21,7 @@ def get_ah(survey):
 	elif (survey == 'LSST_DESI'):
 		import params_LSST_DESI as pa
 	else:
-		print "We don't have support for that survey yet; exiting."
+		print("We don't have support for that survey yet; exiting.")
 		exit()
 		
 	# Don't evaluate at any redshifts higher than the highest value for which we have kcorr and ecorr corrections
@@ -59,7 +59,7 @@ def get_Ai(survey):
 	elif (survey == 'LSST_DESI'):
 		import params_LSST_DESI as pa
 	else:
-		print "We don't have support for that survey yet; exiting."
+		print("We don't have support for that survey yet; exiting.")
 		exit()
 	
 	# Don't evaluate at any redshifts higher than the highest value for which we have kcorr and ecorr corrections
@@ -97,12 +97,13 @@ def window(survey):
 	elif (survey == 'LSST_DESI'):
 		import params_LSST_DESI as pa
 	else:
-		print "We don't have support for that survey yet; exiting."
+		print("We don't have support for that survey yet; exiting.")
 		exit()
 	
 	z = np.linspace(pa.zLmin, pa.zLmax, 100)
 	dNdz_1 = setup.get_dNdzL(z, survey)
 	
+    # UPDATE CCL - use CCL comoving distance? 
 	chi = setup.com(z, survey, pa.cos_par_std)
 	OmL = 1. - pa.OmC - pa.OmB - pa.OmR - pa.OmN
 	dzdchi = pa.H0 * ( ( pa.OmC + pa.OmB )*(1+z)**3 + OmL + (pa.OmR+pa.OmN) * (1+z)**4 )**(0.5)
@@ -133,7 +134,7 @@ def get_P1haloIA(z, k, q11, q12, q13, q21, q22, q23, q31, q32, q33, survey):
 	
 	# Get amplitude parameter (this is a function of limiting luminosity
 	ah = get_ah(survey)
-	print "ah=", ah
+	print("ah=", ah)
 	
 	P1halo = np.zeros((len(k), len(z)))
 	for ki in range(0,len(k)):
@@ -150,7 +151,7 @@ def growth(z_,survey):
 	elif (survey == 'LSST_DESI'):
 		import params_LSST_DESI as pa
 	else:
-		print "We don't have support for that survey yet; exiting."
+		print("We don't have support for that survey yet; exiting.")
 		exit()
 	
 	def int_(z):
@@ -175,7 +176,7 @@ def wgp_1halo(rp_c_, q11, q12, q13, q21, q22, q23, q31, q32, q33, savefile, surv
 	elif (survey == 'LSST_DESI'):
 		import params_LSST_DESI as pa
 	else:
-		print "We don't have support for that survey yet; exiting."
+		print("We don't have support for that survey yet; exiting.")
 		exit()
 	
 	(z, w) = window(survey) 
@@ -219,7 +220,7 @@ def wgp_2halo(rp_cents_, bd, savefile, survey):
 	elif (survey == 'LSST_DESI'):
 		import params_LSST_DESI as pa
 	else:
-		print "We don't have support for that survey yet; exiting."
+		print("We don't have support for that survey yet; exiting.")
 		exit()
 	
 	# Get the redshift window function
@@ -280,18 +281,18 @@ def wgp_full(rp_c, bd, q11, q12, q13, q21, q22, q23, q31, q32, q33, savefile_1h,
 	
 	# Check if savefile_1h exists, and if not, calculate 1 halo term.
 	if (os.path.isfile(savefile_1h)):
-		print "Loading wgp 1halo term from file"
+		print("Loading wgp 1halo term from file")
 		(rp_cen, wgp_1h) = np.loadtxt(savefile_1h, unpack=True)
 	else:
-		print "Computing wgp 1halo term"
+		print("Computing wgp 1halo term")
 		wgp_1h = wgp_1halo(rp_c, q11, q12, q13, q21, q22, q23, q31, q32, q33, savefile_1h, survey)
 		
 	# Check if savefile_2h exists, and if not, calculate 2 halo term.
 	if (os.path.isfile(savefile_2h)):
-		print "Loading wgp 2halo term from file "
+		print("Loading wgp 2halo term from file ")
 		(rp_cen, wgp_2h) = np.loadtxt(savefile_2h, unpack=True)
 	else:
-		print "Computing wgp 2halo term"
+		print("Computing wgp 2halo term")
 		wgp_2h = wgp_2halo(rp_c, bd, savefile_2h, survey)
 	
 	wgp_tot = wgp_1h + wgp_2h 
@@ -310,7 +311,7 @@ def Rhalo(M_insol, survey):
 	elif (survey == 'LSST_DESI'):
 		import params_LSST_DESI as pa
 	else:
-		print "We don't have support for that survey yet; exiting."
+		print("We don't have support for that survey yet; exiting.")
 		exit()
 	
 	#rho_crit = 3. * 10**10 * pa.mperMpc / (8. * np.pi * pa.Gnewt * pa.Msun * (pa. HH0 / 100.)) # Msol h^3 / Mpc^3, for use with M in Msol.
@@ -371,7 +372,7 @@ def wgg_1halo_Four(rp_cents_, fsky, savefile, endfile, survey):
 	elif (survey == 'LSST_DESI'):
 		import params_LSST_DESI as pa
 	else:
-		print "We don't have support for that survey yet; exiting."
+		print("We don't have support for that survey yet; exiting.")
 		exit()
 	
 	logkmin = -6; kpts =40000; logkmax = 5; Mmax = 16;
@@ -424,18 +425,17 @@ def get_Pkgg_2h_multiz(k, endfile, survey):
 		import params_LSST_DESI as pa
 		z = np.asarray([0.025000000000000001, 0.036616161616161616, 0.048232323232323238, 0.059848484848484852, 0.071464646464646481, 0.083080808080808088, 0.094696969696969696, 0.10631313131313133, 0.11792929292929294, 0.12954545454545457, 0.14116161616161618, 0.15277777777777779, 0.1643939393939394, 0.17601010101010103, 0.18762626262626264, 0.19924242424242428, 0.21085858585858588, 0.22247474747474749, 0.23409090909090913, 0.24570707070707073, 0.2573232323232324, 0.26893939393939398, 0.28055555555555561, 0.29217171717171725, 0.30378787878787883, 0.31540404040404046, 0.3270202020202021, 0.33863636363636374, 0.35025252525252532, 0.36186868686868695, 0.37348484848484859, 0.38510101010101017, 0.3967171717171718, 0.40833333333333344, 0.41994949494949502, 0.43156565656565665, 0.44318181818181829, 0.45479797979797987, 0.4664141414141415, 0.47803030303030314, 0.48964646464646477, 0.5012626262626263, 0.51287878787878793, 0.52449494949494957, 0.5361111111111112, 0.54772727272727284, 0.55934343434343448, 0.57095959595959611, 0.58257575757575764, 0.59419191919191927, 0.60580808080808091, 0.61742424242424254, 0.62904040404040418, 0.64065656565656581, 0.65227272727272745, 0.66388888888888897, 0.67550505050505061, 0.68712121212121224, 0.69873737373737388, 0.71035353535353551, 0.72196969696969715, 0.73358585858585867, 0.74520202020202031, 0.75681818181818195, 0.76843434343434358, 0.78005050505050522, 0.79166666666666685, 0.80328282828282849, 0.81489898989899001, 0.82651515151515165, 0.83813131313131328, 0.84974747474747492, 0.86136363636363655, 0.87297979797979819, 0.88459595959595971, 0.89621212121212135, 0.90782828282828298, 0.91944444444444462, 0.93106060606060626, 0.94267676767676789, 0.95429292929292953, 0.96590909090909105, 0.97752525252525269, 0.98914141414141432, 1.000757575757576, 1.0123737373737376, 1.0239898989898992, 1.0356060606060606, 1.0472222222222223, 1.0588383838383839, 1.0704545454545455, 1.0820707070707072, 1.0936868686868688, 1.1053030303030305, 1.1169191919191921, 1.1285353535353537, 1.1401515151515151, 1.1517676767676768, 1.1633838383838384, 1.175])
 	else:
-		print "We don't have support for that survey yet. Exiting."
+		print("We don't have support for that survey yet. Exiting.")
 		exit()
 		
-	p = ccl.Parameters(Omega_c = pa.OmC_s, Omega_b = pa.OmB_s, h = (pa.HH0_s/100.), sigma8 = pa.sigma8_s, n_s=pa.n_s_s)
-	cosmo = ccl.Cosmology(p)
+	cosmo = ccl.Cosmology(Omega_c = pa.OmC_s, Omega_b = pa.OmB_s, h = (pa.HH0_s/100.), sigma8 = pa.sigma8_s, n_s=pa.n_s_s)
 	
 	h = (pa.HH0_s/100.)
 	Pk = np.zeros((len(k),len(z)))
 	for zi in range(0,len(z)):
 		zsave=str('{:1.12f}'.format(z[zi]))
 		if (os.path.isfile('./txtfiles/halofit_Pk/Pk_nonlin_z='+zsave+'_'+endfile+'.txt')):
-			print "Warning: Pk 2halo at z="+zsave+" already exists."
+			print("Warning: Pk 2halo at z="+zsave+" already exists.")
 			k_dummy, Pk[:,zi] = np.loadtxt('./txtfiles/halofit_Pk/Pk_nonlin_z='+zsave+'_'+endfile+'.txt', unpack=True)
 		else:	
 			Pk[:,zi] = h**3 * ccl.nonlin_matter_power(cosmo, k * h , 1./(1.+z[zi])) # CCL takes units without little h's, but we use little h units.
@@ -443,7 +443,7 @@ def get_Pkgg_2h_multiz(k, endfile, survey):
 			np.savetxt('./txtfiles/halofit_Pk/Pk_nonlin_z='+zsave+'_'+endfile+'.txt', save_thing)
 	
 	if (os.path.isfile('./txtfiles/halofit_Pk/Pk_zavg_'+survey+'_'+endfile+'.txt')):
-		print "Warning: Pk 2halo integrated over z already exists."
+		print("Warning: Pk 2halo integrated over z already exists.")
 		return
 	else:	
 		dndzl = setup.get_dNdzL(z, survey)
@@ -458,264 +458,268 @@ def get_Pkgg_2h_multiz(k, endfile, survey):
 	return
 	
 def get_Pkgg_1halo_multiz(kvec_ft, fsky, Mhalo, kvec_short, y_src, y_lens, Mstarlow, endfile, survey):
-	""" Return the 1halo galaxy power spectrum of lenses x sources at multiple redshift for calculating the boost. """
+    """ Return the 1halo galaxy power spectrum of lenses x sources at multiple redshift for calculating the boost. """
 	
-	if (survey == 'SDSS'):
-		import params as pa
-	elif (survey == 'LSST_DESI'):
-		import params_LSST_DESI as pa
-	else:
-		print "We don't have support for that survey yet; exiting."
-		exit()
+    if (survey == 'SDSS'):
+        import params as pa
+    elif (survey == 'LSST_DESI'):
+        import params_LSST_DESI as pa
+    else:
+        print("We don't have support for that survey yet; exiting.")
+        exit()
 	
-	if (survey=='SDSS'):
-		z = np.asarray([0.16, 0.16202020202020204, 0.16404040404040404, 0.16606060606060608, 0.16808080808080808, 0.17010101010101011, 0.17212121212121212, 0.17414141414141415, 0.17616161616161616, 0.17818181818181819, 0.1802020202020202, 0.18222222222222223, 0.18424242424242424, 0.18626262626262627, 0.18828282828282827, 0.19030303030303031, 0.19232323232323234, 0.19434343434343435, 0.19636363636363635, 0.19838383838383838, 0.20040404040404042, 0.20242424242424242, 0.20444444444444446, 0.20646464646464646, 0.2084848484848485, 0.2105050505050505, 0.21252525252525253, 0.21454545454545454, 0.21656565656565657, 0.21858585858585861, 0.22060606060606061, 0.22262626262626262, 0.22464646464646465, 0.22666666666666668, 0.22868686868686869, 0.23070707070707069, 0.23272727272727273, 0.23474747474747476, 0.23676767676767677, 0.23878787878787877, 0.2408080808080808, 0.24282828282828284, 0.24484848484848487, 0.24686868686868688, 0.24888888888888888, 0.25090909090909091, 0.25292929292929295, 0.25494949494949493, 0.25696969696969696, 0.25898989898989899, 0.26101010101010103, 0.26303030303030306, 0.26505050505050504, 0.26707070707070707, 0.2690909090909091, 0.27111111111111108, 0.27313131313131311, 0.27515151515151515, 0.27717171717171718, 0.27919191919191921, 0.28121212121212125, 0.28323232323232322, 0.28525252525252526, 0.28727272727272724, 0.28929292929292927, 0.2913131313131313, 0.29333333333333333, 0.29535353535353537, 0.2973737373737374, 0.29939393939393943, 0.30141414141414141, 0.30343434343434345, 0.30545454545454542, 0.30747474747474746, 0.30949494949494949, 0.31151515151515152, 0.31353535353535356, 0.31555555555555559, 0.31757575757575757, 0.3195959595959596, 0.32161616161616158, 0.32363636363636361, 0.32565656565656564, 0.32767676767676768, 0.32969696969696971, 0.33171717171717174, 0.33373737373737378, 0.33575757575757575, 0.33777777777777779, 0.33979797979797977, 0.3418181818181818, 0.34383838383838383, 0.34585858585858587, 0.3478787878787879, 0.34989898989898993, 0.35191919191919191, 0.35393939393939394, 0.35595959595959598, 0.35797979797979795, 0.35999999999999999])
-	elif (survey=='LSST_DESI'):
-		z = np.asarray([0.025000000000000001, 0.036616161616161616, 0.048232323232323238, 0.059848484848484852, 0.071464646464646481, 0.083080808080808088, 0.094696969696969696, 0.10631313131313133, 0.11792929292929294, 0.12954545454545457, 0.14116161616161618, 0.15277777777777779, 0.1643939393939394, 0.17601010101010103, 0.18762626262626264, 0.19924242424242428, 0.21085858585858588, 0.22247474747474749, 0.23409090909090913, 0.24570707070707073, 0.2573232323232324, 0.26893939393939398, 0.28055555555555561, 0.29217171717171725, 0.30378787878787883, 0.31540404040404046, 0.3270202020202021, 0.33863636363636374, 0.35025252525252532, 0.36186868686868695, 0.37348484848484859, 0.38510101010101017, 0.3967171717171718, 0.40833333333333344, 0.41994949494949502, 0.43156565656565665, 0.44318181818181829, 0.45479797979797987, 0.4664141414141415, 0.47803030303030314, 0.48964646464646477, 0.5012626262626263, 0.51287878787878793, 0.52449494949494957, 0.5361111111111112, 0.54772727272727284, 0.55934343434343448, 0.57095959595959611, 0.58257575757575764, 0.59419191919191927, 0.60580808080808091, 0.61742424242424254, 0.62904040404040418, 0.64065656565656581, 0.65227272727272745, 0.66388888888888897, 0.67550505050505061, 0.68712121212121224, 0.69873737373737388, 0.71035353535353551, 0.72196969696969715, 0.73358585858585867, 0.74520202020202031, 0.75681818181818195, 0.76843434343434358, 0.78005050505050522, 0.79166666666666685, 0.80328282828282849, 0.81489898989899001, 0.82651515151515165, 0.83813131313131328, 0.84974747474747492, 0.86136363636363655, 0.87297979797979819, 0.88459595959595971, 0.89621212121212135, 0.90782828282828298, 0.91944444444444462, 0.93106060606060626, 0.94267676767676789, 0.95429292929292953, 0.96590909090909105, 0.97752525252525269, 0.98914141414141432, 1.000757575757576, 1.0123737373737376, 1.0239898989898992, 1.0356060606060606, 1.0472222222222223, 1.0588383838383839, 1.0704545454545455, 1.0820707070707072, 1.0936868686868688, 1.1053030303030305, 1.1169191919191921, 1.1285353535353537, 1.1401515151515151, 1.1517676767676768, 1.1633838383838384, 1.175])
-	else:
-		print "We don't have support for that survey yet. Exiting."
-		exit()
+    if (survey=='SDSS'):
+        z = np.asarray([0.16, 0.16202020202020204, 0.16404040404040404, 0.16606060606060608, 0.16808080808080808, 0.17010101010101011, 0.17212121212121212, 0.17414141414141415, 0.17616161616161616, 0.17818181818181819, 0.1802020202020202, 0.18222222222222223, 0.18424242424242424, 0.18626262626262627, 0.18828282828282827, 0.19030303030303031, 0.19232323232323234, 0.19434343434343435, 0.19636363636363635, 0.19838383838383838, 0.20040404040404042, 0.20242424242424242, 0.20444444444444446, 0.20646464646464646, 0.2084848484848485, 0.2105050505050505, 0.21252525252525253, 0.21454545454545454, 0.21656565656565657, 0.21858585858585861, 0.22060606060606061, 0.22262626262626262, 0.22464646464646465, 0.22666666666666668, 0.22868686868686869, 0.23070707070707069, 0.23272727272727273, 0.23474747474747476, 0.23676767676767677, 0.23878787878787877, 0.2408080808080808, 0.24282828282828284, 0.24484848484848487, 0.24686868686868688, 0.24888888888888888, 0.25090909090909091, 0.25292929292929295, 0.25494949494949493, 0.25696969696969696, 0.25898989898989899, 0.26101010101010103, 0.26303030303030306, 0.26505050505050504, 0.26707070707070707, 0.2690909090909091, 0.27111111111111108, 0.27313131313131311, 0.27515151515151515, 0.27717171717171718, 0.27919191919191921, 0.28121212121212125, 0.28323232323232322, 0.28525252525252526, 0.28727272727272724, 0.28929292929292927, 0.2913131313131313, 0.29333333333333333, 0.29535353535353537, 0.2973737373737374, 0.29939393939393943, 0.30141414141414141, 0.30343434343434345, 0.30545454545454542, 0.30747474747474746, 0.30949494949494949, 0.31151515151515152, 0.31353535353535356, 0.31555555555555559, 0.31757575757575757, 0.3195959595959596, 0.32161616161616158, 0.32363636363636361, 0.32565656565656564, 0.32767676767676768, 0.32969696969696971, 0.33171717171717174, 0.33373737373737378, 0.33575757575757575, 0.33777777777777779, 0.33979797979797977, 0.3418181818181818, 0.34383838383838383, 0.34585858585858587, 0.3478787878787879, 0.34989898989898993, 0.35191919191919191, 0.35393939393939394, 0.35595959595959598, 0.35797979797979795, 0.35999999999999999])
+    elif (survey=='LSST_DESI'):
+        z = np.asarray([0.025000000000000001, 0.036616161616161616, 0.048232323232323238, 0.059848484848484852, 0.071464646464646481, 0.083080808080808088, 0.094696969696969696, 0.10631313131313133, 0.11792929292929294, 0.12954545454545457, 0.14116161616161618, 0.15277777777777779, 0.1643939393939394, 0.17601010101010103, 0.18762626262626264, 0.19924242424242428, 0.21085858585858588, 0.22247474747474749, 0.23409090909090913, 0.24570707070707073, 0.2573232323232324, 0.26893939393939398, 0.28055555555555561, 0.29217171717171725, 0.30378787878787883, 0.31540404040404046, 0.3270202020202021, 0.33863636363636374, 0.35025252525252532, 0.36186868686868695, 0.37348484848484859, 0.38510101010101017, 0.3967171717171718, 0.40833333333333344, 0.41994949494949502, 0.43156565656565665, 0.44318181818181829, 0.45479797979797987, 0.4664141414141415, 0.47803030303030314, 0.48964646464646477, 0.5012626262626263, 0.51287878787878793, 0.52449494949494957, 0.5361111111111112, 0.54772727272727284, 0.55934343434343448, 0.57095959595959611, 0.58257575757575764, 0.59419191919191927, 0.60580808080808091, 0.61742424242424254, 0.62904040404040418, 0.64065656565656581, 0.65227272727272745, 0.66388888888888897, 0.67550505050505061, 0.68712121212121224, 0.69873737373737388, 0.71035353535353551, 0.72196969696969715, 0.73358585858585867, 0.74520202020202031, 0.75681818181818195, 0.76843434343434358, 0.78005050505050522, 0.79166666666666685, 0.80328282828282849, 0.81489898989899001, 0.82651515151515165, 0.83813131313131328, 0.84974747474747492, 0.86136363636363655, 0.87297979797979819, 0.88459595959595971, 0.89621212121212135, 0.90782828282828298, 0.91944444444444462, 0.93106060606060626, 0.94267676767676789, 0.95429292929292953, 0.96590909090909105, 0.97752525252525269, 0.98914141414141432, 1.000757575757576, 1.0123737373737376, 1.0239898989898992, 1.0356060606060606, 1.0472222222222223, 1.0588383838383839, 1.0704545454545455, 1.0820707070707072, 1.0936868686868688, 1.1053030303030305, 1.1169191919191921, 1.1285353535353537, 1.1401515151515151, 1.1517676767676768, 1.1633838383838384, 1.175])
+    else:
+        print("We don't have support for that survey yet. Exiting.")
+        exit()
 		
-	np.savetxt('./txtfiles/1halo_terms/z_list_'+survey+'.txt', z, fmt="%1.12f")
+    np.savetxt('./txtfiles/1halo_terms/z_list_'+survey+'.txt', z, fmt="%1.12f")
 	
-	zsave = [0]*len(z)
-	for i in range(0,len(z)):
-		zsave[i]=str('{:1.12f}'.format(z[i]))
+    zsave = [0]*len(z)
+    for i in range(0,len(z)):
+        zsave[i]=str('{:1.12f}'.format(z[i]))
 		
-	# Check if this has already been run for this file name:
-	file_present = 0
-	for zi in range(0,len(z)):
-		if (os.path.isfile('./txtfiles/1halo_terms/Pk1h_ls_z='+zsave[zi]+'_'+endfile+'.txt')):
-			file_present = 1
-	if file_present==1:
-		print "Pkgg 1halo multiz has already been run for this endfile."
-		return
+    # Check if this has already been run for this file name:
+    file_present = 0
+    for zi in range(0,len(z)):
+        if (os.path.isfile('./txtfiles/1halo_terms/Pk1h_ls_z='+zsave[zi]+'_'+endfile+'.txt')):
+            file_present = 1
+    if file_present==1:
+        print("Pkgg 1halo multiz has already been run for this endfile.")
+        return
 		
-	# For the cosmological parameters:
-	# I'm going to use the SOURCE parameters here
-	# For SDSS source and lens cosmological parameters are the same
-	# For LSST+DESI, they are not too different, but DESI HOD is already weird because I have to use CMASS
-	# So use the ones consistent with sources.
+    # For the cosmological parameters:
+    # I'm going to use the SOURCE parameters here
+    # For SDSS source and lens cosmological parameters are the same
+    # For LSST+DESI, they are not too different, but DESI HOD is already weird because I have to use CMASS
+    # So use the ones consistent with sources.
 	
-	# Get the halo mass function from CCL
-	p = ccl.Parameters(Omega_c = pa.OmC_s, Omega_b = pa.OmB_s, h = (pa.HH0_s/100.), sigma8 = pa.sigma8_s, n_s=pa.n_s_s)
-	cosmo = ccl.Cosmology(p)
-	HMF = np.zeros((len(Mhalo), len(z)))
-	for zi in range(0,len(z)):
-		HMF[:, zi] = ccl.massfunction.massfunc(cosmo, Mhalo / (pa.HH0_s/100.), 1./ (1. + z[zi]), odelta=200.) / (pa.HH0_s / 100.)**3
+    # Get the halo mass function from CCL
+    cosmo = ccl.Cosmology(Omega_c = pa.OmC_s, Omega_b = pa.OmB_s, h = (pa.HH0_s/100.), sigma8 = pa.sigma8_s, n_s=pa.n_s_s)
+    HMF = np.zeros((len(Mhalo), len(z)))
+    for zi in range(0,len(z)):
+        HMF_class = ccl.halos.MassFuncTinker10(cosmo)
+        HMF[:,zi] = HMF_class.get_mass_function(cosmo, Mhalo / (pa.HH0_s/100.), 1./ (1. + z[zi])) / (pa.HH0_s / 100.)**3
+        #HMF[:, zi] = ccl.massfunction.massfunc(cosmo, Mhalo / (pa.HH0_s/100.), 1./ (1. + z[zi]), odelta=200.) / (pa.HH0_s / 100.)**3
 		
-	# Get the mean number of centrals and satelites for the appropriate HOD. We assume none of the sources are centrals in galaxies with satellites from the lenses.
-	if (survey == 'SDSS'):
-		Ncen_lens 	= 	get_Ncen_Reid(Mhalo, survey)  		# Reid & Spergel
-		Nsat_lens 	= 	get_Nsat_Reid(Mhalo, survey)  		# Reid & Spergel 
-		Ncen_src	= 	get_Ncen_Zu(Mhalo, Mstarlow, survey) # Zu & Mandelbaum 2015
-		Nsat_src_tot 	= 	get_Nsat_Zu(Mhalo, Mstarlow, 'tot', survey)  	# Zu & Mandelbaum 2015 - the halo occupation including all satelite galaxies
-		Nsat_src_wlens	= 	get_Nsat_Zu(Mhalo, Mstarlow, 'with_lens', survey)  	# Zu & Mandelbaum 2015 - the halo occupation including only those satelite galaxies which share halos with central lenses
+    # Get the mean number of centrals and satelites for the appropriate HOD. We assume none of the sources are centrals in galaxies with satellites from the lenses.
+    if (survey == 'SDSS'):
+        Ncen_lens 	= 	get_Ncen_Reid(Mhalo, survey)  		# Reid & Spergel
+        Nsat_lens 	= 	get_Nsat_Reid(Mhalo, survey)  		# Reid & Spergel 
+        Ncen_src	= 	get_Ncen_Zu(Mhalo, Mstarlow, survey) # Zu & Mandelbaum 2015
+        Nsat_src_tot 	= 	get_Nsat_Zu(Mhalo, Mstarlow, 'tot', survey)  	# Zu & Mandelbaum 2015 - the halo occupation including all satelite galaxies
+        Nsat_src_wlens	= 	get_Nsat_Zu(Mhalo, Mstarlow, 'with_lens', survey)  	# Zu & Mandelbaum 2015 - the halo occupation including only those satelite galaxies which share halos with central lenses
 		
-	elif (survey== 'LSST_DESI'):
-		Ncen_lens 	= 	get_Ncen_More(Mhalo, survey) # CMASS
-		Nsat_lens 	= 	get_Nsat_More(Mhalo, survey) # CMASS 
-		Ncen_src	= 	get_Ncen_Zu(Mhalo, Mstarlow, survey) # Zu & Mandelbaum 2015
-		Nsat_src_tot 	= 	get_Nsat_Zu(Mhalo, Mstarlow, 'tot', survey)  	# Zu & Mandelbaum 2015 - the halo occupation including all satelite galaxies
-		Nsat_src_wlens	= 	get_Nsat_Zu(Mhalo, Mstarlow, 'with_lens', survey)  	# Zu & Mandelbaum 2015 - the halo occupation including only those satelite galaxies which share halos with central lenses
+    elif (survey== 'LSST_DESI'):
+        Ncen_lens 	= 	get_Ncen_More(Mhalo, survey) # CMASS
+        Nsat_lens 	= 	get_Nsat_More(Mhalo, survey) # CMASS 
+        Ncen_src	= 	get_Ncen_Zu(Mhalo, Mstarlow, survey) # Zu & Mandelbaum 2015
+        Nsat_src_tot 	= 	get_Nsat_Zu(Mhalo, Mstarlow, 'tot', survey)  	# Zu & Mandelbaum 2015 - the halo occupation including all satelite galaxies 
+        Nsat_src_wlens	= 	get_Nsat_Zu(Mhalo, Mstarlow, 'with_lens', survey)  	# Zu & Mandelbaum 2015 - the halo occupation including only those satelite galaxies which share halos with central lenses
 		
-	# Get the number density predicted by the halo model
-	tot_ng = np.zeros(len(z)); tot_nsrc=np.zeros(len(z))
-	for zi in range(0, len(z)):
-		tot_ng[zi] = scipy.integrate.simps( ( Ncen_lens + Nsat_lens) * HMF[:, zi], np.log10(Mhalo / (pa.HH0_s/100.) ) ) 
-		tot_nsrc[zi] = scipy.integrate.simps(( Ncen_src + Nsat_src_tot) * HMF[:, zi], np.log10(Mhalo / (pa.HH0_s/100.) ) )
+    # Get the number density predicted by the halo model
+    tot_ng = np.zeros(len(z)); tot_nsrc=np.zeros(len(z))
+    for zi in range(0, len(z)):
+        tot_ng[zi] = scipy.integrate.simps( ( Ncen_lens + Nsat_lens) * HMF[:, zi], np.log10(Mhalo / (pa.HH0_s/100.) ) ) 
+        tot_nsrc[zi] = scipy.integrate.simps(( Ncen_src + Nsat_src_tot) * HMF[:, zi], np.log10(Mhalo / (pa.HH0_s/100.) ) )
 
-	# We assume Poisson statistics because it doesn't make much difference for us..
-	NcNs = Ncen_lens * Nsat_src_wlens  #NcenNsat(1., Ncen_lens, Nsat_src_wlens) # The average number of central-satelite pairs in a halo of mass M
-	NsNs = Nsat_lens * Nsat_src_wlens #NsatNsat(1., Nsat_lens, Nsat_src_wlens) # The average number of satelite-satelite pairs in a halo of mass M
+    # We assume Poisson statistics because it doesn't make much difference for us..
+    NcNs = Ncen_lens * Nsat_src_wlens  #NcenNsat(1., Ncen_lens, Nsat_src_wlens) # The average number of central-satelite pairs in a halo of mass M
+    NsNs = Nsat_lens * Nsat_src_wlens #NsatNsat(1., Nsat_lens, Nsat_src_wlens) # The average number of satelite-satelite pairs in a halo of mass M
 	
-	# Get Pkgg in terms of z and k
-	Pkgg = np.zeros((len(kvec_short), len(z)))
-	for ki in range(0,len(kvec_short)):
-		for zi in range(0,len(z)):
-			Pkgg[ki, zi] = scipy.integrate.simps( HMF[:, zi] * (NcNs * y_src[ki, :] + NsNs * y_src[ki, :]*y_lens[ki,:]), np.log10(Mhalo / (pa.HH0_s/100.)  )) / (tot_nsrc[zi] * tot_ng[zi]) 
+    # Get Pkgg in terms of z and k
+    Pkgg = np.zeros((len(kvec_short), len(z)))
+    for ki in range(0,len(kvec_short)):
+        for zi in range(0,len(z)):
+            Pkgg[ki, zi] = scipy.integrate.simps( HMF[:, zi] * (NcNs * y_src[ki, :] + NsNs * y_src[ki, :]*y_lens[ki,:]), np.log10(Mhalo / (pa.HH0_s/100.)  )) / (tot_nsrc[zi] * tot_ng[zi]) 
 	
-	for zi in range(0,len(z)):
-		Pkgg_interp = scipy.interpolate.interp1d(np.log(kvec_short), np.log(Pkgg[:, zi]))
-		logPkgg = Pkgg_interp(np.log(kvec_ft))
-		Pkgg_longk = np.exp(logPkgg)
-		save_P1h = np.column_stack((kvec_ft, Pkgg_longk))
-		np.savetxt('./txtfiles/1halo_terms/Pk1h_ls_z='+zsave[zi]+'_'+endfile+'.txt', save_P1h)
+    for zi in range(0,len(z)):
+        Pkgg_interp = scipy.interpolate.interp1d(np.log(kvec_short), np.log(Pkgg[:, zi]))
+        logPkgg = Pkgg_interp(np.log(kvec_ft))
+        Pkgg_longk = np.exp(logPkgg)
+        save_P1h = np.column_stack((kvec_ft, Pkgg_longk))
+        np.savetxt('./txtfiles/1halo_terms/Pk1h_ls_z='+zsave[zi]+'_'+endfile+'.txt', save_P1h)
 	
-	return
+    return
 
 def get_Pkgg_1halo(kvec_ft, fsky, Mhalo, kvec_short, y_src, y_lens, Mstarlow, endfile, survey):
-	""" Returns the 1halo galaxy power spectrum with c-s and s-s terms"""
+    """ Returns the 1halo galaxy power spectrum with c-s and s-s terms"""
 	
-	if (survey == 'SDSS'):
-		import params as pa
-	elif (survey == 'LSST_DESI'):
-		import params_LSST_DESI as pa
-	else:
-		print "We don't have support for that survey yet; exiting."
-		exit()
+    if (survey == 'SDSS'):
+        import params as pa
+    elif (survey == 'LSST_DESI'):
+        import params_LSST_DESI as pa
+    else:
+        print("We don't have support for that survey yet; exiting.")
+        exit()
 		
-	if (os.path.isfile('./txtfiles/1halo_terms/Pkgg_1h_'+survey+'_'+endfile+'.txt')):
-		print "Pkgg 1halo averaged over z already exists for this endfile."
-		return
+    if (os.path.isfile('./txtfiles/1halo_terms/Pkgg_1h_'+survey+'_'+endfile+'.txt')):
+        print("Pkgg 1halo averaged over z already exists for this endfile.")
+        return
 		
-	# Get the combined redshift window function of lens and source samples.
-	(z, W_z) = window(survey) # Comment this out if getting 1-halo functions for the boost.
+    # Get the combined redshift window function of lens and source samples.
+    (z, W_z) = window(survey) # Comment this out if getting 1-halo functions for the boost.
 	
-	# To produce 1-halo functions at each zL for getting the Boost, uncomment this:
-	z = np.linspace(pa.zLmin, pa.zLmax, 100)
+    # To produce 1-halo functions at each zL for getting the Boost, uncomment this:
+    z = np.linspace(pa.zLmin, pa.zLmax, 100)
 	
-	# For the cosmological parameters:
-	# I'm going to use the SOURCE parameters here
-	# For SDSS source and lens cosmological parameters are the same
-	# For LSST+DESI, they are not too different, but DESI HOD is already weird because I have to use CMASS
-	# So use the ones consistent with sources.
+    # For the cosmological parameters:
+    # I'm going to use the SOURCE parameters here
+    # For SDSS source and lens cosmological parameters are the same
+    # For LSST+DESI, they are not too different, but DESI HOD is already weird because I have to use CMASS
+    # So use the ones consistent with sources.
 	
-	# Get the halo mass function from CCL
-	p = ccl.Parameters(Omega_c = pa.OmC_s, Omega_b = pa.OmB_s, h = (pa.HH0_s/100.), sigma8 = pa.sigma8_s, n_s=pa.n_s_s)
-	cosmo = ccl.Cosmology(p)
-	HMF = np.zeros((len(Mhalo), len(z)))
-	for zi in range(0,len(z)):
-		HMF[:, zi] = ccl.massfunction.massfunc(cosmo, Mhalo / (pa.HH0_s/100.), 1./ (1. + z[zi]), odelta=200.) / (pa.HH0_s / 100.)**3
+    # Get the halo mass function from CCL
+    cosmo = ccl.Cosmology(Omega_c = pa.OmC_s, Omega_b = pa.OmB_s, h = (pa.HH0_s/100.), sigma8 = pa.sigma8_s, n_s=pa.n_s_s)
+    
+    HMF = np.zeros((len(Mhalo), len(z)))
+    for zi in range(0,len(z)):
+        HMF_class = ccl.halos.MassFuncTinker10(cosmo)
+        HMF[:,zi] = HMF_class.get_mass_function(cosmo, Mhalo / (pa.HH0_s/100.), 1./ (1. + z[zi])) / (pa.HH0_s / 100.)**3
+        #HMF[:, zi] = ccl.massfunction.massfunc(cosmo, Mhalo / (pa.HH0_s/100.), 1./ (1. + z[zi]), odelta=200.) / (pa.HH0_s / 100.)**3
 	
-	# Get the mean number of centrals and satelites for the appropriate HOD. We assume none of the sources are centrals in galaxies with satellites from the lenses.
-	if (survey == 'SDSS'):
-		Ncen_lens 	= 	get_Ncen_Reid(Mhalo, survey)  		# Reid & Spergel
-		Nsat_lens 	= 	get_Nsat_Reid(Mhalo, survey)  		# Reid & Spergel 
-		Ncen_src	= 	get_Ncen_Zu(Mhalo, Mstarlow, survey) # Zu & Mandelbaum 2015
-		Nsat_src_tot 	= 	get_Nsat_Zu(Mhalo, Mstarlow, 'tot', survey)  	# Zu & Mandelbaum 2015 - the halo occupation including all satelite galaxies
-		Nsat_src_wlens	= 	get_Nsat_Zu(Mhalo, Mstarlow, 'with_lens', survey)  	# Zu & Mandelbaum 2015 - the halo occupation including only those satelite galaxies which share halos with central lenses
+    # Get the mean number of centrals and satelites for the appropriate HOD. We assume none of the sources are centrals in galaxies with satellites from the lenses.
+    if (survey == 'SDSS'):
+        Ncen_lens 	= 	get_Ncen_Reid(Mhalo, survey)  		# Reid & Spergel
+        Nsat_lens 	= 	get_Nsat_Reid(Mhalo, survey)  		# Reid & Spergel 
+        Ncen_src	= 	get_Ncen_Zu(Mhalo, Mstarlow, survey) # Zu & Mandelbaum 2015
+        Nsat_src_tot 	= 	get_Nsat_Zu(Mhalo, Mstarlow, 'tot', survey)  	# Zu & Mandelbaum 2015 - the halo occupation including all satelite galaxies
+        Nsat_src_wlens	= 	get_Nsat_Zu(Mhalo, Mstarlow, 'with_lens', survey)  	# Zu & Mandelbaum 2015 - the halo occupation including only those satelite galaxies which share halos with central lenses
 		
-	elif (survey== 'LSST_DESI'):
-		Ncen_lens 	= 	get_Ncen_More(Mhalo, survey) # CMASS
-		Nsat_lens 	= 	get_Nsat_More(Mhalo, survey) # CMASS 
-		Ncen_src	= 	get_Ncen_Zu(Mhalo, Mstarlow, survey) # Zu & Mandelbaum 2015
-		Nsat_src_tot 	= 	get_Nsat_Zu(Mhalo, Mstarlow, 'tot', survey)  	# Zu & Mandelbaum 2015 - the halo occupation including all satelite galaxies
-		Nsat_src_wlens	= 	get_Nsat_Zu(Mhalo, Mstarlow, 'with_lens', survey)  	# Zu & Mandelbaum 2015 - the halo occupation including only those satelite galaxies which share halos with central lenses
+    elif (survey== 'LSST_DESI'):
+        Ncen_lens 	= 	get_Ncen_More(Mhalo, survey) # CMASS
+        Nsat_lens 	= 	get_Nsat_More(Mhalo, survey) # CMASS 
+        Ncen_src	= 	get_Ncen_Zu(Mhalo, Mstarlow, survey) # Zu & Mandelbaum 2015
+        Nsat_src_tot 	= 	get_Nsat_Zu(Mhalo, Mstarlow, 'tot', survey)  	# Zu & Mandelbaum 2015 - the halo occupation including all satelite galaxies
+        Nsat_src_wlens	= 	get_Nsat_Zu(Mhalo, Mstarlow, 'with_lens', survey)  	# Zu & Mandelbaum 2015 - the halo occupation including only those satelite galaxies which share halos with central lenses
 		
-	# Get the number density predicted by the halo model
-	tot_ng = np.zeros(len(z)); tot_nsrc=np.zeros(len(z))
-	for zi in range(0, len(z)):
-		tot_ng[zi] = scipy.integrate.simps( ( Ncen_lens + Nsat_lens) * HMF[:, zi], np.log10(Mhalo / (pa.HH0_s/100.) ) ) 
-		tot_nsrc[zi] = scipy.integrate.simps(( Ncen_src + Nsat_src_tot) * HMF[:, zi], np.log10(Mhalo / (pa.HH0/100.) ) )  # all the sources in the sample 
+    # Get the number density predicted by the halo model
+    tot_ng = np.zeros(len(z)); tot_nsrc=np.zeros(len(z))
+    for zi in range(0, len(z)):
+        tot_ng[zi] = scipy.integrate.simps( ( Ncen_lens + Nsat_lens) * HMF[:, zi], np.log10(Mhalo / (pa.HH0_s/100.) ) ) 
+        tot_nsrc[zi] = scipy.integrate.simps(( Ncen_src + Nsat_src_tot) * HMF[:, zi], np.log10(Mhalo / (pa.HH0/100.) ) )  # all the sources in the sample 
 	
-	# We assume Poisson statistics because it doesn't make much difference for us..
-	NcNs = Ncen_lens * Nsat_src_wlens #NcenNsat(1., Ncen_lens, Nsat_src_wlens) # The average number of central-satelite pairs in a halo of mass M # Count only the sources that actually share halos with lenses. 
-	NsNs = Nsat_lens * Nsat_src_wlens #NsatNsat(1., Nsat_lens, Nsat_src_wlens) # The average number of satelite-satelite pairs in a halo of mass M
+    # We assume Poisson statistics because it doesn't make much difference for us..
+    NcNs = Ncen_lens * Nsat_src_wlens #NcenNsat(1., Ncen_lens, Nsat_src_wlens) # The average number of central-satelite pairs in a halo of mass M # Count only the sources that actually share halos with lenses. 
+    NsNs = Nsat_lens * Nsat_src_wlens #NsatNsat(1., Nsat_lens, Nsat_src_wlens) # The average number of satelite-satelite pairs in a halo of mass M
 
-	# Get Pkgg in terms of z and k
-	Pkgg = np.zeros((len(kvec_short), len(z)))
-	for ki in range(0,len(kvec_short)):
-		for zi in range(0,len(z)):
-			Pkgg[ki, zi] = scipy.integrate.simps( HMF[:, zi] * (NcNs * y_src[ki, :] + NsNs * y_src[ki, :]*y_lens[ki,:]), np.log10(Mhalo / (pa.HH0_s/100.)  )) / (tot_nsrc[zi] * tot_ng[zi]) 
+    # Get Pkgg in terms of z and k
+    Pkgg = np.zeros((len(kvec_short), len(z)))
+    for ki in range(0,len(kvec_short)):
+        for zi in range(0,len(z)):
+            Pkgg[ki, zi] = scipy.integrate.simps( HMF[:, zi] * (NcNs * y_src[ki, :] + NsNs * y_src[ki, :]*y_lens[ki,:]), np.log10(Mhalo / (pa.HH0_s/100.)  )) / (tot_nsrc[zi] * tot_ng[zi]) 
 
-	# Now integrate this over the window function
-	Pkgg_zavg = np.zeros(len(kvec_short))
-	for ki in range(0,len(kvec_short)):
-		Pkgg_zavg[ki] = scipy.integrate.simps(W_z * Pkgg[ki, :], z)
+    # Now integrate this over the window function
+    Pkgg_zavg = np.zeros(len(kvec_short))
+    for ki in range(0,len(kvec_short)):
+        Pkgg_zavg[ki] = scipy.integrate.simps(W_z * Pkgg[ki, :], z)
 	
-	# Get the answer in terms of the full k vector for fourier transforming.
-	Pkgg_interp = scipy.interpolate.interp1d(np.log(kvec_short), np.log(Pkgg_zavg))
-	logPkgg = Pkgg_interp(np.log(kvec_ft))
-	Pkgg_ft = np.exp(logPkgg)
+    # Get the answer in terms of the full k vector for fourier transforming.
+    Pkgg_interp = scipy.interpolate.interp1d(np.log(kvec_short), np.log(Pkgg_zavg))
+    logPkgg = Pkgg_interp(np.log(kvec_ft))
+    Pkgg_ft = np.exp(logPkgg)
 	
-	Pkgg_save = np.column_stack((kvec_ft, Pkgg_ft))
-	np.savetxt('./txtfiles/1halo_terms/Pkgg_1h_'+survey+'_'+endfile+'.txt', Pkgg_save)
+    Pkgg_save = np.column_stack((kvec_ft, Pkgg_ft))
+    np.savetxt('./txtfiles/1halo_terms/Pkgg_1h_'+survey+'_'+endfile+'.txt', Pkgg_save)
 	
-	"""plt.figure()
-	plt.loglog(kvec_short, 4* np.pi * kvec_short**3 * Pkgg_zavg / (2* np.pi)**3, 'm+')
-	plt.ylim(0.001, 100000)
-	plt.xlim(0.01, 100)
-	plt.ylabel('$4\pi k^3 P_{gg}^{1h}(k)$, $(Mpc/h)^3$, com')
-	plt.xlabel('$k$, h/Mpc, com')
-	plt.savefig('./plots/Pkgg_1halo_'+survey+'.pdf')
-	plt.close()"""
+    """plt.figure()
+    plt.loglog(kvec_short, 4* np.pi * kvec_short**3 * Pkgg_zavg / (2* np.pi)**3, 'm+')
+    plt.ylim(0.001, 100000)
+    plt.xlim(0.01, 100)
+    plt.ylabel('$4\pi k^3 P_{gg}^{1h}(k)$, $(Mpc/h)^3$, com')
+    plt.xlabel('$k$, h/Mpc, com')
+    plt.savefig('./plots/Pkgg_1halo_'+survey+'.pdf')
+    plt.close()"""
 	
-	return 
+    return 
 
 def get_Pkgm_1halo(kvec_FT, Mhalo, kvec_short, y, endfile, survey):
-	""" Returns (and more usefully saves) the 1halo lens galaxies x dark matter power spectrum, for the calculation of Delta Sigma (theoretical) """
+    """ Returns (and more usefully saves) the 1halo lens galaxies x dark matter power spectrum, for the calculation of Delta Sigma (theoretical) """
 	
-	if (survey == 'SDSS'):
-		import params as pa
-	elif (survey == 'LSST_DESI'):
-		import params_LSST_DESI as pa
-	else:
-		print "We don't have support for that survey yet; exiting."
-		exit()
+    if (survey == 'SDSS'):
+        import params as pa
+    elif (survey == 'LSST_DESI'):
+        import params_LSST_DESI as pa
+    else:
+        print("We don't have support for that survey yet; exiting.")
+        exit()
 		
-	if (os.path.isfile('./txtfiles/1halo_terms/Pkgm_1h_'+survey+'_'+endfile+'.txt')):
-		print "Pkgm 1halo averaged over z already exists."
-		return
+    if (os.path.isfile('./txtfiles/1halo_terms/Pkgm_1h_'+survey+'_'+endfile+'.txt')):
+        print("Pkgm 1halo averaged over z already exists.")
+        return
 
-	# Define the vector of lens redshifts over which we will average.
-	zLvec = np.linspace(pa.zLmin, pa.zLmax, 500)
+    # Define the vector of lens redshifts over which we will average.
+    zLvec = np.linspace(pa.zLmin, pa.zLmax, 500)
 	
-	# Get the halo mass function
-	p = ccl.Parameters(Omega_c = pa.OmC_l, Omega_b = pa.OmB_l, h = (pa.HH0_l/100.), sigma8=pa.sigma8_l, n_s=pa.n_s_l)
-	cosmo = ccl.Cosmology(p)
-	HMF = np.zeros((len(Mhalo), len(zLvec)))
-	for zi in range(0, len(zLvec)):
-		HMF[:, zi]= ccl.massfunction.massfunc( cosmo, Mhalo / (pa.HH0_l/100.), 1./ (1. + zLvec[zi]), odelta=200. )
+    # Get the halo mass function
+    cosmo = ccl.Cosmology(Omega_c = pa.OmC_l, Omega_b = pa.OmB_l, h = (pa.HH0_l/100.), sigma8=pa.sigma8_l, n_s=pa.n_s_l)
+    HMF = np.zeros((len(Mhalo), len(zLvec)))
+    for zi in range(0, len(zLvec)):
+        HMF_class = ccl.halos.MassFuncTinker10(cosmo)
+        HMF[:,zi] = HMF_class.get_mass_function(cosmo, Mhalo / (pa.HH0_l/100.), 1./ (1. + zLvec[zi]))
+        #HMF[:, zi]= ccl.massfunction.massfunc( cosmo, Mhalo / (pa.HH0_l/100.), 1./ (1. + zLvec[zi]), odelta=200. )
 	
-	# Get HOD quantities we need
-	if (survey=='SDSS'):
-		Ncen_lens = get_Ncen_Reid(Mhalo, survey) # We use the LRG model for the lenses from Reid & Spergel 2008
-		Nsat_lens = get_Nsat_Reid(Mhalo, survey)
-	elif (survey=='LSST_DESI'):
-		Ncen_lens = get_Ncen_More(Mhalo, survey)
-		Nsat_lens = get_Nsat_More(Mhalo, survey)
-	else:
-		print "We don't have support for that survey yet!"
-		exit()
+    # Get HOD quantities we need
+    if (survey=='SDSS'):
+        Ncen_lens = get_Ncen_Reid(Mhalo, survey) # We use the LRG model for the lenses from Reid & Spergel 2008
+        Nsat_lens = get_Nsat_Reid(Mhalo, survey)
+    elif (survey=='LSST_DESI'):
+        Ncen_lens = get_Ncen_More(Mhalo, survey)
+        Nsat_lens = get_Nsat_More(Mhalo, survey)
+    else:
+        print("We don't have support for that survey yet!")
+        exit()
 		
-	# Check total number of galaxies:
-	tot_ng= np.zeros(len(zLvec))
-	for zi in range(0,len(zLvec)):
-		tot_ng[zi] = scipy.integrate.simps( ( Ncen_lens + Nsat_lens) * HMF[:, zi], np.log10(Mhalo / (pa.HH0_l/100.) ) ) / (pa.HH0_l / 100.)**3
+    # Check total number of galaxies:
+    tot_ng= np.zeros(len(zLvec))
+    for zi in range(0,len(zLvec)):
+        tot_ng[zi] = scipy.integrate.simps( ( Ncen_lens + Nsat_lens) * HMF[:, zi], np.log10(Mhalo / (pa.HH0_l/100.) ) ) / (pa.HH0_l / 100.)**3
 	
-	# Get the density of matter in comoving coordinates
-	rho_crit = 3. * 10**10 * pa.mperMpc / (8. * np.pi * pa.Gnewt * pa.Msun)  # Msol h^2 / Mpc^3, for use with M in Msol / h (comoving distances)
-	rho_m = (pa.OmC_l + pa.OmB_l) * rho_crit # units of Msol h^2 / Mpc^3 (comoving distances)
+    # Get the density of matter in comoving coordinates
+    rho_crit = 3. * 10**10 * pa.mperMpc / (8. * np.pi * pa.Gnewt * pa.Msun)  # Msol h^2 / Mpc^3, for use with M in Msol / h (comoving distances)
+    rho_m = (pa.OmC_l + pa.OmB_l) * rho_crit # units of Msol h^2 / Mpc^3 (comoving distances)
 	
-	# Get Pk
-	Pkgm = np.zeros((len(kvec_short), len(zLvec)))
-	for ki in range(0,len(kvec_short)):
-		for zi in range(0, len(zLvec)):
-			Pkgm[ki, zi] = scipy.integrate.simps( HMF[:, zi] * (Mhalo / rho_m) * (Ncen_lens * y[ki, :] + Nsat_lens * y[ki, :]**2), np.log10(Mhalo / (pa.HH0_l/ 100.))) / (tot_ng[zi]) / (pa.HH0_l / 100.)**3
+    # Get Pk
+    Pkgm = np.zeros((len(kvec_short), len(zLvec)))
+    for ki in range(0,len(kvec_short)):
+        for zi in range(0, len(zLvec)):
+            Pkgm[ki, zi] = scipy.integrate.simps( HMF[:, zi] * (Mhalo / rho_m) * (Ncen_lens * y[ki, :] + Nsat_lens * y[ki, :]**2), np.log10(Mhalo / (pa.HH0_l/ 100.))) / (tot_ng[zi]) / (pa.HH0_l / 100.)**3
 		
-	# Now integrate this over the appropriate lens redshift distribution:
-	dndzl = setup.get_dNdzL(zLvec, survey)
-	Pk_zavg = np.zeros(len(kvec_short))
-	for ki in range(0,len(kvec_short)):
-		Pk_zavg[ki] = scipy.integrate.simps(dndzl * Pkgm[ki, :], zLvec)
+    # Now integrate this over the appropriate lens redshift distribution:
+    dndzl = setup.get_dNdzL(zLvec, survey)
+    Pk_zavg = np.zeros(len(kvec_short))
+    for ki in range(0,len(kvec_short)):
+        Pk_zavg[ki] = scipy.integrate.simps(dndzl * Pkgm[ki, :], zLvec)
 	
-	"""plt.figure()
-	plt.loglog(kvec_short, 4* np.pi * kvec_short**3 * Pk_zavg / (2* np.pi)**3, 'mo')
-	plt.ylim(0.1, 100000)
-	plt.xlim(0.05, 1000)
-	plt.ylabel('$4\pi k^3 P_{gg}^{1h}(k)$, $(Mpc/h)^3$, com')
-	plt.xlabel('$k$, h/Mpc, com')
-	plt.savefig('./plots/Pkgm_1halo_survey='+SURVEY+'.pdf')
-	plt.close()"""
+    """plt.figure()
+    plt.loglog(kvec_short, 4* np.pi * kvec_short**3 * Pk_zavg / (2* np.pi)**3, 'mo')
+    plt.ylim(0.1, 100000)
+    plt.xlim(0.05, 1000)
+    plt.ylabel('$4\pi k^3 P_{gg}^{1h}(k)$, $(Mpc/h)^3$, com')
+    plt.xlabel('$k$, h/Mpc, com')
+    plt.savefig('./plots/Pkgm_1halo_survey='+SURVEY+'.pdf')
+    plt.close()"""
 	
-	# Get this in terms of the more well-sampled k, for fourier transforming, and save.
-	Pkgm_interp = scipy.interpolate.interp1d(np.log(kvec_short), np.log(Pk_zavg))
-	logPkgm = Pkgm_interp(np.log(kvec_FT))
-	Pkgm = np.exp(logPkgm)
-	Pkgm_save = np.column_stack((kvec_FT, Pkgm))
-	np.savetxt('./txtfiles/1halo_terms/Pkgm_1h_'+survey+'_'+endfile+'.txt', Pkgm_save)
+    # Get this in terms of the more well-sampled k, for fourier transforming, and save.
+    Pkgm_interp = scipy.interpolate.interp1d(np.log(kvec_short), np.log(Pk_zavg))
+    logPkgm = Pkgm_interp(np.log(kvec_FT))
+    Pkgm = np.exp(logPkgm)
+    Pkgm_save = np.column_stack((kvec_FT, Pkgm))
+    np.savetxt('./txtfiles/1halo_terms/Pkgm_1h_'+survey+'_'+endfile+'.txt', Pkgm_save)
 	
-	"""plt.figure()
-	plt.loglog(kvec_FT, 4* np.pi * kvec_FT**3 * Pkgm / (2* np.pi)**3, 'mo')
-	plt.ylim(0.001, 100000)
-	plt.xlim(0.01, 10000)
-	plt.ylabel('$4\pi k^3 P_{gg}^{1h}(k)$, $(Mpc/h)^3$, com')
-	plt.xlabel('$k$, h/Mpc, com')
-	plt.savefig('./plots/Pkgm_1halo_longerkvec_survey='+SURVEY+'.pdf')
-	plt.close()"""
+    """plt.figure()
+    plt.loglog(kvec_FT, 4* np.pi * kvec_FT**3 * Pkgm / (2* np.pi)**3, 'mo')
+    plt.ylim(0.001, 100000)
+    plt.xlim(0.01, 10000)
+    plt.ylabel('$4\pi k^3 P_{gg}^{1h}(k)$, $(Mpc/h)^3$, com')
+    plt.xlabel('$k$, h/Mpc, com')
+    plt.savefig('./plots/Pkgm_1halo_longerkvec_survey='+SURVEY+'.pdf')
+    plt.close()"""
 	
-	return 
+    return 
 
 def get_Pkgg_ll_1halo_kz(kvec, zvec, y, Mhalo, kvec_short, survey):
 	""" Returns the 1halo galaxy power spectrum with c-s and s-s terms for lenses x lenses (for the covariance). """
@@ -725,7 +729,7 @@ def get_Pkgg_ll_1halo_kz(kvec, zvec, y, Mhalo, kvec_short, survey):
 	elif (survey == 'LSST_DESI'):
 		import params_LSST_DESI as pa
 	else:
-		print "We don't have support for that survey yet; exiting."
+		print("We don't have support for that survey yet; exiting.")
 		exit()
 	
 	# Define the downsampled k and z vector over which we will compute Pk_{gm}^{1h}
@@ -790,7 +794,7 @@ def get_Pkgm_1halo_kz(kvec, zvec, y, Mhalo, kvec_short, survey):
 	elif (survey == 'LSST_DESI'):
 		import params_LSST_DESI as pa
 	else:
-		print "We don't have support for that survey yet; exiting."
+		print("We don't have support for that survey yet; exiting.")
 		exit()
 	
 	# Define the downsampled k and z vector over which we will compute Pk_{gm}^{1h}
@@ -812,7 +816,7 @@ def get_Pkgm_1halo_kz(kvec, zvec, y, Mhalo, kvec_short, survey):
 		Ncen_lens = get_Ncen_More(Mhalo, survey)
 		Nsat_lens = get_Nsat_More(Mhalo, survey)
 	else:
-		print "We don't have support for that survey yet!"
+		print("We don't have support for that survey yet!")
 		exit()
 		
 	# Get total number of galaxies (this is z-dependent) 
@@ -859,7 +863,7 @@ def get_Pkmm_1halo_kz(kvec, zvec, y, Mhalo, kvec_short, survey):
 	elif (survey == 'LSST_DESI'):
 		import params_LSST_DESI as pa
 	else:
-		print "We don't have support for that survey yet; exiting."
+		print("We don't have support for that survey yet; exiting.")
 		exit()
 	
 	# Define the downsampled k and z vector over which we will compute Pk_{gm}^{1h}
@@ -952,7 +956,7 @@ def get_Nsat_Zu(M_h, Mstar, case, survey):
 	elif (survey == 'LSST_DESI'):
 		import params_LSST_DESI as pa
 	else:
-		print "We don't have support for that survey yet; exiting."
+		print("We don't have support for that survey yet; exiting.")
 		exit()
 	
 	# Uncomment the following to use halotools
@@ -1020,10 +1024,10 @@ def get_Nsat_Zu(M_h, Mstar, case, survey):
 		if (( hasattr(Mstar, "__len__")==False) ):
 			Nsat = Ncen_lens * (M_h / Msat)**(pa.alpha_sat) * np.exp(-Mcut / M_h)
 		else:
-			print "Why are you calling Nsat with_lens for len(Mstar)!=1?"
+			print("Why are you calling Nsat with_lens for len(Mstar)!=1?")
 			exit()
 	else:
-		print "We don't have support for that case for Ncen in Nsat."
+		print("We don't have support for that case for Ncen in Nsat.")
 		exit()
 	
 	"""#f_Mh = Mh_atfixed_Ms(Mstar)
@@ -1050,7 +1054,7 @@ def vol_dens(fsky, N,survey):
 	elif (survey == 'LSST_DESI'):
 		import params_LSST_DESI as pa
 	else:
-		print "We don't have support for that survey yet; exiting."
+		print("We don't have support for that survey yet; exiting.")
 		exit()
 
 	# Get the total number of galaxies
@@ -1067,6 +1071,7 @@ def vol_dens(fsky, N,survey):
 	H_over_c = pa.H0 * ( (pa.OmC_s+pa.OmB_s)*(1.+z)**3 + OmL + (pa.OmR+pa.OmN) * (1.+z)**4 )**(0.5)
 	
 	# volume density as a function of z
+    # UPDATE CCL - use CCL comoving distance?
 	ndens_ofz = dNdz_num * H_over_c / ( 4. * np.pi * fsky * setup.com(z, survey, pa.cos_par_s)**2 )
 	
 	# We want to integrate this over the window function of lenses x sources, because that's the redshift range on which we care about the number density:
@@ -1079,56 +1084,57 @@ def vol_dens(fsky, N,survey):
 	return ndens_avg
 	
 def get_Mstar_low(survey, ngal):
-	""" For a given number density of source galaxies (calculated in the vol_dens function), get the appropriate choice for the lower bound of Mstar """
+    """ For a given number density of source galaxies (calculated in the vol_dens function), get the appropriate choice for the lower bound of Mstar """
 	
-	if (survey == 'SDSS'):
-		import params as pa
-	elif (survey == 'LSST_DESI'):
-		import params_LSST_DESI as pa
-	else:
-		print "We don't have support for that survey yet; exiting."
-		exit()
+    if (survey == 'SDSS'):
+        import params as pa
+    elif (survey == 'LSST_DESI'):
+        import params_LSST_DESI as pa
+    else:
+        print("We don't have support for that survey yet; exiting.")
+        exit()
 		
-	# Get the window function for the lenses x sources
-	(z, win) = window(survey)
+    # Get the window function for the lenses x sources
+    (z, win) = window(survey)
 	
-	# Use the HOD model from Zu & Mandelbaum 2015
+    # Use the HOD model from Zu & Mandelbaum 2015
 		
-	# Define a vector of Mstar_low value to try
-	Ms_low_vec = np.logspace(7., 10.,200)
-	# Define a vector of Mh values to integrate over
-	Mh_vec = np.logspace(9., 16., 100)
+    # Define a vector of Mstar_low value to try
+    Ms_low_vec = np.logspace(7., 10.,200)
+    # Define a vector of Mh values to integrate over
+    Mh_vec = np.logspace(9., 16., 100)
 	
-	# Get Nsat and Ncen as a function of the values of the two above arrays
-	Nsat = get_Nsat_Zu(Mh_vec, Ms_low_vec, 'tot', survey) # Get the occupation number counting all sats in the sample.
-	Ncen = get_Ncen_Zu(Mh_vec, Ms_low_vec, survey)
+    # Get Nsat and Ncen as a function of the values of the two above arrays
+    Nsat = get_Nsat_Zu(Mh_vec, Ms_low_vec, 'tot', survey) # Get the occupation number counting all sats in the sample.
+    Ncen = get_Ncen_Zu(Mh_vec, Ms_low_vec, survey)
+    
+    # Get the halo mass function (from CCL) to integrate over (dn / dlog10M, Tinker 2010 )
+    cosmo = ccl.Cosmology(Omega_c = pa.OmC_s, Omega_b = pa.OmB_s, h = (pa.HH0_s/100.), sigma8 = pa.sigma8_s, n_s=pa.n_s_s)
+    HMF = np.zeros((len(Mh_vec), len(z)))
+    print("In Mstar low - check units of HMF!")
+    for zi in range(0,len(z)):
+        #print "zi=", zi
+        HMF_class = ccl.halos.MassFuncTinker10(cosmo)
+        HMF[:,zi] = HMF_class.get_mass_function(cosmo, Mh_vec / (pa.HH0_s/100.), 1./ (1. + z[zi]))
 	
-	# Get the halo mass function (from CCL) to integrate over (dn / dlog10M, Tinker 2010 )
-	p = ccl.Parameters(Omega_c = pa.OmC_s, Omega_b = pa.OmB_s, h = (pa.HH0_s/100.), sigma8 = pa.sigma8_s, n_s=pa.n_s_s)
-	cosmo = ccl.Cosmology(p)
-	HMF = np.zeros((len(Mh_vec), len(z)))
-	for zi in range(0,len(z)):
-		#print "zi=", zi
-		HMF[:, zi] = ccl.massfunction.massfunc(cosmo, Mh_vec / (pa.HH0_s/100.), 1./ (1. + z[zi]), odelta=200.) 
+    # Now get what nsrc should be for each Mstar_low cut 
+    nsrc_of_Mstar_z = np.zeros((len(Ms_low_vec), len(z)))
+    for msi in range(0,len(Ms_low_vec)):
+        #print "Msi=", i
+        for zi in range(0,len(z)):
+            nsrc_of_Mstar_z[msi, zi] = scipy.integrate.simps(HMF[:, zi] * ( Nsat[msi, :] + Ncen[msi, :]), np.log10(Mh_vec / (pa.HH0_s / 100.))) / (pa.HH0_s / 100.)**3
 	
-	# Now get what nsrc should be for each Mstar_low cut 
-	nsrc_of_Mstar_z = np.zeros((len(Ms_low_vec), len(z)))
-	for msi in range(0,len(Ms_low_vec)):
-		#print "Msi=", i
-		for zi in range(0,len(z)):
-			nsrc_of_Mstar_z[msi, zi] = scipy.integrate.simps(HMF[:, zi] * ( Nsat[msi, :] + Ncen[msi, :]), np.log10(Mh_vec / (pa.HH0_s / 100.))) / (pa.HH0_s / 100.)**3
+    # Integrate this over the z window function
+    nsrc_of_Mstar = np.zeros(len(Ms_low_vec))
+    for i in range(0,len(Ms_low_vec)):
+        nsrc_of_Mstar[i] = scipy.integrate.simps(nsrc_of_Mstar_z[i, :] * win, z)
 	
-	# Integrate this over the z window function
-	nsrc_of_Mstar = np.zeros(len(Ms_low_vec))
-	for i in range(0,len(Ms_low_vec)):
-		nsrc_of_Mstar[i] = scipy.integrate.simps(nsrc_of_Mstar_z[i, :] * win, z)
-	
-	# Get the correct Mstar cut	
-	ind = next(j[0] for j in enumerate(nsrc_of_Mstar) if j[1]<=ngal)
+    # Get the correct Mstar cut	
+    ind = next(j[0] for j in enumerate(nsrc_of_Mstar) if j[1]<=ngal)
 		
-	Mstarlow = Ms_low_vec[ind]
+    Mstarlow = Ms_low_vec[ind]
 	
-	return Mstarlow
+    return Mstarlow
 		
 def Mh_atfixed_Ms(Ms):
 	""" Get Mh in terms of Mstar """
@@ -1148,7 +1154,7 @@ def get_inv_fSHMR(Ms, survey):
 	elif (survey == 'LSST_DESI'):
 		import params_LSST_DESI as pa
 	else:
-		print "We don't have support for that survey yet; exiting."
+		print("We don't have support for that survey yet; exiting.")
 		exit()
 	
 	m = Ms / pa.Mso
@@ -1165,7 +1171,7 @@ def get_Msat(f_Mh, survey):
 	elif (survey == 'LSST_DESI'):
 		import params_LSST_DESI as pa
 	else:
-		print "We don't have support for that survey yet; exiting."
+		print("We don't have support for that survey yet; exiting.")
 		exit()
 	
 	Msat = pa.Bsat * 10**12 * (f_Mh / 10**12)**pa.beta_sat
@@ -1180,7 +1186,7 @@ def get_Mcut(f_Mh, survey):
 	elif (survey == 'LSST_DESI'):
 		import params_LSST_DESI as pa
 	else:
-		print "We don't have support for that survey yet; exiting."
+		print("We don't have support for that survey yet; exiting.")
 		exit()
 	
 	Mcut = pa.Bcut * 10**12 * ( f_Mh / 10**12) ** pa.beta_cut
@@ -1197,7 +1203,7 @@ def get_Ncen_Zu(Mh, Mstar, survey):
 	elif (survey == 'LSST_DESI'):
 		import params_LSST_DESI as pa
 	else:
-		print "We don't have support for that survey yet; exiting."
+		print("We don't have support for that survey yet; exiting.")
 		exit()
 		
 	# This is for the Zu & Mandelbaum 2015 halo model.
@@ -1227,7 +1233,7 @@ def get_sigMs(Mh, survey):
 	elif (survey == 'LSST_DESI'):
 		import params_LSST_DESI as pa
 	else:
-		print "We don't have support for that survey yet; exiting."
+		print("We don't have support for that survey yet; exiting.")
 		exit()
 	
 	if (hasattr(Mh, "__len__")==False):
@@ -1254,7 +1260,7 @@ def get_fSHMR(Mh, survey):
 	elif (survey == 'LSST_DESI'):
 		import params_LSST_DESI as pa
 	else:
-		print "We don't have support for that survey yet; exiting."
+		print("We don't have support for that survey yet; exiting.")
 		exit()
 	
 	Ms = np.logspace(1, 13, 5000)
@@ -1280,7 +1286,7 @@ def get_Nsat_More(M_h, survey):
 	elif (survey == 'LSST_DESI'):
 		import params_LSST_DESI as pa
 	else:
-		print "We don't have support for that survey yet; exiting."
+		print("We don't have support for that survey yet; exiting.")
 		exit()
 		
 	Ncen = get_Ncen_More(M_h, survey)
@@ -1302,7 +1308,7 @@ def get_Ncen_More(Mh, survey):
 	elif (survey == 'LSST_DESI'):
 		import params_LSST_DESI as pa
 	else:
-		print "We don't have support for that survey yet; exiting."
+		print("We don't have support for that survey yet; exiting.")
 		exit()
 	
 	# This is for the More et al. 2014 CMASS HOD
@@ -1322,7 +1328,7 @@ def get_Ncen_Reid(Mh, survey):
 	elif (survey == 'LSST_DESI'):
 		import params_LSST_DESI as pa
 	else:
-		print "We don't have support for that survey yet; exiting."
+		print("We don't have support for that survey yet; exiting.")
 		exit()
 	
 	Ncen = 0.5 * (1. + scipy.special.erf((np.log10(Mh / (pa.HH0_l/100.)) - np.log10(pa.Mmin_reid)) / pa.sigLogM_reid))
@@ -1337,7 +1343,7 @@ def get_Nsat_Reid(Mh, survey):
 	elif (survey == 'LSST_DESI'):
 		import params_LSST_DESI as pa
 	else:
-		print "We don't have support for that survey yet; exiting."
+		print("We don't have support for that survey yet; exiting.")
 		exit()
 	
 	Ncen = get_Ncen_Reid(Mh, survey)
@@ -1387,14 +1393,14 @@ def wgg_2halo(rp_cents_, bd, bs, savefile, survey):
 	elif (survey == 'LSST_DESI'):
 		import params_LSST_DESI as pa
 	else:
-		print "We don't have support for that survey yet; exiting."
+		print("We don't have support for that survey yet; exiting.")
 		exit()
 	
 	# Get the redshift window functions
 	z_gg, win_gg = window(survey)
 	
 	# Get the required matter power spectrum from CCL
-	
+	# UPDATE CCL
 	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), sigma8= pa.sigma8, n_s=pa.n_s_cosmo)
 	cosmo = ccl.Cosmology(p)
 	h = (pa.HH0/100.)
@@ -1442,19 +1448,19 @@ def wgg_full(rp_c, fsky, bd, bs, savefile_1h, savefile_2h, endfile, survey):
 	
 	# Check if savefile_1h exists and if not compute the 1halo term.
 	if (os.path.isfile(savefile_1h)):
-		print "Loading wgg 1halo term from file."
+		print("Loading wgg 1halo term from file.")
 		(rp_cen, wgg_1h) = np.loadtxt(savefile_1h, unpack=True)	
 	else:
-		print "Computing wgg 1halo term."
+		print("Computing wgg 1halo term.")
 		wgg_1h = wgg_1halo_Four(rp_c, fsky,savefile_1h, endfile, survey)
 		
 	# Same for savefile_2h 
 	if (os.path.isfile(savefile_2h)):
-		print "Loading wgg 2halo term from file."
+		print("Loading wgg 2halo term from file.")
 		(rp_cen, wgg_2h) = np.loadtxt(savefile_2h, unpack=True)
 	else:	
-		print "Computing wgg 2halo term."
-		print savefile_2h
+		print("Computing wgg 2halo term.")
+		print(savefile_2h)
 		wgg_2h = wgg_2halo(rp_c, bd, bs, savefile_2h,survey)
 	
 	wgg_tot = wgg_1h + wgg_2h 
