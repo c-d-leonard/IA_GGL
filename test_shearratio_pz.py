@@ -1,6 +1,6 @@
 # This is a script which predicts constraints on intrinsic alignments, using an updated version of the method of Blazek et al 2012 in which it is not assumed that only excess galaxies contribute to IA (rather it is assumed that source galaxies which are close to the lens along the line-of-sight can contribute.)
 
-SURVEY = 'LSST_DESI'
+SURVEY = 'SDSS'
 print("SURVEY=", SURVEY)
 endfile = 'test_updates'
 
@@ -75,131 +75,137 @@ def com_of_z(z):
 ################### THEORETICAL VALUES FOR FRACTIONAL ERROR CALCULATION ########################333
 	
 def sum_weights(photoz_sample, specz_cut, color_cut, rp_bins, dNdz_par, pz_par, dNdztype, pztype):
-	""" Returns the sum over weights for each projected radial bin. 
-	photoz_sample = 'A', 'B', or 'full'
-	specz_cut = 'close', or 'nocut'
-	"""
+    """ Returns the sum over weights for each projected radial bin. 
+    photoz_sample = 'A', 'B', or 'full'
+    specz_cut = 'close', or 'nocut'
+    """
 	
-	# Get lens redshift distribution
-	zL = np.linspace(pa.zLmin, pa.zLmax, 100)
-	dNdzL = setup.get_dNdzL(zL, SURVEY)
-	chiL = com_of_z(zL)
-	if (min(chiL)> (pa.close_cut + com_of_z(pa.zsmin))):
-		zminclose = z_of_com(chiL - pa.close_cut)
-	else:
-		zminclose = np.zeros(len(chiL))
-		for cli in range(0,len(chiL)):
-			if (chiL[cli]>pa.close_cut + com_of_z(pa.zsmin)):
-				zminclose[cli] = z_of_com(chiL[cli] - pa.close_cut)
-			else:
-				zminclose[cli] = pa.zsmin
-	zmaxclose = z_of_com(chiL + pa.close_cut)
+    # Get lens redshift distribution
+    zL = np.linspace(pa.zLmin, pa.zLmax, 100)
+    dNdzL = setup.get_dNdzL(zL, SURVEY)
+    #chiL = com_of_z(zL)
+    chiL = ccl.comoving_radial_distance(cosmo_fid, 1./(1.+zL))
+    chiSmin = ccl.comoving_radial_distance(cosmo_fid, 1./(1.+pa.zsmin))
+    #if (min(chiL)> (pa.close_cut + com_of_z(pa.zsmin))):
+    if (min(chiL)> (pa.close_cut + chiSmin)):
+        #zminclose = z_of_com(chiL - pa.close_cut)
+        zminclose = 1./(ccl.scale_factor_of_chi(cosmo_fid, chiL - pa.close_cut)) - 1.
+    else:
+        zminclose = np.zeros(len(chiL))
+        for cli in range(0,len(chiL)):
+            if (chiL[cli]>pa.close_cut + chiSmin):
+                #zminclose[cli] = z_of_com(chiL[cli] - pa.close_cut)
+                zminclose[cli] = 1./(ccl.scale_factor_of_chi(cosmo_fid, chiL[cli]-pa.close_cut))-1.
+            else:
+                zminclose[cli] = pa.zsmin
+    #zmaxclose = z_of_com(chiL + pa.close_cut)
+    zmaxclose = 1./(ccl.scale_factor_of_chi(cosmo_fid, chiL + pa.close_cut)) - 1.
 	
-	# Get norm, required for the color cut case:
-	zph_norm = np.linspace(pa.zphmin, pa.zphmax, 1000)
-	(zs_norm, dNdzs_norm) = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, pa.zsmin, pa.zsmax, 1000, SURVEY)
-	zs_integral_norm = np.zeros(len(zph_norm))
-	for zpi in range(0,len(zph_norm)):
-		pz = setup.p_z(zph_norm[zpi], zs_norm, pa.pzpar_fid, pa.pztype)
-		zs_integral_norm[zpi] = scipy.integrate.simps(pz * dNdzs_norm, zs_norm)
-	norm = scipy.integrate.simps(zs_integral_norm, zph_norm)
+    # Get norm, required for the color cut case:
+    zph_norm = np.linspace(pa.zphmin, pa.zphmax, 1000)
+    (zs_norm, dNdzs_norm) = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, pa.zsmin, pa.zsmax, 1000, SURVEY)
+    zs_integral_norm = np.zeros(len(zph_norm))
+    for zpi in range(0,len(zph_norm)):
+        pz = setup.p_z(zph_norm[zpi], zs_norm, pa.pzpar_fid, pa.pztype)
+        zs_integral_norm[zpi] = scipy.integrate.simps(pz * dNdzs_norm, zs_norm)
+    norm = scipy.integrate.simps(zs_integral_norm, zph_norm)
 	
-	# Loop over lens redshift values
-	sum_ans_zph = np.zeros(len(zL))
-	for zi in range(0,len(zL)):
-		
-		if (color_cut=='all'):
-			if (photoz_sample == 'A'):
+    # Loop over lens redshift values
+    sum_ans_zph = np.zeros(len(zL))
+    for zi in range(0,len(zL)):
+
+        if (color_cut=='all'):
+            if (photoz_sample == 'A'):
 			
-				if (specz_cut == 'nocut'):
-					(z_ph, dNdz_ph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, zL[zi], zL[zi] + pa.delta_z, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
+                if (specz_cut == 'nocut'):
+                    (z_ph, dNdz_ph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, zL[zi], zL[zi] + pa.delta_z, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
 				
-					weight = weights(pa.e_rms_Bl_a, z_ph)
-					sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weight, z_ph)
+                    weight = weights(pa.e_rms_Bl_a, z_ph)
+                    sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weight, z_ph)
 				
-				elif (specz_cut == 'close'):
-					(z_ph, dNdz_ph) = N_of_zph(zminclose[zi], zmaxclose[zi], pa.zsmin, pa.zsmax, zL[zi], zL[zi] + pa.delta_z, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
+                elif (specz_cut == 'close'):
+                    (z_ph, dNdz_ph) = N_of_zph(zminclose[zi], zmaxclose[zi], pa.zsmin, pa.zsmax, zL[zi], zL[zi] + pa.delta_z, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
 				
-					weight = weights(pa.e_rms_Bl_a, z_ph)
-					sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weight, z_ph)
+                    weight = weights(pa.e_rms_Bl_a, z_ph)
+                    sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weight, z_ph)
 				
-				else:
-					print("We do not have support for that spec-z cut. Exiting.")
-					exit()
+                else:
+                    print("We do not have support for that spec-z cut. Exiting.")
+                    exit()
 					
-			elif(photoz_sample =='assocBl'):
-				if (pa.delta_z<zL[zi]):
-					zminph = zL[zi] - pa.delta_z
-				else:
-					zminph = 0.
+            elif(photoz_sample =='assocBl'):
+                if (pa.delta_z<zL[zi]):
+                    zminph = zL[zi] - pa.delta_z
+                else:
+                    zminph = 0.
 						
-				if (specz_cut == 'nocut'):
-					(z_ph, dNdz_ph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, zminph, zL[zi] + pa.delta_z, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
+                if (specz_cut == 'nocut'):
+                    (z_ph, dNdz_ph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, zminph, zL[zi] + pa.delta_z, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
 				
-					weight = weights(pa.e_rms_Bl_a, z_ph)
-					sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weight, z_ph)
+                    weight = weights(pa.e_rms_Bl_a, z_ph)
+                    sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weight, z_ph)
 				
-				elif (specz_cut == 'close'):
-					(z_ph, dNdz_ph) = N_of_zph(zminclose[zi], zmaxclose[zi], pa.zsmin, pa.zsmax, zminph, zL[zi] + pa.delta_z, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
+                elif (specz_cut == 'close'):
+                    (z_ph, dNdz_ph) = N_of_zph(zminclose[zi], zmaxclose[zi], pa.zsmin, pa.zsmax, zminph, zL[zi] + pa.delta_z, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
 				
-					weight = weights(pa.e_rms_Bl_a, z_ph)
-					sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weight, z_ph)
+                    weight = weights(pa.e_rms_Bl_a, z_ph)
+                    sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weight, z_ph)
 				
-				else:
-					print("We do not have support for that spec-z cut. Exiting.")
-					exit()
+                else:
+                    print("We do not have support for that spec-z cut. Exiting.")
+                    exit()
 			
-			elif(photoz_sample == 'B'):
+            elif(photoz_sample == 'B'):
 			
-				if (specz_cut == 'nocut'):
-					(z_ph, dNdz_ph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, zL[zi] + pa.delta_z, pa.zphmax, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
+                if (specz_cut == 'nocut'):
+                    (z_ph, dNdz_ph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, zL[zi] + pa.delta_z, pa.zphmax, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
 				
-					weight = weights(pa.e_rms_Bl_b, z_ph)
-					sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weight, z_ph)
+                    weight = weights(pa.e_rms_Bl_b, z_ph)
+                    sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weight, z_ph)
 				
-				elif (specz_cut == 'close'):
-					(z_ph, dNdz_ph) = N_of_zph(zminclose[zi], zmaxclose[zi], pa.zsmin, pa.zsmax, zL[zi] + pa.delta_z, pa.zphmax, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
+                elif (specz_cut == 'close'):
+                    (z_ph, dNdz_ph) = N_of_zph(zminclose[zi], zmaxclose[zi], pa.zsmin, pa.zsmax, zL[zi] + pa.delta_z, pa.zphmax, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
 				
-					weight = weights(pa.e_rms_Bl_b, z_ph)
+                    weight = weights(pa.e_rms_Bl_b, z_ph)
 				
-					sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weight, z_ph)
+                    sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weight, z_ph)
 				
-				else:
-					print("We do not have support for that spec-z cut. Exiting.")
-					exit()
+                else:
+                    print("We do not have support for that spec-z cut. Exiting.")
+                    exit()
 		
-			elif(photoz_sample == 'full'):
+            elif(photoz_sample == 'full'):
 			
-				if (specz_cut == 'nocut'):
-					(z_ph, dNdz_ph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, pa.zphmin, pa.zphmax, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
+                if (specz_cut == 'nocut'):
+                    (z_ph, dNdz_ph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, pa.zphmin, pa.zphmax, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
 				
-					weight = weights(pa.e_rms_Bl_full, z_ph)
+                    weight = weights(pa.e_rms_Bl_full, z_ph)
 				
-					sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weight, z_ph)
+                    sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weight, z_ph)
 				
-				elif (specz_cut == 'close'):
-					(z_ph, dNdz_ph) = N_of_zph(zminclose[zi], zmaxclose[zi], pa.zsmin, pa.zsmax, pa.zphmin, pa.zphmax, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
+                elif (specz_cut == 'close'):
+                    (z_ph, dNdz_ph) = N_of_zph(zminclose[zi], zmaxclose[zi], pa.zsmin, pa.zsmax, pa.zphmin, pa.zphmax, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
 				
-					weight = weights(pa.e_rms_Bl_full, z_ph)
+                    weight = weights(pa.e_rms_Bl_full, z_ph)
 				
-					sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weight, z_ph)
+                    sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weight, z_ph)
 				
-				else:
-					print("We do not have support for that spec-z cut. Exiting.")
-					exit()
-			else:
-				print("We do not have support for that photo-z sample cut. Exiting.")
-				print photoz_sample
-				exit()
+                else:
+                    print("We do not have support for that spec-z cut. Exiting.")
+                    exit()
+            else:
+                print("We do not have support for that photo-z sample cut. Exiting.")
+                print(photoz_sample)
+                exit()
 	
-		else:
-			print("We do not have support for that color cut, exiting.")
-			exit()
+        else:
+            print("We do not have support for that color cut, exiting.")
+            exit()
 			
-	# Now sum over lens redshift:
-	sum_ans = scipy.integrate.simps(sum_ans_zph * dNdzL, zL)
+    # Now sum over lens redshift:
+    sum_ans = scipy.integrate.simps(sum_ans_zph * dNdzL, zL)
 	
-	return sum_ans
+    return sum_ans
 	
 def get_boost(rp_cents_, sample):
 	"""Returns the boost factor in radial bins. propfact is a tunable parameter giving the proportionality constant by which boost goes like projected correlation function (= value at 1 Mpc/h). """
@@ -302,8 +308,10 @@ def get_SigmaC_inv(z_s_, z_l_):
     """ Returns the theoretical value of 1/Sigma_c, (Sigma_c = the critcial surface mass density).
     z_s_ and z_l_ can be 1d arrays, so the returned value will in general be a 2d array. """
 
-    com_s = com_of_z(z_s_) 
-    com_l = com_of_z(z_l_) 
+    #com_s = com_of_z(z_s_) 
+    #com_l = com_of_z(z_l_) 
+    com_s = ccl.comoving_radial_distance(cosmo_fid, 1./(1.+z_s_))
+    com_l = ccl.comoving_radial_distance(cosmo_fid, 1./(1.+z_l_))
 
     if ((hasattr(z_s_, "__len__")==True) and (hasattr(z_l_, "__len__")==True)):
         Sigma_c_inv = np.zeros((len(z_s_), len(z_l_)))
@@ -337,10 +345,39 @@ def get_SigmaC_inv(z_s_, z_l_):
                  Sigma_c_inv= 4. * np.pi * (pa.Gnewt * pa.Msun) * (10**12 / pa.c**2) / pa.mperMpc *   com_l * (com_s - com_l) * (1 + z_l_) / com_s
                     
     return Sigma_c_inv
-	
+    
 def get_SigmaC_avg(photoz_sample):
 	""" Get the average over Sigma C for the given sample.
 	WE ASSUME A SINGLE LENS REDSHIFT HERE BECAUSE WE ARE ONLY USING THIS FOR ROUGH DEBUGGING."""
+	
+	if(photoz_sample =='assocBl'):
+		if (pa.delta_z<pa.zeff):
+			zminph = pa.zeff - pa.delta_z
+		else:
+			zminph = 0.
+						
+		(z_ph, dNdz_ph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, zminph, pa.zeff + pa.delta_z, pa.zphmin, pa.zphmax, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
+			
+	elif(photoz_sample == 'B'):
+
+		(z_ph, dNdz_ph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, pa.zeff + pa.delta_z, pa.zphmax, pa.zphmin, pa.zphmax, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
+		
+	Siginv = get_SigmaC_inv(z_ph, pa.zeff)
+		
+	Siginv_avg = scipy.integrate.simps(dNdz_ph * Siginv, z_ph)
+	
+	Sigavg =  1. / Siginv_avg
+	
+	return Sigavg
+    
+def get_SigmaC_inv_avg(photoz_sample, SURVEY):
+	""" Get the average over Sigma C inverse for the given sample."""
+    
+    # Get lens redshift distribution
+    zL = np.linspace(pa.zLmin, pa.zLmax, 100)
+    dNdzL = setup.get_dNdzL(zL, SURVEY)
+    #chiL = com_of_z(zL)
+    chiL = ccl.comoving_radial_distance(cosmo_fid, 1./(1.+zL))
 	
 	if(photoz_sample =='assocBl'):
 		if (pa.delta_z<pa.zeff):
@@ -486,14 +523,23 @@ else:
 rp_bins 	= 	setup.setup_rp_bins(pa.rp_min, pa.rp_max, pa.N_bins)
 rp_cent		=	setup.rp_bins_mid(rp_bins)
 
+# Set up the fiducial cosmology object
+cosmo_fid = ccl.Cosmology(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), sigma8 = pa.sigma8, n_s=pa.n_s)
+#F = get_F('B', rp_bins, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
+
+Sigma_c_inv = get_SigmaC_inv(2.0, 0.1)
+
+
+print("SigCinv=", Sigma_c_inv)
+
 # Set up a function to get z as a function of comoving distance
-(z_of_com, com_of_z) = setup.z_interpof_com(SURVEY) 
+#(z_of_com, com_of_z) = setup.z_interpof_com(SURVEY) 
 
 # Get fiducial gamma_IA
-g_IA_fid = gamma_fid(rp_cent)
-(StoNstat, StoN_stat_sysB) = get_gammaIA_cov(rp_bins, rp_cent)
+#g_IA_fid = gamma_fid(rp_cent)
+#(StoNstat, StoN_stat_sysB) = get_gammaIA_cov(rp_bins, rp_cent)
 
 # Save the statistical-only S-to-N and from stat + sysB  
-StoNstat_save = [StoNstat]; np.savetxt('./txtfiles/StoN/StoNstat_gamt_Blazek_'+SURVEY+'_deltaz='+str(pa.delta_z)+'_rlim='+str(pa.mlim)+'_'+endfile+'.txt', StoNstat_save)  
-StoNstat_sysB_save = [StoN_stat_sysB]; np.savetxt('./txtfiles/StoN/StoN_stat_sysB_gamt_Blazek_'+SURVEY+'_deltaz='+str(pa.delta_z)+'_rlim='+str(pa.mlim)+'_'+endfile+'.txt', StoNstat_sysB_save)
+#StoNstat_save = [StoNstat]; np.savetxt('./txtfiles/StoN/StoNstat_gamt_Blazek_'+SURVEY+'_deltaz='+str(pa.delta_z)+'_rlim='+str(pa.mlim)+'_'+endfile+'.txt', StoNstat_save)  
+#StoNstat_sysB_save = [StoN_stat_sysB]; np.savetxt('./txtfiles/StoN/StoN_stat_sysB_gamt_Blazek_'+SURVEY+'_deltaz='+str(pa.delta_z)+'_rlim='+str(pa.mlim)+'_'+endfile+'.txt', StoNstat_sysB_save)
 
