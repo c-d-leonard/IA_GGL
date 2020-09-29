@@ -2,7 +2,7 @@ import numpy as np
 import shared_functions_wlp_wls as shared
 
 survey = 'LSST_DESI'
-endfile = 'test_updates'
+endfile = 'test_DellXPS'
 
 if (survey == 'SDSS'):
 	import params as pa

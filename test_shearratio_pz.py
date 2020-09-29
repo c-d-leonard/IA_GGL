@@ -1,8 +1,8 @@
 # This is a script which predicts constraints on intrinsic alignments, using an updated version of the method of Blazek et al 2012 in which it is not assumed that only excess galaxies contribute to IA (rather it is assumed that source galaxies which are close to the lens along the line-of-sight can contribute.)
 
-SURVEY = 'SDSS'
+SURVEY = 'LSST_DESI'
 print("SURVEY=", SURVEY)
-endfile = 'test_updates'
+endfile = 'test_DellXPS'
 
 import numpy as np
 import scipy
@@ -25,8 +25,8 @@ def N_of_zph(z_a_def_s, z_b_def_s, z_a_norm_s, z_b_norm_s, z_a_def_ph, z_b_def_p
 	
 	(z_norm, dNdZ_norm) = setup.get_NofZ_unnormed(dNdzpar, dNdztype, z_a_norm_s, z_b_norm_s, 200, SURVEY)
 	
-	z_ph_vec = scipy.linspace(z_a_def_ph, z_b_def_ph, 200)
-	z_ph_vec_norm = scipy.linspace(z_a_norm_ph, z_b_norm_ph, 200)
+	z_ph_vec = np.linspace(z_a_def_ph, z_b_def_ph, 200)
+	z_ph_vec_norm = np.linspace(z_a_norm_ph, z_b_norm_ph, 200)
 	
 	int_dzs = np.zeros(len(z_ph_vec))
 	for i in range(0,len(z_ph_vec)):
@@ -347,31 +347,33 @@ def get_SigmaC_inv(z_s_, z_l_):
     return Sigma_c_inv
     
 def get_SigmaC_avg(photoz_sample):
-	""" Get the average over Sigma C for the given sample.
-	WE ASSUME A SINGLE LENS REDSHIFT HERE BECAUSE WE ARE ONLY USING THIS FOR ROUGH DEBUGGING."""
+    """ Get the average over Sigma C for the given sample.
+    WE ASSUME A SINGLE LENS REDSHIFT HERE BECAUSE WE ARE ONLY USING THIS FOR ROUGH DEBUGGING."""
 	
-	if(photoz_sample =='assocBl'):
-		if (pa.delta_z<pa.zeff):
-			zminph = pa.zeff - pa.delta_z
-		else:
-			zminph = 0.
+    if(photoz_sample =='assocBl'):
+        if (pa.delta_z<pa.zeff):
+            zminph = pa.zeff - pa.delta_z
+        else:
+            zminph = 0.
 						
-		(z_ph, dNdz_ph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, zminph, pa.zeff + pa.delta_z, pa.zphmin, pa.zphmax, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
+        (z_ph, dNdz_ph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, zminph, pa.zeff + pa.delta_z, pa.zphmin, pa.zphmax, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
 			
-	elif(photoz_sample == 'B'):
-
-		(z_ph, dNdz_ph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, pa.zeff + pa.delta_z, pa.zphmax, pa.zphmin, pa.zphmax, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
+    elif(photoz_sample == 'B'):
+        (z_ph, dNdz_ph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, pa.zeff + pa.delta_z, pa.zphmax, pa.zphmin, pa.zphmax, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
+        
+    elif(photoz_sample=='A'):
+        (z_ph, dNdz_ph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, pa.zeff, pa.zeff + pa.delta_z, pa.zphmin, pa.zphmax, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)   
 		
-	Siginv = get_SigmaC_inv(z_ph, pa.zeff)
+    Siginv = get_SigmaC_inv(z_ph, pa.zeff)
 		
-	Siginv_avg = scipy.integrate.simps(dNdz_ph * Siginv, z_ph)
+    Siginv_avg = scipy.integrate.simps(dNdz_ph * Siginv, z_ph)
 	
-	Sigavg =  1. / Siginv_avg
+    Sigavg =  1. / Siginv_avg
 	
-	return Sigavg
+    return Sigavg
     
 def get_SigmaC_inv_avg(photoz_sample, SURVEY):
-	""" Get the average over Sigma C inverse for the given sample."""
+    """ Get the average over Sigma C inverse for the given sample."""
     
     # Get lens redshift distribution
     zL = np.linspace(pa.zLmin, pa.zLmax, 100)
@@ -379,25 +381,25 @@ def get_SigmaC_inv_avg(photoz_sample, SURVEY):
     #chiL = com_of_z(zL)
     chiL = ccl.comoving_radial_distance(cosmo_fid, 1./(1.+zL))
 	
-	if(photoz_sample =='assocBl'):
-		if (pa.delta_z<pa.zeff):
-			zminph = pa.zeff - pa.delta_z
-		else:
-			zminph = 0.
+    if(photoz_sample =='assocBl'):
+        if (pa.delta_z<pa.zeff):
+            zminph = pa.zeff - pa.delta_z
+        else:
+            zminph = 0.
 						
-		(z_ph, dNdz_ph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, zminph, pa.zeff + pa.delta_z, pa.zphmin, pa.zphmax, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
+        (z_ph, dNdz_ph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, zminph, pa.zeff + pa.delta_z, pa.zphmin, pa.zphmax, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
 			
-	elif(photoz_sample == 'B'):
-
-		(z_ph, dNdz_ph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, pa.zeff + pa.delta_z, pa.zphmax, pa.zphmin, pa.zphmax, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
+    elif(photoz_sample == 'B'):
+    
+        (z_ph, dNdz_ph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, pa.zeff + pa.delta_z, pa.zphmax, pa.zphmin, pa.zphmax, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
 		
-	Siginv = get_SigmaC_inv(z_ph, pa.zeff)
-		
-	Siginv_avg = scipy.integrate.simps(dNdz_ph * Siginv, z_ph)
+        Siginv = get_SigmaC_inv(z_ph, pa.zeff)
 	
-	Sigavg =  1. / Siginv_avg
+        Siginv_avg = scipy.integrate.simps(dNdz_ph * Siginv, z_ph)
 	
-	return Sigavg
+        Sigavg =  1. / Siginv_avg
+	
+    return Sigavg
 	
 			
 ##### ERRORS FOR FRACTIONAL ERROR CALCULATION #####
@@ -506,6 +508,57 @@ def gamma_fid(rp):
 	gammaIA = (f_red * wgp_rp) / (wgg_rp + 2. * pa.close_cut)  # We assume wgg is the same for red and blue galaxies.
 
 	return gammaIA
+	
+
+	
+def get_gammaIA_estimator():
+    """ Calculate gammaIA from the estimator used on data for the Blazek et al. 2012 + F method with gammat, as in Sara's project. """
+    
+    # Get F factors
+    F_a = get_F('A', rp_bins, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
+    F_b = get_F('B', rp_bins, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
+    
+    print("F_a=", F_a)
+    print("F_b=", F_b)
+    
+    # Write to file:
+    np.savetxt('./txtfiles/photo_z_test/F_a_'+SURVEY+'_'+endfile+'.txt', [F_a])
+    np.savetxt('./txtfiles/photo_z_test/F_b_'+SURVEY+'_'+endfile+'.txt', [F_a])
+
+    # Load boosts
+    B_a = get_boost(rp_cent, 'A')
+    B_b = get_boost(rp_cent, 'B')
+    
+    print("B_a=", B_a)
+    print("B_b=", B_b)
+    
+    # Write to file:
+    np.savetxt('./txtfiles/photo_z_test/B_a_'+SURVEY+'_'+endfile+'.txt', B_a)
+    np.savetxt('./txtfiles/photo_z_test/B_b_'+SURVEY+'_'+endfile+'.txt', B_b)
+    
+    # Get SigmaC
+    SigA = get_SigmaC_avg('A')
+    SigB = get_SigmaC_avg('B')
+    
+    print("Sigma_c_inv_avg_inv A=", SigA)
+    print("Sigma_c_inv_avg_inv B=", SigB)
+    
+    # Write to file:
+    np.savetxt('./txtfiles/photo_z_test/SigmaC_a_'+SURVEY+'_'+endfile+'.txt', [SigA])
+    np.savetxt('./txtfiles/photo_z_test/SigmaC_b_'+SURVEY+'_'+endfile+'.txt', [SigB])
+    
+    # Probably call function to read in gamma_t from cosmosis and either convert rp to theta for boost or theta to rp for gamma_t.
+    #gammat_a = ...
+    #gammat_b = ...
+    
+    # Assemble estimator
+    #gamma_IA_est = (gammat_b * SigB - gammat_a*SigA) / ( (B_b - 1 + F_b)*SigB - (B_a - 1 + F_a))
+    
+    # Stack rp or theta with gamma_IA_est to output
+    # save_gammaIA = np.column_stack((rp_cent, gamma_IA_est))
+    #np.savetxt('./txtfiles/photo_z_test/gamma_IA_est_'+SURVEY+'_'+endfile+'.txt', save_gammaIA)
+
+    return
 
 
 ######## MAIN CALLS ##########
@@ -526,6 +579,10 @@ rp_cent		=	setup.rp_bins_mid(rp_bins)
 # Set up the fiducial cosmology object
 cosmo_fid = ccl.Cosmology(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), sigma8 = pa.sigma8, n_s=pa.n_s)
 #F = get_F('B', rp_bins, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
+
+get_gammaIA_estimator()
+
+exit()
 
 Sigma_c_inv = get_SigmaC_inv(2.0, 0.1)
 

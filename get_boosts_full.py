@@ -11,7 +11,7 @@ import shared_functions_wlp_wls as shared
 import pyccl as ccl
 
 SURVEY = 'LSST_DESI'
-endfile = 'test_updates'
+endfile = 'test_DellXPS'
 
 if (SURVEY=='SDSS'):
     import params as pa

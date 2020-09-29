@@ -8,22 +8,22 @@
 
 # UPDATE - switch the 2halo cases to ccl?
 # FFT and save the results.
-cp ./txtfiles/1halo_terms/P*test_updates.txt ~/Documents/CMU/Software/FFTLog-master-slosar/test/
-cp ./txtfiles/halofit_Pk/P*test_updates.txt ~/Documents/CMU/Software/FFTLog-master-slosar/test/
-cd ~/Documents/CMU/Software/FFTLog-master-slosar/
+#cp ./txtfiles/1halo_terms/P*test_DellXPS.txt ~/Software/FFTLog/test/
+#cp ./txtfiles/halofit_Pk/P*test_DellXPS.txt ~/Software/FFTLog/test/
+#cd ~/Software/FFTLog/
 
-make test_gg_1h.out
-make test_gg_1h_multifile.out
-make test_gm_1h.out
-make test_gm_2h.out
-make test_gg_2h_multifile.out
-make clean
+#make test_gg_1h.out
+#make test_gg_1h_multifile.out
+#make test_gm_1h.out
+#make test_gm_2h.out
+#make test_gg_2h_multifile.out
+#make clean
 
-#cd ~/Dropbox/CMU/Research/Intrinsic_Alignments/
-cd ~/Documents/Research_Newcastle/IA_GGL/
-mv ~/Documents/CMU/Software/FFTLog-master-slosar/xi*1h*test_updates.txt ./txtfiles/xi_1h_terms/
-mv ~/Documents/CMU/Software/FFTLog-master-slosar/xi*2h*test_updates.txt ./txtfiles/halofit_xi/
-rm ~/Documents/CMU/Software/FFTLog-master-slosar/test/P*_test_updates.txt
+
+#cd ~/Research/IA_measurement_GGL/IA_GGL/
+#mv ~/Software/FFTLog/xi*1h*test_DellXPS.txt ./txtfiles/xi_1h_terms/
+#mv ~/Software/FFTLog/xi*2h*test_DellXPS.txt ./txtfiles/halofit_xi/
+#rm ~/Software/FFTLog/test/P*_test_DellXPS.txt
 
 # Get the boost
 python get_boosts_full.py
