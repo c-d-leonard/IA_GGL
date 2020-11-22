@@ -142,58 +142,54 @@ def p_z(z_ph, z_sp, pzpar, pztype):
 	return p_z_
 	
 def get_NofZ_unnormed(dNdzpar, dNdztype, z_min, z_max, zpts, survey):
-	""" Returns the dNdz of the sources as a function of photometric redshift, as well as the z points at which it is evaluated."""
-	
-	if (survey == 'SDSS'):
-		import params as pa
-	elif (survey == 'LSST_DESI'):
-		import params_LSST_DESI as pa
-	else:
-		print("We don't have support for that survey yet; exiting.")
-		exit()
+    """ Returns the dNdz of the sources as a function of photometric redshift, as well as the z points at which it is evaluated."""
 
-	z = scipy.linspace(z_min, z_max, zpts)
+    if (survey == 'SDSS'):
+        print("Special photoz paramsfile") 
+        import params_SDSS_testpz as pa
+    elif (survey == 'LSST_DESI'):
+        import params_LSST_DESI as pa
+    else:
+        print("We don't have support for that survey yet; exiting.")
+        exit()
+
+    z = scipy.linspace(z_min, z_max, zpts)
+
+    # There's only one magnitude limit here we are considering for now, so we just take the parameters fit to data from that magnitude limit.
+    if (dNdztype=='Nakajima'):
+        # dNdz takes form like in Nakajima et al. 2011 equation 3
+        a = dNdzpar[0]
+        zs = dNdzpar[1]
 	
-	# There's only one magnitude limit here we are considering for now, so we just take the parameters fit to data from that magnitude limit.
-	if (dNdztype=='Nakajima'):
-		# dNdz takes form like in Nakajima et al. 2011 equation 3
-		a = dNdzpar[0]
-		zs = dNdzpar[1]
-	
-		nofz_ = (z / zs)**(a-1.) * np.exp( -0.5 * (z / zs)**2)
-	elif (dNdztype=='Smail'):
-		if (np.abs(pa.mlim - 25.3)<10**(-15)): # if rlim = 25.3 use the Chang et al. 2013 parameters directly
-			# dNdz take form like in Smail et al. 1994
-			alpha = dNdzpar[0]
-			z0 = dNdzpar[1]
-			beta = dNdzpar[2]
-			nofz_ = z**alpha * np.exp( - (z / z0)**beta)
-		else: # if rlim != 25.3 we have to compute the redshift distribution from the luminosity function
-			print("dNdz (sources) for rlim != 25.3 is not working yet.")
-			exit()
-		#(L, phi_normed, phi) = get_phi(z, pa.lumparams_all, survey)
-		#(L_red, phi_normed_red, phi_red) = get_phi(z, pa.lumparams_red, survey)
+        nofz_ = (z / zs)**(a-1.) * np.exp( -0.5 * (z / zs)**2)
+    elif (dNdztype=='Smail'):
+        if (np.abs(pa.mlim - 25.3)<10**(-15)): # if rlim = 25.3 use the Chang et al. 2013 parameters directly
+            # dNdz take form like in Smail et al. 1994
+            alpha = dNdzpar[0]
+            z0 = dNdzpar[1]
+            beta = dNdzpar[2]
+            nofz_ = z**alpha * np.exp( - (z / z0)**beta)
+        else: # if rlim != 25.3 we have to compute the redshift distribution from the luminosity function
+            print("dNdz (sources) for rlim != 25.3 is not working yet.")
+            exit()
+        #(L, phi_normed, phi) = get_phi(z, pa.lumparams_all, survey)
+        #(L_red, phi_normed_red, phi_red) = get_phi(z, pa.lumparams_red, survey)
 		
-		#OmL = 1. - pa.OmC - pa.OmB - pa.OmR - pa.OmN	
-		#phi_ofz = np.zeros(len(z))
-		#phi_of_z_red = np.zeros(len(z))
-		#nofz_ = np.zeros(len(z))
-		#for zi in range(0,len(z)):
-		#	phi_ofz[zi] = scipy.integrate.simps(phi[zi], L[zi])
-			#phi_of_z_red[zi] = scipy.integrate.simps(phi_red[zi], L[zi])
-		#	c_over_H = 1. / (pa.H0 * ( (pa.OmC+pa.OmB)*(1.+z[zi])**3 + OmL + (pa.OmR+pa.OmN) * (1.+z[zi])**4 )**(0.5))
-		#	nofz_[zi] = phi_ofz[zi] #4. * np.pi * pa.fsky * com(z[zi], survey)**2 * c_over_H  * phi_ofz[zi]  # See notes October 12 2017 for this expression.
+        #OmL = 1. - pa.OmC - pa.OmB - pa.OmR - pa.OmN	
+        #phi_ofz = np.zeros(len(z))
+        #phi_of_z_red = np.zeros(len(z))
+        #nofz_ = np.zeros(len(z))
+        #for zi in range(0,len(z)):
+            #	phi_ofz[zi] = scipy.integrate.simps(phi[zi], L[zi])
+            #phi_of_z_red[zi] = scipy.integrate.simps(phi_red[zi], L[zi])
+            #	c_over_H = 1. / (pa.H0 * ( (pa.OmC+pa.OmB)*(1.+z[zi])**3 + OmL + (pa.OmR+pa.OmN) * (1.+z[zi])**4 )**(0.5))
+            #	nofz_[zi] = phi_ofz[zi] #4. * np.pi * pa.fsky * com(z[zi], survey)**2 * c_over_H  * phi_ofz[zi]  # See notes October 12 2017 for this expression.		
 			
-		"""plt.figure()
-		plt.plot(z, phi_of_z_red[:] / phi_ofz[:], 'm+')
-		plt.savefig('./plots/testfred.pdf')
-		plt.close()"""
-			
-	else:
-		print("dNdz type "+str(dNdztype)+" not yet supported; exiting.")
-		exit()
+    else:
+        print("dNdz type "+str(dNdztype)+" not yet supported; exiting.")
+        exit()
 
-	return (z, nofz_)
+    return (z, nofz_)
 	
 def get_dNdzL(zvec, survey):
     """ Imports the lens redshift distribution from file, normalizes, interpolates, and outputs at the z vector that's passed."""
@@ -324,3 +320,12 @@ def get_fred_ofz(z, survey):
 	fred_ofz = phi_red_ofz / phi_all_ofz
 
 	return fred_ofz
+	
+	
+def arcmin_to_rp(theta,zeff, cosmo):
+    chieff = ccl.comoving_radial_distance(cosmo,1./(1.+zeff)) 
+    rads = theta * np.pi / 60. / 180.
+
+    rp = rads * chieff
+
+    return rp

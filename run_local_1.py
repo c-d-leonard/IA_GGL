@@ -2,7 +2,7 @@ import numpy as np
 import shared_functions_wlp_wls as shared
 
 survey = 'LSST_DESI'
-endfile = 'test_DellXPS'
+endfile = 'ext_theta'
 
 if (survey == 'SDSS'):
 	import params as pa

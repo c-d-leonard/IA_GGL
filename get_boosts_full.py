@@ -10,11 +10,12 @@ import shared_functions_setup as setup
 import shared_functions_wlp_wls as shared
 import pyccl as ccl
 
-SURVEY = 'LSST_DESI'
-endfile = 'test_DellXPS'
+SURVEY = 'SDSS'
+endfile = 'specz'
 
 if (SURVEY=='SDSS'):
-    import params as pa
+    print("RUNNING WITH TEST VALUE FOR SPEC Z")
+    import params_SDSS_testpz as pa
 elif (SURVEY=='LSST_DESI'):
     import params_LSST_DESI as pa
 else:
@@ -22,8 +23,21 @@ else:
     exit()
     
 # Set up rp vector
-rp_edges = setup.setup_rp_bins(pa.rp_min, pa.rp_max, pa.N_bins)
-rpvec = setup.rp_bins_mid(rp_edges)
+
+cosmo = ccl.Cosmology(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), sigma8 = pa.sigma8, n_s=pa.n_s)
+
+# Option to provide theta min and theta max and convert to rp for a given effective lens redshift:
+theta_min = 0.1
+theta_max = 200
+rp_min = setup.arcmin_to_rp(theta_min, pa.zeff,cosmo)
+rp_max = setup.arcmin_to_rp(theta_max, pa.zeff,cosmo)
+print("rp_min=", rp_min, "rp_max=", rp_max)
+
+rp_edges = 	setup.setup_rp_bins(rp_min, rp_max, pa.N_bins)
+rpvec	=	setup.rp_bins_mid(rp_edges)
+
+#rp_edges = setup.setup_rp_bins(pa.rp_min, pa.rp_max, pa.N_bins)
+#rpvec = setup.rp_bins_mid(rp_edges)
 	
 # First check if we need to do this:
 Boost_file_a = './txtfiles/boosts/Boost_full_A_survey='+SURVEY+'_deltaz='+str(pa.delta_z)+'_'+endfile+'.txt'
@@ -160,8 +174,9 @@ xi_2h_mm = np.zeros((40000, len(zLvec)))
 xi_1h = np.zeros((40000, len(zLvec)))
 for zi in range(0,len(zLvec)):
     stringz = '{:1.12f}'.format(zLvec[zi])
-    (r, xi_2h_mm[:, zi]) = np.loadtxt('./txtfiles/halofit_xi/xi2h_z='+stringz+'_'+endfile+'.txt', unpack=True)
-    (r, xi_1h[:, zi]) = np.loadtxt('./txtfiles/xi_1h_terms/xi1h_ls_z='+stringz+'_'+endfile+'.txt', unpack=True)
+    print("IMPORTING SPECIFIC XI TERMS FOR TEST")
+    (r, xi_2h_mm[:, zi]) = np.loadtxt('./txtfiles/halofit_xi/xi2h_z='+stringz+'_ext_theta.txt', unpack=True)
+    (r, xi_1h[:, zi]) = np.loadtxt('./txtfiles/xi_1h_terms/xi1h_ls_z='+stringz+'_ext_theta.txt', unpack=True)
     for ri in range(0,len(r)):
         if r[ri]>3:
             xi_1h[ri,zi] = 0.
@@ -171,7 +186,7 @@ xi = xi_1h + xi_2h
 
 # Get the comoving distance associated to the lens redshift
 #chi_vec = chi_of_z(zLvec)
-cosmo = ccl.Cosmology(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), sigma8 = pa.sigma8, n_s=pa.n_s)
+#cosmo = ccl.Cosmology(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), sigma8 = pa.sigma8, n_s=pa.n_s)
 chi_vec = np.zeros(len(zLvec))
 for zi in range(0,len(zLvec)):
     chi_vec[zi] = ccl.comoving_radial_distance(cosmo, 1./(1.+zLvec[zi])) * (pa.HH0/100.) # CCL returns in Mpc but we want Mpc/h

@@ -4,29 +4,30 @@
 # other than things that need to be pre-run on coma. 
 
 # Get 1halo and 2halo power spectrum terms that will need FFTing
-#python run_local_1.py
+python run_local_1.py
 
 # UPDATE - switch the 2halo cases to ccl?
 # FFT and save the results.
-#cp ./txtfiles/1halo_terms/P*test_DellXPS.txt ~/Software/FFTLog/test/
-#cp ./txtfiles/halofit_Pk/P*test_DellXPS.txt ~/Software/FFTLog/test/
-#cd ~/Software/FFTLog/
+cp ./txtfiles/1halo_terms/P*ext_theta.txt ~/Software/FFTLog/test/
+cp ./txtfiles/halofit_Pk/P*ext_theta.txt ~/Software/FFTLog/test/
+cd ~/Software/FFTLog/
 
-#make test_gg_1h.out
-#make test_gg_1h_multifile.out
-#make test_gm_1h.out
-#make test_gm_2h.out
-#make test_gg_2h_multifile.out
-#make clean
+make test_gg_1h.out
+make test_gg_1h_multifile.out
+make test_gm_1h.out
+make test_gm_2h.out
+make test_gg_2h_multifile.out
+make clean
 
-
-#cd ~/Research/IA_measurement_GGL/IA_GGL/
-#mv ~/Software/FFTLog/xi*1h*test_DellXPS.txt ./txtfiles/xi_1h_terms/
-#mv ~/Software/FFTLog/xi*2h*test_DellXPS.txt ./txtfiles/halofit_xi/
-#rm ~/Software/FFTLog/test/P*_test_DellXPS.txt
+cd ~/Research/IA_measurement_GGL/IA_GGL/
+mv ~/Software/FFTLog/xi*1h*ext_theta.txt ./txtfiles/xi_1h_terms/
+mv ~/Software/FFTLog/xi*2h*ext_theta.txt ./txtfiles/halofit_xi/
+rm ~/Software/FFTLog/test/P*_ext_theta.txt
 
 # Get the boost
 python get_boosts_full.py
+
+python test_shearratio_pz.py
 
 exit 1
 
