@@ -198,6 +198,8 @@ def get_dNdzL(zvec, survey):
         import params as pa
     elif (survey == 'LSST_DESI'):
         import params_LSST_DESI as pa
+    elif (survey == 'DESY1'):
+        import params_DESY1_testpz as pa
     else:
         print("We don't have support for that survey yet; exiting.")
         exit()

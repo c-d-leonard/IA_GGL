@@ -567,10 +567,10 @@ else:
 	print("We don't have support for that survey yet; exiting.")
 	exit()
 	
-endfile = 'dndz_'+str(pa.percent_change)+'percent'
+#endfile = 'dndz_'+str(pa.percent_change)+'percent'
 
-print("endfile=", endfile)
-print("dNdztruepar=", pa.dNdzpar_true)
+#print("endfile=", endfile)
+#print("dNdztruepar=", pa.dNdzpar_true)
 
 	
 # Set up the fiducial cosmology object
