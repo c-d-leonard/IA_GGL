@@ -127,138 +127,6 @@ def sum_weights_DESY1(source_sample, z_cut):
 	
     return sum_ans
 
-def sum_weights(photoz_sample, specz_cut, color_cut, rp_bins, dNdz_par, pz_par, dNdztype, pztype):
-    """ Returns the sum over weights for each projected radial bin. 
-    photoz_sample = 'A', 'B', or 'full'
-    specz_cut = 'close', or 'nocut'
-    """
-	
-    # Get lens redshift distribution
-    zL = np.linspace(pa.zLmin, pa.zLmax, 100)
-    dNdzL = setup.get_dNdzL(zL, SURVEY)
-    #chiL = com_of_z(zL)
-    chiL = ccl.comoving_radial_distance(cosmo_fid, 1./(1.+zL))
-    chiSmin = ccl.comoving_radial_distance(cosmo_fid, 1./(1.+pa.zsmin))
-    #if (min(chiL)> (pa.close_cut + com_of_z(pa.zsmin))):
-    if (min(chiL)> (pa.close_cut + chiSmin)):
-        #zminclose = z_of_com(chiL - pa.close_cut)
-        zminclose = 1./(ccl.scale_factor_of_chi(cosmo_fid, chiL - pa.close_cut)) - 1.
-    else:
-        zminclose = np.zeros(len(chiL))
-        for cli in range(0,len(chiL)):
-            if (chiL[cli]>pa.close_cut + chiSmin):
-                #zminclose[cli] = z_of_com(chiL[cli] - pa.close_cut)
-                zminclose[cli] = 1./(ccl.scale_factor_of_chi(cosmo_fid, chiL[cli]-pa.close_cut))-1.
-            else:
-                zminclose[cli] = pa.zsmin
-    #zmaxclose = z_of_com(chiL + pa.close_cut)
-    zmaxclose = 1./(ccl.scale_factor_of_chi(cosmo_fid, chiL + pa.close_cut)) - 1.
-	
-    # Get norm, required for the color cut case:
-    zph_norm = np.linspace(pa.zphmin, pa.zphmax, 1000)
-    (zs_norm, dNdzs_norm) = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, pa.zsmin, pa.zsmax, 1000, SURVEY)
-    zs_integral_norm = np.zeros(len(zph_norm))
-    for zpi in range(0,len(zph_norm)):
-        pz = setup.p_z(zph_norm[zpi], zs_norm, pa.pzpar_fid, pa.pztype)
-        zs_integral_norm[zpi] = scipy.integrate.simps(pz * dNdzs_norm, zs_norm)
-    norm = scipy.integrate.simps(zs_integral_norm, zph_norm)
-	
-    # Loop over lens redshift values
-    sum_ans_zph = np.zeros(len(zL))
-    for zi in range(0,len(zL)):
-
-        if (color_cut=='all'):
-            if (photoz_sample == 'A'):
-			
-                if (specz_cut == 'nocut'):
-                    (z_ph, dNdz_ph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, zL[zi], zL[zi] + pa.delta_z, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
-				
-                    weight = weights(pa.e_rms_Bl_a, z_ph)
-                    sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weight, z_ph)
-				
-                elif (specz_cut == 'close'):
-                    (z_ph, dNdz_ph) = N_of_zph(zminclose[zi], zmaxclose[zi], pa.zsmin, pa.zsmax, zL[zi], zL[zi] + pa.delta_z, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
-				
-                    weight = weights(pa.e_rms_Bl_a, z_ph)
-                    sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weight, z_ph)
-				
-                else:
-                    print("We do not have support for that spec-z cut. Exiting.")
-                    exit()
-					
-            elif(photoz_sample =='assocBl'):
-                if (pa.delta_z<zL[zi]):
-                    zminph = zL[zi] - pa.delta_z
-                else:
-                    zminph = 0.
-						
-                if (specz_cut == 'nocut'):
-                    (z_ph, dNdz_ph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, zminph, zL[zi] + pa.delta_z, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
-				
-                    weight = weights(pa.e_rms_Bl_a, z_ph)
-                    sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weight, z_ph)
-				
-                elif (specz_cut == 'close'):
-                    (z_ph, dNdz_ph) = N_of_zph(zminclose[zi], zmaxclose[zi], pa.zsmin, pa.zsmax, zminph, zL[zi] + pa.delta_z, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
-				
-                    weight = weights(pa.e_rms_Bl_a, z_ph)
-                    sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weight, z_ph)
-				
-                else:
-                    print("We do not have support for that spec-z cut. Exiting.")
-                    exit()
-			
-            elif(photoz_sample == 'B'):
-			
-                if (specz_cut == 'nocut'):
-                    (z_ph, dNdz_ph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, zL[zi] + pa.delta_z, pa.zphmax, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
-				
-                    weight = weights(pa.e_rms_Bl_b, z_ph)
-                    sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weight, z_ph)
-				
-                elif (specz_cut == 'close'):
-                    (z_ph, dNdz_ph) = N_of_zph(zminclose[zi], zmaxclose[zi], pa.zsmin, pa.zsmax, zL[zi] + pa.delta_z, pa.zphmax, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
-				
-                    weight = weights(pa.e_rms_Bl_b, z_ph)
-				
-                    sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weight, z_ph)
-				
-                else:
-                    print("We do not have support for that spec-z cut. Exiting.")
-                    exit()
-		
-            elif(photoz_sample == 'full'):
-			
-                if (specz_cut == 'nocut'):
-                    (z_ph, dNdz_ph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, pa.zphmin, pa.zphmax, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
-				
-                    weight = weights(pa.e_rms_Bl_full, z_ph)
-				
-                    sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weight, z_ph)
-				
-                elif (specz_cut == 'close'):
-                    (z_ph, dNdz_ph) = N_of_zph(zminclose[zi], zmaxclose[zi], pa.zsmin, pa.zsmax, pa.zphmin, pa.zphmax, pa.zphmin, pa.zphmax, dNdz_par, pz_par, dNdztype, pztype)
-				
-                    weight = weights(pa.e_rms_Bl_full, z_ph)
-				
-                    sum_ans_zph[zi] = scipy.integrate.simps(dNdz_ph * weight, z_ph)
-				
-                else:
-                    print("We do not have support for that spec-z cut. Exiting.")
-                    exit()
-            else:
-                print("We do not have support for that photo-z sample cut. Exiting.")
-                print(photoz_sample)
-                exit()
-	
-        else:
-            print("We do not have support for that color cut, exiting.")
-            exit()
-			
-    # Now sum over lens redshift:
-    sum_ans = scipy.integrate.simps(sum_ans_zph * dNdzL, zL)
-	
-    return sum_ans
 	
 def get_boost(rp_cents_, sample):
 	"""Returns the boost factor in radial bins. propfact is a tunable parameter giving the proportionality constant by which boost goes like projected correlation function (= value at 1 Mpc/h). """
@@ -284,8 +152,6 @@ def get_SigmaC_inv(z_s_, z_l_):
     """ Returns the theoretical value of 1/Sigma_c, (Sigma_c = the critcial surface mass density).
     z_s_ and z_l_ can be 1d arrays, so the returned value will in general be a 2d array. """
 
-    #com_s = com_of_z(z_s_) 
-    #com_l = com_of_z(z_l_) 
     com_s = ccl.comoving_radial_distance(cosmo_fid, 1./(1.+z_s_))
     com_l = ccl.comoving_radial_distance(cosmo_fid, 1./(1.+z_l_))
 
@@ -327,18 +193,29 @@ def get_SigmaC_avg(photoz_sample):
     This is only used for the estimated SigmaCinv_avg_inv,
     this function is not called when converting Delta Sigma to gammat
     from pure lensing"""
-			
+
+    # Load weighted source distributions			
     if(photoz_sample == 'B'):
-        (z_ph, dNdz_ph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, pa.zeff + pa.delta_z, pa.zphmax, pa.zeff + pa.delta_z, pa.zphmax, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
+        z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_centres.dat')
+        dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_weighted')
         
     elif(photoz_sample=='A'):
-        (z_ph, dNdz_ph) = N_of_zph(pa.zsmin, pa.zsmax, pa.zsmin, pa.zsmax, pa.zeff, pa.zeff + pa.delta_z, pa.zeff, pa.zeff + pa.delta_z, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
+        z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_centres.dat')
+        dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_weighted')
         
-
-    #print("z_ph=", z_ph)		
-    Siginv = get_SigmaC_inv(z_ph, pa.zeff)
-		
-    Siginv_avg = scipy.integrate.simps(dNdz_ph * Siginv, z_ph)
+    norm_mc = scipy.integrate.simps(dNdz_mc, z_mc)    
+    
+    # Load lens distribution:
+    zL, dNdzL = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/z_dNdz_lenses_subbin.dat', unpack=True)
+    norm_L = scipy.integrate.simps(dNdzL, zL)
+	
+    Siginv = get_SigmaC_inv(z_mc, zL)
+    
+    Siginv_zL = np.zeros(len(zL))
+    for zi in range(0,len(zL)):
+        Siginv_zL[zi] = scipy.integrate.simps(dNdz_mc*Siginv[:,zi], z_mc) / norm_mc
+    		
+    Siginv_avg = scipy.integrate.simps(dNdzL * Siginv_zL, zL) / norm_L
     
     # testing
     #savedndz = np.column_stack((z_ph, dNdz_ph))
@@ -370,114 +247,52 @@ def get_DeltaSig_theory(rp_bins, rp_bins_c):
     # Get rho_m in comoving coordinates (independent of redshift)
     rho_crit = 3. * 10**10 * pa.mperMpc / (8. * np.pi * pa.Gnewt * pa.Msun)  # Msol h^2 / Mpc^3, for use with M in Msol / h (comoving distances)
     rho_m = (pa.OmC + pa.OmB) * rho_crit # units of Msol h^2 / Mpc^3 (comoving distances)
-		
-    # Import the appropriate correlation function (already integrated over lens redshift distribution)
+    
+    # Import z-list
+    zL = np.loadtxt('./txtfiles/z_list_DESY1.txt')
 
-    r_hf, corr_hf = np.loadtxt('./txtfiles/halofit_xi/xi_2h_zavg_'+SURVEY+'_'+endfile+'.txt', unpack=True)	
-    #if SURVEY=='SDSS':
-    #    print("Loading single xi2h file for all dNdz tests - correct later.")
-    #    r_hf, corr_hf = np.loadtxt('./txtfiles/halofit_xi/xi_2h_zavg_'+SURVEY+'_ext_theta.txt', unpack=True)
-    #elif SURVEY=='LSST_DESI':
-    #    r_hf, corr_hf = np.loadtxt('./txtfiles/halofit_xi/xi_2h_zavg_'+SURVEY+'_ext_theta.txt', unpack=True)
-    #else:
-    #    print("We don't have support for that survey, exiting.")
-    #    exit()
+    DeltaSigma_centbins = np.zeros((len(rp_bins_c), len(zL)))
+    for zi in range(len(zL)):
+        # Import the appropriate correlation function
+        r_hf, corr_hf = np.loadtxt('./txtfiles/halofit_xi/xi2h_z='+str(zL[zi])+'_'+endfile+'.txt', unpack=True)	
 		
-    # Interpolate in 2D separations
-    corr_hf_interp = scipy.interpolate.interp1d(r_hf, corr_hf)
-    corr_2D_hf = np.zeros((len(rpvec), len(Pivec)))
-    for ri in range(0, len(rpvec)):
-        for pi in range(0, len(Pivec)):
-            corr_2D_hf[ri, pi] = corr_hf_interp(np.sqrt(rpvec[ri]**2 + Pivec[pi]**2))
+        # Interpolate in 2D separations
+        corr_hf_interp = scipy.interpolate.interp1d(r_hf, corr_hf)
+        corr_2D_hf = np.zeros((len(rpvec), len(Pivec)))
+        for ri in range(0, len(rpvec)):
+            for pi in range(0, len(Pivec)):
+                corr_2D_hf[ri, pi] = corr_hf_interp(np.sqrt(rpvec[ri]**2 + Pivec[pi]**2))
 		
-    # Get Sigma(r_p) for the 2halo term.
-    Sigma_HF = np.zeros(len(rpvec))
-    for ri in range(0,len(rpvec)):
-        # This will have units Msol h / Mpc^2 in comoving distances.
-        Sigma_HF[ri] = rho_m * scipy.integrate.simps(corr_2D_hf[ri, :], Pivec) 
-		
-        # Now average Sigma_HF(R) over R to get the first averaged term in Delta Sigma
-        barSigma_HF = np.zeros(len(rpvec))
+        # Get Sigma(r_p) for the 2halo term.
+        Sigma_HF = np.zeros(len(rpvec))
         for ri in range(0,len(rpvec)):
-            barSigma_HF[ri] = 2. / rpvec[ri]**2 * scipy.integrate.simps(rpvec[0:ri+1]**2*Sigma_HF[0:ri+1], np.log(rpvec[0:ri+1]))
+            # This will have units Msol h / Mpc^2 in comoving distances.
+            Sigma_HF[ri] = rho_m * scipy.integrate.simps(corr_2D_hf[ri, :], Pivec) 
+		
+            # Now average Sigma_HF(R) over R to get the first averaged term in Delta Sigma
+            barSigma_HF = np.zeros(len(rpvec))
+            for ri in range(0,len(rpvec)):
+                barSigma_HF[ri] = 2. / rpvec[ri]**2 * scipy.integrate.simps(rpvec[0:ri+1]**2*Sigma_HF[0:ri+1], np.log(rpvec[0:ri+1]))
 	
         # Units Msol h / Mpc^2 (comoving distances).
         DeltaSigma_HF = pa.bd*(barSigma_HF - Sigma_HF)
 			
-    ####### Now get the 1 halo term #######
-
-    # Get the max R associated to our max M = 10**16
-    #Rmax = ws.Rhalo(10**16, SURVEY)
+        ans_interp = scipy.interpolate.interp1d(rpvec, (DeltaSigma_HF) / (10**12))
+        DeltaSigma_centbins[:,zi] = ans_interp(rp_bins_c)
 	
-    # Import the 1halo correlation function from the power spectrum computed in get_Pkgm_1halo and fourier transformed using FFTlog. Already averaged over dndlz.
-    #print("Loading single xi1h file for all dNdz tests - correct later")
-    #r_1h, corr_1h = np.loadtxt('./txtfiles/xi_1h_terms/xigm_1h_'+SURVEY+'_ext_theta.txt', unpack=True)
-	
-    # Set xi_gg_1h to zero above Rmax Mpc/h.
-    #for ri in range(0, len(r_1h)):
-    #    if (r_1h[ri]>Rmax):
-    #        corr_1h[ri] = 0.0
-	
-    #corr_1h_interp = scipy.interpolate.interp1d(r_1h, corr_1h)
-	
-    #corr_2D_1h = np.zeros((len(rpvec), len(Pivec)))
-    #for ri in range(0, len(rpvec)):
-    #    for pi in range(0, len(Pivec)):
-    #        corr_2D_1h[ri, pi] = corr_1h_interp(np.sqrt(rpvec[ri]**2 + Pivec[pi]**2))
-	
-    #Sigma_1h = np.zeros(len(rpvec))
-    #for ri in range(0,len(rpvec)):
-    #    # Units Msol h / Mpc^2, comoving distances
-    #    Sigma_1h[ri] = rho_m * scipy.integrate.simps(corr_2D_1h[ri, :], Pivec)
-		
-    #plt.figure()
-    #plt.loglog(rpvec, Sigma_1h/ 10.**12, 'm+') # Plot in Msol h / pc^2.
-    #plt.hold(True)
-    #plt.loglog(rpvec, Sigma_HF/ 10.**12, 'g+')
-    #plt.xlim(0.0003, 8)
-    #plt.ylim(0.1,10**4)
-    #plt.savefig('./plots/Sigma_1h.png')
-    #plt.close()
-
-	
-    # Now average over R to get the first averaged term in Delta Sigma
-    #barSigma_1h = np.zeros(len(rpvec))
-    #for ri in range(0,len(rpvec)):
-    #    barSigma_1h[ri] = 2. / rpvec[ri]**2 * scipy.integrate.simps(rpvec[0:ri+1]**2*Sigma_1h[0:ri+1], np.log(rpvec[0:ri+1]))
-		
-    #DeltaSigma_1h = (barSigma_1h - Sigma_1h)
-	
-    """plt.figure()
-    plt.loglog(rpvec, DeltaSigma_1h  / (10**12), 'g+', label='1-halo')
-    plt.hold(True)
-    plt.loglog(rpvec, DeltaSigma_HF  / (10**12), 'm+', label='halofit')
-    plt.hold(True)
-    plt.loglog(rpvec, (DeltaSigma_HF + DeltaSigma_1h)  / (10**12), 'k+', label='total')
-    plt.xlim(0.05,20)
-    plt.ylim(0.3,200)
-    plt.xlabel('$r_p$, Mpc/h')
-    plt.ylabel('$\Delta \Sigma$, $h M_\odot / pc^2$')
-    plt.legend()
-    plt.savefig('./plots/test_DeltaSigmatot_extzl_survey='+SURVEY+'.pdf')
-    plt.close()"""
-	
-    # Interpolate and output at r_bins_c:
-    #ans_interp = scipy.interpolate.interp1d(rpvec, (DeltaSigma_1h + DeltaSigma_HF) / (10**12))
-    ans_interp = scipy.interpolate.interp1d(rpvec, (DeltaSigma_HF) / (10**12))
-    ans = ans_interp(rp_bins_c)
-	
-    return ans # outputting as Msol h / pc^2
+    return DeltaSigma_centbins # outputting as Msol h / pc^2
     
 def get_gammat_purelensing(sample, limtype='pz'):
     """ Get gammat for a given photometric sample with only the lensing signal (not IA)"""
-    #print("before delta sigma theory")
+
     # First get Delta Sigma, this is the same for all source samples
     DeltaSigma = get_DeltaSig_theory(rp_bins, rp_cent)
     
     # Now we need to get <Sigma_c^{-1}>^{-1}
     # This function supports setting the limits of this integration in terms of photo-z (closer to the real scenario) 
     # and in terms of spec-z / true-z (to cross check how much this matters)
-    if limtype=='pz':
+    if limtype=='pz': # NOT UPDATED FOR DES REDSHIFT DISTRIBUTIONS
+        print(" the version of pz limits is not updated to allow for des y1 input redshift distributions")
         # The limits are in terms of photo-z
         if sample=='A':
             zphmin = pa.zeff
@@ -520,37 +335,33 @@ def get_gammat_purelensing(sample, limtype='pz'):
                   
     elif limtype=='truez':
         # The limits are in terms of spec-z
-        if sample=='A':
-            zsmin = pa.zeff
-            zsmax = pa.zeff+pa.delta_z
-        elif sample=='B':
-            zsmin = pa.zeff+pa.delta_z
-            zsmax = pa.zphmax
-        else:
-            ValueError("We don't support that sample for the calculation of gammat from pure lensing.")
+     
+        if(sample == 'B'):
+            z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_centres.dat')
+            dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_weighted')
         
-        (zs, dNdzs) = setup.get_NofZ_unnormed(pa.dNdzpar_true, pa.dNdztype, zsmin, zsmax, 1000, SURVEY) 
+        elif(photoz_sample=='A'):
+            z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_centres.dat')
+            dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_weighted')
         
-        #print("zs=", zs)
+        norm_mc = scipy.integrate.simps(dNdz_mc, z_mc)    
+    
+        # Load lens distribution:
+        zL, dNdzL = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/z_dNdz_lenses_subbin.dat', unpack=True)
+        norm_L = scipy.integrate.simps(dNdzL, zL)
         
-        Siginv = get_SigmaC_inv(zs, pa.zeff)
+        Siginv = get_SigmaC_inv(z_mc, zL)
         
-        int_num = scipy.integrate.simps(Siginv*dNdzs, zs)
-        int_norm = scipy.integrate.simps(dNdzs, zs)
-        #print("norm, zs=", int_norm)
-        
-        # testing
-        #save_dndz = np.column_stack((zs, dNdzs/int_norm))
-        #np.savetxt('./txtfiles/photo_z_test/dNdzs_'+sample+'.txt', save_dndz)
-        
-        SigInv_avg = int_num / int_norm  
-        print("SigInv_avg inv=", 1./SigInv_avg) 
+        Siginv_zL = np.zeros(len(zL))
+        for zi in range(len(zL)):
+            Siginv_zL[zi] = scipy.integrate.simps(Siginv[:, zi]*dNdz_mc, z_mc) / norm_mc
            
     else:
         raise ValueError("We don't have support for that type of limit on the pure lensing integral.")
         
     
-    gammat_lens = DeltaSigma * SigInv_avg
+    for ri in range(len(rp_cent)):
+        gammat_lens[ri] = scipy.integrate.simps(DeltaSigma[ri,:] * SigInv_avg * dNdzL, zL) / norm_L
     
     # save answer
     save_gammat = np.column_stack((rp_cent, gammat_lens))
@@ -562,45 +373,43 @@ def get_gammaIA_estimator():
     """ Calculate gammaIA from the estimator used on data for the Blazek et al. 2012 + F method with gammat, as in Sara's project. """
     
     # Get F factors
-    F_a = get_F('A', rp_bins, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
-    F_b = get_F('B', rp_bins, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
+    #F_a = get_F('A', rp_bins, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
+    #F_b = get_F('B', rp_bins, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
     
-    print("F_a=", F_a)
-    print("F_b=", F_b)
-    
-    exit()
+    #print("F_a=", F_a)
+    #print("F_b=", F_b)
     
     # Write to file:
-    np.savetxt('./txtfiles/photo_z_test/F_a_'+SURVEY+'_'+endfile+'.txt', [F_a])
-    np.savetxt('./txtfiles/photo_z_test/F_b_'+SURVEY+'_'+endfile+'.txt', [F_a])
+    #np.savetxt('./txtfiles/photo_z_test/F_a_'+SURVEY+'_'+endfile+'.txt', [F_a])
+    #np.savetxt('./txtfiles/photo_z_test/F_b_'+SURVEY+'_'+endfile+'.txt', [F_a])
 
     # Load boosts
-    B_a = get_boost(rp_cent, 'A')
-    B_b = get_boost(rp_cent, 'B')
+    #B_a = get_boost(rp_cent, 'A')
+    #B_b = get_boost(rp_cent, 'B')
     
-    print("B_a=", B_a)
-    print("B_b=", B_b)
+    #print("B_a=", B_a)
+    #print("B_b=", B_b)
     
     # Write to file:
-    np.savetxt('./txtfiles/photo_z_test/B_a_'+SURVEY+'_'+endfile+'.txt', B_a)
-    np.savetxt('./txtfiles/photo_z_test/B_b_'+SURVEY+'_'+endfile+'.txt', B_b)
+    #np.savetxt('./txtfiles/photo_z_test/B_a_'+SURVEY+'_'+endfile+'.txt', B_a)
+    #np.savetxt('./txtfiles/photo_z_test/B_b_'+SURVEY+'_'+endfile+'.txt', B_b)
     
     # Get SigmaC
-    SigA = get_SigmaC_avg('A')
-    SigB = get_SigmaC_avg('B')
+    #SigA = get_SigmaC_avg('A')
+    #SigB = get_SigmaC_avg('B')
     
-    print("Sigma_c_inv_avg_inv A=", SigA)
-    print("Sigma_c_inv_avg_inv B=", SigB)
+    #print("Sigma_c_inv_avg_inv A=", SigA)
+    #print("Sigma_c_inv_avg_inv B=", SigB)
     
     # Write to file:
-    np.savetxt('./txtfiles/photo_z_test/SigmaC_a_'+SURVEY+'_'+endfile+'.txt', [SigA])
-    np.savetxt('./txtfiles/photo_z_test/SigmaC_b_'+SURVEY+'_'+endfile+'.txt', [SigB])
+    #np.savetxt('./txtfiles/photo_z_test/SigmaC_a_'+SURVEY+'_'+endfile+'.txt', [SigA])
+    #np.savetxt('./txtfiles/photo_z_test/SigmaC_b_'+SURVEY+'_'+endfile+'.txt', [SigB])
     
     # Get theoretical lensing-only gammat
     gammat_a = get_gammat_purelensing('A', limtype='truez')
     gammat_b = get_gammat_purelensing('B', limtype='truez')
     
-    
+    exit()
     
     # Assemble estimator
     gamma_IA_est = (gammat_b * SigB - gammat_a*SigA) / ( (B_b - 1 + F_b)*SigB - (B_a - 1 + F_a)*SigA)

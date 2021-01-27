@@ -149,6 +149,8 @@ def get_NofZ_unnormed(dNdzpar, dNdztype, z_min, z_max, zpts, survey):
         import params_SDSS_testpz as pa
     elif (survey == 'LSST_DESI'):
         import params_LSST_DESI as pa
+    elif (survey == 'DESY1'):
+        import params_DESY1_testpz as pa
     else:
         print("We don't have support for that survey yet; exiting.")
         exit()

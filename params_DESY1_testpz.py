@@ -21,6 +21,23 @@ N_bins	=	10 # The number of bins of projected radius
 bd = 1.60 # Our lenses are bin 2 of the Y1 galaxy clustering sample. This value taken from Table IV of 1708.01536.
 bs = 1.0 # I'm assuming that the source galaxy sample bias is 1.0.
 
+# Parameters associated with the sample / shape noise calcuation 
+e_rms 			= 	0.21
+e_rms_Bl_a 		= 	e_rms # rms ellipticity of sample a, Blazek method   # from Reyes et al. 2012 (reports in terms of distortion = 0.36)
+e_rms_Bl_b		=	e_rms # rms ellipticity of sample b, Blazek method
+e_rms_Bl_full	=	e_rms # rms ellipticity of the full sample, Blazek method
+e_rms_a 		= 	e_rms # rms ellipticity of sample measured with method a, shapes method  
+e_rms_b 		= 	e_rms # rms ellipticity of sample measured with method b, shapes method
+n_l 			= 	8.7 # The number of lenses in the lens sample per square DEGREE
+Area_l 			=	7131 # Area associated with the lens sample in square DEGREES
+fsky			=   Area_l / 41253. # Assumes the lens area is the limiting factor
+#n_s 			=	1. # The EFFECTIVE number density of sources in the sample per square ARCMINUTE - 1.2 is unweighted. This number is from Rachel in an email June 7.
+S_to_N 			= 	15. # The per-galaxy signal to noise- necessary for estimating sigma_e
+a_con			=	[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9] # Fiducial constant offset, approximated from Singh 2016 assuming unprimed method isophotal and primed ReGaussianisation
+cov_perc 		= 	[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9] #percentage covariance between methods, shape measurement method
+e_rms_mean 		=	np.abs((e_rms_b+e_rms_a)/2.) # This is the e_rms used in computing the shared weight for shapes methods
+#N_shapes		= 	Area_l * n_s * 3600. # Number of galaxies in the shape sample.
+
 #Parameters of the dNdz of sources, if using an analytic distribution. 'fid' = the fiducial value, 'sys' = 1sigma off from fid value to evaluate systematic error.
 # NEED DNDZ OR FUNCTIONAL FORM. Have now the dNdz for each bin wrt zmc and zmean. zmc corresponds roughly to 'true' redshift and zmean to 'photoz'.
 # Need to change the code so I'm importing these and using them directly.
@@ -44,9 +61,9 @@ pzpar_fid 	=	[sigz_fid] # Make this a list to make it more generic to pass aroun
 
 # Lenses: Bin 2 of galaxy clustering sample from DES Y1
 zeff 	= 	0.37  # Need to get this manually
-zLmin	= 	0.3  
-zLmax	=	0.45  
-dNdzL_file	=  '/DESY1_quantities_fromSara/z_dNdz_lenses.dat'
+zLmin	= 	0.301  
+zLmax	=	0.448  
+dNdzL_file	=  '/DESY1_quantities_fromSara/z_dNdz_lenses_subbin.dat'
 
 # MAKE SURE I'M USING THE RIGHT VALUES HERE
 close_cut = 100.# Mpc/h # The maximum separation from a lens to consider part of `rand-close', in Mpc/h. Waiting on Jonathan for this value.
