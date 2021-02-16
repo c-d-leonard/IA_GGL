@@ -21,7 +21,35 @@ N_bins	=	10 # The number of bins of projected radius
 bd = 1.60 # Our lenses are bin 2 of the Y1 galaxy clustering sample. This value taken from Table IV of 1708.01536.
 bs = 1.0 # I'm assuming that the source galaxy sample bias is 1.0.
 
-# Parameters associated with the sample / shape noise calcuation 
+# Constants / conversions
+mperMpc = 3.0856776*10**22
+Msun = 1.989*10**30 # in kg
+Gnewt = 6.67408*10**(-11)
+c=2.99792458*10**(8)
+
+# Cosmological parameters. Using the same ones that Sara used as fiducial values in her analysis (as a default).
+# Need to work out how to vary these for the shear-ratio test.
+Nnu	=	3.046    # Massless neutrinos, standard value
+OmB	=	0.05 
+H0	=	10**(5)/c
+sigma8  =      0.817 	# From DES Y1
+n_s	=	0.9652
+
+# For HH0 and OmM, we set up two versions so we can vary to see if assumed cosmology will affect measurement. 
+# Subscript t is for true i.e. goes into boost and pure gammat.
+# Subscript a is for assumed i.e. goes into Sigmacrit and F in computing distances.
+HH0_t 	=   	72.0     # Default value Sara used
+OmM_t	= 	0.3	 # Default value Sara used
+HH0_a	=	72.0
+OmM_a	=	0.3
+OmC_t	=	OmM_t-OmB 
+OmC_a	=	OmM_a-OmB 
+OmR_t	=	2.47*10**(-5)/(HH0_t/100.)**2
+OmR_a	=	2.47*10**(-5)/(HH0_a/100.)**2
+OmN_t	=	Nnu*(7./8.)*(4./11.)**(4./3.)*OmR_t
+OmN_a	=	Nnu*(7./8.)*(4./11.)**(4./3.)*OmR_a
+
+"""# Parameters associated with the sample / shape noise calcuation 
 e_rms 			= 	0.21
 e_rms_Bl_a 		= 	e_rms # rms ellipticity of sample a, Blazek method   # from Reyes et al. 2012 (reports in terms of distortion = 0.36)
 e_rms_Bl_b		=	e_rms # rms ellipticity of sample b, Blazek method
@@ -54,7 +82,7 @@ dNdzpar_true	=	[alpha_true, zs_true]
 # NEED APPROPRIATE PARAMETERS FOR DES Y1
 pztype		=	'Gaussian'
 sigz_fid	=	0.11 # The photometric redshift error given a Gaussian photo_z model
-pzpar_fid 	=	[sigz_fid] # Make this a list to make it more generic to pass around
+pzpar_fid 	=	[sigz_fid] # Make this a list to make it more generic to pass around"""
 
 
 # Parameters related to the spec and photo z's of the source sample and other redshift cuts.
@@ -63,11 +91,11 @@ pzpar_fid 	=	[sigz_fid] # Make this a list to make it more generic to pass aroun
 zeff 	= 	0.37  # Need to get this manually
 zLmin	= 	0.301  
 zLmax	=	0.448  
-dNdzL_file	=  '/DESY1_quantities_fromSara/z_dNdz_lenses_subbin.dat'
+dNdzL_file	=  '/DESY1_quantities_fromSara/z_dNdz_lenses_narrow_test.dat'
 
 # MAKE SURE I'M USING THE RIGHT VALUES HERE
 close_cut = 100.# Mpc/h # The maximum separation from a lens to consider part of `rand-close', in Mpc/h. Waiting on Jonathan for this value.
-#Blazek et al. case
+"""#Blazek et al. case
 zsmin 	=	0.02
 zsmax 	= 	3.0
 zphmin	=	0.
@@ -80,26 +108,7 @@ zmin 	=	0.0 # Minimum spec-z
 zmax 	= 	3.0 # Maximum spec-z
 zmin_ph	=	0.0 # Minimu photo-z
 zmax_ph	=	5.0 # Maximum photo-zboost
-delta_z = 0.17 
-
-# Constants / conversions
-mperMpc = 3.0856776*10**22
-Msun = 1.989*10**30 # in kg
-Gnewt = 6.67408*10**(-11)
-c=2.99792458*10**(8)
-
-# Cosmological parameters. Using the same ones that Sara used as fiducial values in her analysis (as a default).
-# Need to work out how to vary these for the shear-ratio test.
-Nnu	=	3.046    # Massless neutrinos, standard value
-HH0 	=   	72.0     # Default value Sara used
-OmR	=	2.47*10**(-5)/(HH0/100.)**2
-OmN	=	Nnu*(7./8.)*(4./11.)**(4./3.)*OmR
-OmM	= 	0.3	 # Default value Sara used
-OmB	=	0.05 
-OmC	=	OmM-OmB 
-H0	=	10**(5)/c
-sigma8  =      0.817 	# From DES Y1
-n_s	=	0.9652
+delta_z = 0.17 """
 
 
 # We also have another set of cosmological parameters:

@@ -2,7 +2,7 @@ import numpy as np
 import shared_functions_wlp_wls as shared
 
 survey = 'DESY1'
-endfile = 'test'
+endfile = 'dndz_narrow_test'
 
 if (survey == 'SDSS'):
 	import params as pa

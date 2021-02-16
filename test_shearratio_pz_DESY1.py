@@ -14,58 +14,6 @@ import pyccl as ccl
 import os.path
 
 np.set_printoptions(linewidth=240)
-	
-############## GENERIC FUNCTIONS ###############
-	
-def N_of_zph(z_a_def_s, z_b_def_s, z_a_norm_s, z_b_norm_s, z_a_def_ph, z_b_def_ph, z_a_norm_ph, z_b_norm_ph, dNdzpar, pzpar, dNdztype, pztype):
-    """ Returns dNdz_ph, the number density in terms of photometric redshift, defined over photo-z range (z_a_def_ph, z_b_def_ph), normalized over the photo-z range (z_a_norm_ph, z_b_norm_ph), normalized over the spec-z range (z_a_norm, z_b_norm), and defined on the spec-z range (z_a_def, z_b_def)"""
-	
-    #print("z_a_def_s=", z_a_def_s, "z_b_def_s=", z_b_def_s)
-    #print("z_a_norm_s=", z_a_norm_s, "z_b_norm_s=", z_b_norm_s)
-	
-    (z, dNdZ) = setup.get_NofZ_unnormed(dNdzpar, dNdztype, z_a_def_s, z_b_def_s, 1000, SURVEY)
-	
-    (z_norm, dNdZ_norm) = setup.get_NofZ_unnormed(dNdzpar, dNdztype, z_a_norm_s, z_b_norm_s, 1000, SURVEY)
-	
-    #print("z_a_def_ph=", z_a_def_ph, "z_b_def_ph=", z_b_def_ph)
-    #print("z_a_norm_ph=", z_a_norm_ph, "z_b_norm_ph=", z_b_norm_ph)
-	
-    #save_dNdzs = np.column_stack((z, dNdZ))
-    #np.savetxt('./txtfiles/photo_z_test/dNdzs_in_Nph_sample_A.txt', save_dNdzs)
-	
-    z_ph_vec = np.linspace(z_a_def_ph, z_b_def_ph, 1000)
-    z_ph_vec_norm = np.linspace(z_a_norm_ph, z_b_norm_ph, 1000)
-	
-    int_dzs = np.zeros(len(z_ph_vec))
-    for i in range(0,len(z_ph_vec)):
-        int_dzs[i] = scipy.integrate.simps(dNdZ*setup.p_z(z_ph_vec[i], z, pzpar, pztype), z)
-		
-    int_dzs_norm = np.zeros(len(z_ph_vec_norm))
-    for i in range(0,len(z_ph_vec_norm)):
-        int_dzs_norm[i] = scipy.integrate.simps(dNdZ_norm*setup.p_z(z_ph_vec_norm[i], z_norm, pzpar, pztype), z_norm)
-		
-    norm = scipy.integrate.simps(int_dzs_norm, z_ph_vec_norm)
-    #print("norm, pz=", norm)
-	
-    return (z_ph_vec, int_dzs / norm)
-
-def sigma_e(z_s_):
-	""" Returns a value for the model for the per-galaxy noise as a function of source redshift"""
-		
-	if hasattr(z_s_, "__len__"):
-		sig_e = 2. / pa.S_to_N * np.ones(len(z_s_))
-	else:
-		sig_e = 2. / pa.S_to_N
-			
-	return sig_e
-	
-def weights(e_rms, z_):
-	""" Returns the inverse variance weights as a function of redshift. """
-	
-	weights = (1./(sigma_e(z_)**2 + e_rms**2)) * np.ones(len(z_))
-	
-	return weights
-    
 
 ################### THEORETICAL VALUES FOR FRACTIONAL ERROR CALCULATION ########################333
 	
@@ -76,8 +24,8 @@ def sum_weights_DESY1(source_sample, z_cut):
     """
 
     # Load lens redshift distribution from file
-    zL, dNdzL = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/z_dNdz_lenses_subbin.dat', unpack=True)
-    chiL = ccl.comoving_radial_distance(cosmo_fid, 1./(1.+zL))
+    zL, dNdzL = np.loadtxt('./txtfiles/'+pa.dNdzL_file, unpack=True)
+    chiL = ccl.comoving_radial_distance(cosmo_a, 1./(1.+zL))
 	
     # Load weighted source redshift distributions
     if (source_sample == 'A'):    
@@ -102,18 +50,18 @@ def sum_weights_DESY1(source_sample, z_cut):
         
     elif z_cut=='close':
           
-        chiSmin = ccl.comoving_radial_distance(cosmo_fid, 1./(1.+min(z_mc)))
+        chiSmin = ccl.comoving_radial_distance(cosmo_a, 1./(1.+min(z_mc)))
         if (min(chiL)> (pa.close_cut + chiSmin)):
-            zminclose = 1./(ccl.scale_factor_of_chi(cosmo_fid, chiL - pa.close_cut)) - 1.
+            zminclose = 1./(ccl.scale_factor_of_chi(cosmo_a, chiL - pa.close_cut)) - 1.
         else:
             zminclose = np.zeros(len(chiL))
             for cli in range(0,len(chiL)):
                 if (chiL[cli]>pa.close_cut + chiSmin):
-                    zminclose[cli] = 1./(ccl.scale_factor_of_chi(cosmo_fid, chiL[cli]-pa.close_cut))-1.
+                    zminclose[cli] = 1./(ccl.scale_factor_of_chi(cosmo_a, chiL[cli]-pa.close_cut))-1.
                 else:
                     zminclose[cli] = min(z_mc)
 
-        zmaxclose = 1./(ccl.scale_factor_of_chi(cosmo_fid, chiL + pa.close_cut)) - 1.  
+        zmaxclose = 1./(ccl.scale_factor_of_chi(cosmo_a, chiL + pa.close_cut)) - 1.  
            
         sum_close = np.zeros(len(zL))
         for zi in range(0,len(zL)):
@@ -131,11 +79,11 @@ def sum_weights_DESY1(source_sample, z_cut):
 def get_boost(rp_cents_, sample):
 	"""Returns the boost factor in radial bins. propfact is a tunable parameter giving the proportionality constant by which boost goes like projected correlation function (= value at 1 Mpc/h). """
 
-	Boost = np.loadtxt('./txtfiles/boosts/Boost_full_'+str(sample)+'_survey='+str(SURVEY)+'_deltaz='+str(pa.delta_z)+'_'+endfile+'.txt') + np.ones((len(rp_cents_)))
+	Boost = np.loadtxt('./txtfiles/boosts/Boost_'+str(sample)+'_survey='+str(SURVEY)+'_'+endfile+'.txt') + np.ones((len(rp_cents_)))
 
 	return Boost
 	
-def get_F(photoz_sample, rp_bins_, dNdz_par, pz_par, dNdztype, pztype):
+def get_F(photoz_sample):
 	""" Returns F (the weighted fraction of lens-source pairs from the smooth dNdz which are contributing to IA) """
 
 	# Sum over `rand-close'
@@ -152,8 +100,8 @@ def get_SigmaC_inv(z_s_, z_l_):
     """ Returns the theoretical value of 1/Sigma_c, (Sigma_c = the critcial surface mass density).
     z_s_ and z_l_ can be 1d arrays, so the returned value will in general be a 2d array. """
 
-    com_s = ccl.comoving_radial_distance(cosmo_fid, 1./(1.+z_s_))
-    com_l = ccl.comoving_radial_distance(cosmo_fid, 1./(1.+z_l_))
+    com_s = ccl.comoving_radial_distance(cosmo_a, 1./(1.+z_s_))
+    com_l = ccl.comoving_radial_distance(cosmo_a, 1./(1.+z_l_))
 
     if ((hasattr(z_s_, "__len__")==True) and (hasattr(z_l_, "__len__")==True)):
         Sigma_c_inv = np.zeros((len(z_s_), len(z_l_)))
@@ -206,7 +154,8 @@ def get_SigmaC_avg(photoz_sample):
     norm_mc = scipy.integrate.simps(dNdz_mc, z_mc)    
     
     # Load lens distribution:
-    zL, dNdzL = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/z_dNdz_lenses_subbin.dat', unpack=True)
+    #zL, dNdzL = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/z_dNdz_lenses_subbin.dat', unpack=True)
+    zL, dNdzL = np.loadtxt('./txtfiles/'+pa.dNdzL_file, unpack=True)
     norm_L = scipy.integrate.simps(dNdzL, zL)
 	
     Siginv = get_SigmaC_inv(z_mc, zL)
@@ -214,6 +163,8 @@ def get_SigmaC_avg(photoz_sample):
     Siginv_zL = np.zeros(len(zL))
     for zi in range(0,len(zL)):
         Siginv_zL[zi] = scipy.integrate.simps(dNdz_mc*Siginv[:,zi], z_mc) / norm_mc
+    
+    np.savetxt('./txtfiles/siginv_zl_avg_debug_'+photoz_sample+'.txt', Siginv_zL)
     		
     Siginv_avg = scipy.integrate.simps(dNdzL * Siginv_zL, zL) / norm_L
     
@@ -246,16 +197,20 @@ def get_DeltaSig_theory(rp_bins, rp_bins_c):
 	
     # Get rho_m in comoving coordinates (independent of redshift)
     rho_crit = 3. * 10**10 * pa.mperMpc / (8. * np.pi * pa.Gnewt * pa.Msun)  # Msol h^2 / Mpc^3, for use with M in Msol / h (comoving distances)
-    rho_m = (pa.OmC + pa.OmB) * rho_crit # units of Msol h^2 / Mpc^3 (comoving distances)
+    rho_m = (pa.OmC_t + pa.OmB) * rho_crit # units of Msol h^2 / Mpc^3 (comoving distances)
     
     # Import z-list
     zL = np.loadtxt('./txtfiles/z_list_DESY1.txt')
-
+    
     DeltaSigma_centbins = np.zeros((len(rp_bins_c), len(zL)))
     for zi in range(len(zL)):
+        print("Delta_Sig_theory, zi=", zL[zi])
+        zload=str('{:1.12f}'.format(zL[zi]))
         # Import the appropriate correlation function
-        r_hf, corr_hf = np.loadtxt('./txtfiles/halofit_xi/xi2h_z='+str(zL[zi])+'_'+endfile+'.txt', unpack=True)	
-		
+        print("import the correlation function")
+        r_hf, corr_hf = np.loadtxt('./txtfiles/halofit_xi/xi2h_z='+zload+'_'+endfile+'.txt', unpack=True)	
+	
+        print("interpolate in 2D separation")	
         # Interpolate in 2D separations
         corr_hf_interp = scipy.interpolate.interp1d(r_hf, corr_hf)
         corr_2D_hf = np.zeros((len(rpvec), len(Pivec)))
@@ -268,11 +223,11 @@ def get_DeltaSig_theory(rp_bins, rp_bins_c):
         for ri in range(0,len(rpvec)):
             # This will have units Msol h / Mpc^2 in comoving distances.
             Sigma_HF[ri] = rho_m * scipy.integrate.simps(corr_2D_hf[ri, :], Pivec) 
-		
-            # Now average Sigma_HF(R) over R to get the first averaged term in Delta Sigma
-            barSigma_HF = np.zeros(len(rpvec))
-            for ri in range(0,len(rpvec)):
-                barSigma_HF[ri] = 2. / rpvec[ri]**2 * scipy.integrate.simps(rpvec[0:ri+1]**2*Sigma_HF[0:ri+1], np.log(rpvec[0:ri+1]))
+        
+        # Now average Sigma_HF(R) over R to get the first averaged term in Delta Sigma
+        barSigma_HF = np.zeros(len(rpvec))
+        for ri in range(0,len(rpvec)):
+             barSigma_HF[ri] = 2. / rpvec[ri]**2 * scipy.integrate.simps(rpvec[0:ri+1]**2*Sigma_HF[0:ri+1], np.log(rpvec[0:ri+1]))
 	
         # Units Msol h / Mpc^2 (comoving distances).
         DeltaSigma_HF = pa.bd*(barSigma_HF - Sigma_HF)
@@ -282,17 +237,68 @@ def get_DeltaSig_theory(rp_bins, rp_bins_c):
 	
     return DeltaSigma_centbins # outputting as Msol h / pc^2
     
-def get_gammat_purelensing(sample, limtype='pz'):
-    """ Get gammat for a given photometric sample with only the lensing signal (not IA)"""
+def get_DeltaSig_theory_zavg(rp_bins, rp_bins_c):
+    """ Returns the theoretical value of Delta Sigma in bin using projection over the NFW profile and over the 2-pt correlation function at larger scales.
 
-    # First get Delta Sigma, this is the same for all source samples
-    DeltaSigma = get_DeltaSig_theory(rp_bins, rp_cent)
+    We load correlation functions which have been computed externally using FFTlog; these are from power spectra that have already been averaged over the lens distribution. """
+	
+    ###### First get the term from halofit (valid at larger scales) ######
+    # Import correlation functions, obtained via getting P(k) from CAMB OR CLASS and then using FFT_log, Anze Slozar version. 
+    # Note that since CAMB / class uses comoving distances, all distances here should be comoving. rpvec and Pivec are in Mpc/h.	
+
+    # Get a more well sampled rp, and Pi	
+    rpvec 	= np.logspace(np.log10(0.00002), np.log10(rp_bins[-1]), 300)
+    # Pivec a little more complicated because we want it log-spaced about zero
+    Pi_neg = -np.logspace(np.log10(rpvec[0]), np.log10(500), 250)
+    Pi_pos = np.logspace(np.log10(rpvec[0]), np.log10(500), 250)
+    Pi_neg_list = list(Pi_neg)
+    Pi_neg_list.reverse()
+    Pi_neg_rev = np.asarray(Pi_neg_list)
+    Pivec = np.append(Pi_neg_rev, Pi_pos)
+	
+    # Get rho_m in comoving coordinates (independent of redshift)
+    rho_crit = 3. * 10**10 * pa.mperMpc / (8. * np.pi * pa.Gnewt * pa.Msun)  # Msol h^2 / Mpc^3, for use with M in Msol / h (comoving distances)
+    rho_m = (pa.OmC_t + pa.OmB) * rho_crit # units of Msol h^2 / Mpc^3 (comoving distances)
+		
+    # Import the appropriate correlation function (already integrated over lens redshift distribution)
+
+    r_hf, corr_hf = np.loadtxt('./txtfiles/halofit_xi/xi_2h_zavg_'+SURVEY+'_'+endfile+'.txt', unpack=True)	
+		
+    # Interpolate in 2D separations
+    corr_hf_interp = scipy.interpolate.interp1d(r_hf, corr_hf)
+    corr_2D_hf = np.zeros((len(rpvec), len(Pivec)))
+    for ri in range(0, len(rpvec)):
+        for pi in range(0, len(Pivec)):
+            corr_2D_hf[ri, pi] = corr_hf_interp(np.sqrt(rpvec[ri]**2 + Pivec[pi]**2))
+		
+    # Get Sigma(r_p) for the 2halo term.
+    Sigma_HF = np.zeros(len(rpvec))
+    for ri in range(0,len(rpvec)):
+        # This will have units Msol h / Mpc^2 in comoving distances.
+        Sigma_HF[ri] = rho_m * scipy.integrate.simps(corr_2D_hf[ri, :], Pivec) 
+		
+        # Now average Sigma_HF(R) over R to get the first averaged term in Delta Sigma
+        barSigma_HF = np.zeros(len(rpvec))
+        for ri in range(0,len(rpvec)):
+            barSigma_HF[ri] = 2. / rpvec[ri]**2 * scipy.integrate.simps(rpvec[0:ri+1]**2*Sigma_HF[0:ri+1], np.log(rpvec[0:ri+1]))
+	
+        # Units Msol h / Mpc^2 (comoving distances).
+        DeltaSigma_HF = pa.bd*(barSigma_HF - Sigma_HF)
+	
+    # Interpolate and output at r_bins_c:
+    ans_interp = scipy.interpolate.interp1d(rpvec, (DeltaSigma_HF) / (10**12))
+    ans = ans_interp(rp_bins_c)
+	
+    return ans # outputting as Msol h / pc^2
+    
+def get_gammat_purelensing(DeltaSigma, sample, limtype='pz'):
+    """ Get gammat for a given photometric sample with only the lensing signal (not IA)"""
     
     # Now we need to get <Sigma_c^{-1}>^{-1}
     # This function supports setting the limits of this integration in terms of photo-z (closer to the real scenario) 
     # and in terms of spec-z / true-z (to cross check how much this matters)
     if limtype=='pz': # NOT UPDATED FOR DES REDSHIFT DISTRIBUTIONS
-        print(" the version of pz limits is not updated to allow for des y1 input redshift distributions")
+        """print(" the version of pz limits is not updated to allow for des y1 input redshift distributions")
         # The limits are in terms of photo-z
         if sample=='A':
             zphmin = pa.zeff
@@ -331,7 +337,8 @@ def get_gammat_purelensing(sample, limtype='pz'):
         
         psf = setup.p_z(zphmax, zsf, pa.pzpar_fid, pa.pztype)
         SigInv_avg = scipy.integrate.simps(pzf*int_pz_1, zsf)
-        print("SigInv_avg=", 1./SigInv_avg)
+        print("SigInv_avg=", 1./SigInv_avg)"""
+        print("we don't have support for pz limits actually, sorry!")
                   
     elif limtype=='truez':
         # The limits are in terms of spec-z
@@ -340,28 +347,39 @@ def get_gammat_purelensing(sample, limtype='pz'):
             z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_centres.dat')
             dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_weighted')
         
-        elif(photoz_sample=='A'):
+        elif(sample=='A'):
             z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_centres.dat')
             dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_weighted')
         
         norm_mc = scipy.integrate.simps(dNdz_mc, z_mc)    
     
         # Load lens distribution:
-        zL, dNdzL = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/z_dNdz_lenses_subbin.dat', unpack=True)
+        #zL, dNdzL = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/z_dNdz_lenses_subbin.dat', unpack=True)
+        zL, dNdzL = np.loadtxt('./txtfiles/'+pa.dNdzL_file, unpack=True)
         norm_L = scipy.integrate.simps(dNdzL, zL)
         
         Siginv = get_SigmaC_inv(z_mc, zL)
+        #print("sample="+sample+" Sig=", 1./Siginv)
         
         Siginv_zL = np.zeros(len(zL))
         for zi in range(len(zL)):
             Siginv_zL[zi] = scipy.integrate.simps(Siginv[:, zi]*dNdz_mc, z_mc) / norm_mc
+            #Siginv_zL[zi] = scipy.integrate.simps(dNdz_mc, z_mc) / norm_mc
+        #print("Siginv=", 1./Siginv_zL)
+        
+        np.savetxt('./txtfiles/siginv_zl_gammat_debug_'+sample+'.txt', Siginv_zL)
            
     else:
         raise ValueError("We don't have support for that type of limit on the pure lensing integral.")
         
-    
+    #int_Siginv_zL = scipy.integrate.simps(Siginv_zL*dNdzL, zL) / norm_L
+    #print("sample="+sample+",Sigavg in gammat=", 1./int_Siginv_zL)
+        
+    gammat_lens = np.zeros(len(rp_cent))
     for ri in range(len(rp_cent)):
-        gammat_lens[ri] = scipy.integrate.simps(DeltaSigma[ri,:] * SigInv_avg * dNdzL, zL) / norm_L
+        #gammat_lens[ri] = scipy.integrate.simps(Siginv_zL * dNdzL, zL) / norm_L
+        gammat_lens[ri] = scipy.integrate.simps(DeltaSigma[ri,:] * Siginv_zL * dNdzL, zL) / norm_L
+        #gammat_lens[ri] = scipy.integrate.simps(DeltaSigma[ri,:] * dNdzL, zL) / norm_L
     
     # save answer
     save_gammat = np.column_stack((rp_cent, gammat_lens))
@@ -373,43 +391,49 @@ def get_gammaIA_estimator():
     """ Calculate gammaIA from the estimator used on data for the Blazek et al. 2012 + F method with gammat, as in Sara's project. """
     
     # Get F factors
-    #F_a = get_F('A', rp_bins, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
-    #F_b = get_F('B', rp_bins, pa.dNdzpar_fid, pa.pzpar_fid, pa.dNdztype, pa.pztype)
+    F_a = get_F('A')
+    F_b = get_F('B')
     
-    #print("F_a=", F_a)
-    #print("F_b=", F_b)
+    print("F_a=", F_a)
+    print("F_b=", F_b)
     
     # Write to file:
-    #np.savetxt('./txtfiles/photo_z_test/F_a_'+SURVEY+'_'+endfile+'.txt', [F_a])
-    #np.savetxt('./txtfiles/photo_z_test/F_b_'+SURVEY+'_'+endfile+'.txt', [F_a])
+    np.savetxt('./txtfiles/photo_z_test/F_a_'+SURVEY+'_'+endfile+'.txt', [F_a])
+    np.savetxt('./txtfiles/photo_z_test/F_b_'+SURVEY+'_'+endfile+'.txt', [F_a])
 
     # Load boosts
-    #B_a = get_boost(rp_cent, 'A')
-    #B_b = get_boost(rp_cent, 'B')
+    B_a = get_boost(rp_cent, 'A')
+    B_b = get_boost(rp_cent, 'B')
     
-    #print("B_a=", B_a)
-    #print("B_b=", B_b)
+    print("B_a=", B_a)
+    print("B_b=", B_b)
     
     # Write to file:
-    #np.savetxt('./txtfiles/photo_z_test/B_a_'+SURVEY+'_'+endfile+'.txt', B_a)
-    #np.savetxt('./txtfiles/photo_z_test/B_b_'+SURVEY+'_'+endfile+'.txt', B_b)
+    np.savetxt('./txtfiles/photo_z_test/B_a_'+SURVEY+'_'+endfile+'.txt', B_a)
+    np.savetxt('./txtfiles/photo_z_test/B_b_'+SURVEY+'_'+endfile+'.txt', B_b)
     
     # Get SigmaC
-    #SigA = get_SigmaC_avg('A')
-    #SigB = get_SigmaC_avg('B')
+    SigA = get_SigmaC_avg('A')
+    SigB = get_SigmaC_avg('B')
     
-    #print("Sigma_c_inv_avg_inv A=", SigA)
-    #print("Sigma_c_inv_avg_inv B=", SigB)
+    print("Sigma_c_inv_avg_inv A=", SigA)
+    print("Sigma_c_inv_avg_inv B=", SigB)
     
     # Write to file:
-    #np.savetxt('./txtfiles/photo_z_test/SigmaC_a_'+SURVEY+'_'+endfile+'.txt', [SigA])
-    #np.savetxt('./txtfiles/photo_z_test/SigmaC_b_'+SURVEY+'_'+endfile+'.txt', [SigB])
+    np.savetxt('./txtfiles/photo_z_test/SigmaC_a_'+SURVEY+'_'+endfile+'.txt', [SigA])
+    np.savetxt('./txtfiles/photo_z_test/SigmaC_b_'+SURVEY+'_'+endfile+'.txt', [SigB])
+    
+    #print("before delta sigma theory")
+    # First get Delta Sigma, this is the same for all source samples
+    #DeltaSigma = get_DeltaSig_theory(rp_bins, rp_cent)
+    #print("after delta sigma theory")
+    #np.savetxt('./txtfiles/DeltaSigma.txt', DeltaSigma)
+    DeltaSigma = np.loadtxt('./txtfiles/DeltaSigma.txt')
     
     # Get theoretical lensing-only gammat
-    gammat_a = get_gammat_purelensing('A', limtype='truez')
-    gammat_b = get_gammat_purelensing('B', limtype='truez')
+    gammat_a = get_gammat_purelensing(DeltaSigma, 'A', limtype='truez')
+    gammat_b = get_gammat_purelensing(DeltaSigma, 'B', limtype='truez')
     
-    exit()
     
     # Assemble estimator
     gamma_IA_est = (gammat_b * SigB - gammat_a*SigA) / ( (B_b - 1 + F_b)*SigB - (B_a - 1 + F_a)*SigA)
@@ -417,7 +441,83 @@ def get_gammaIA_estimator():
     # Stack rp or theta with gamma_IA_est to output
     save_gammaIA = np.column_stack((rp_cent, gamma_IA_est))
     np.savetxt('./txtfiles/photo_z_test/gamma_IA_est_'+SURVEY+'_'+endfile+'.txt', save_gammaIA)
+    
+    # Load the version with the true dNdzL for our distribution to see the difference:
+    rp_load, gamma_IA_load = np.loadtxt('./txtfiles/photo_z_test/gamma_IA_est_DESY1_test.txt', unpack=True)
+    
+    plt.figure()
+    plt.loglog(rp_cent, gamma_IA_est, 'o', label='narrow dNdzL')
+    plt.loglog(rp_load, gamma_IA_load, 'o', label='true dNdzL')
+    plt.ylim(10**(-8), 10**(-4))
+    plt.xlabel('$r_p$, Mpc')
+    plt.legend()
+    plt.ylabel('$\gamma_{IA}$ estimated in pure lensing case')
+    plt.title('Narrow Gaussian lens bin')
+    plt.savefig('./gamma_IA_purelensing_test_thin_lens.png')
+    plt.close()
 
+    return
+    
+def test_thin_lens_approx(sample):
+    """ Check if the approximation of pulling Delta Sigma outside the integral over lens redshift holds. """
+    
+    # Load source and lens distributions
+    if(sample == 'B'):
+        z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_centres.dat')
+        dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_weighted')
+        
+    elif(sample=='A'):
+        z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_centres.dat')
+        dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_weighted')
+    
+    norm_mc = scipy.integrate.simps(dNdz_mc, z_mc)    
+    
+    # Load lens distribution:
+    #zL, dNdzL = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/z_dNdz_lenses_subbin.dat', unpack=True)
+    zL, dNdzL = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/z_dNdz_lenses.dat', unpack=True)
+    norm_L = scipy.integrate.simps(dNdzL, zL)
+    
+    # Get Sigma crit inverse as a function of zL and zs (need this for both cases)
+    Siginv = get_SigmaC_inv(z_mc, zL)
+    
+    # Integrate this over the source distribution (need this for both cases)
+    Siginv_zL = np.zeros(len(zL))
+    for zi in range(len(zL)):
+        Siginv_zL[zi] = scipy.integrate.simps(Siginv[:, zi]*dNdz_mc, z_mc) / norm_mc
+        
+    # Without the approximation:
+    
+    # Load Delta Sigma as a function of lens redshift and rp because this takes ages to compute
+    DeltaSigma = np.loadtxt('./txtfiles/DeltaSigma.txt')
+    
+    no_approx = np.zeros(len(rp_cent))
+    for ri in range(len(rp_cent)):
+        no_approx[ri] = scipy.integrate.simps(DeltaSigma[ri,:] * Siginv_zL * dNdzL, zL) / norm_L
+        
+    # Now with the approximation
+    
+    Delta_Sig_zavg = get_DeltaSig_theory_zavg(rp_bins, rp_cent)
+    
+    with_approx = Delta_Sig_zavg * scipy.integrate.simps(Siginv_zL * dNdzL, zL) / norm_L
+    
+    frac_diff = np.abs(no_approx - with_approx) / np.abs(no_approx)
+    
+    plt.figure()
+    plt.loglog(rp_cent, no_approx, 'o', label='No approx')
+    plt.loglog(rp_cent, with_approx, 'o',label='Thin lens approx')
+    plt.legend()
+    plt.xlabel('$r_p$, Mpc/h')
+    plt.ylabel('$\gamma_t$, pure lensing')
+    plt.savefig('./thin_lens_approx_sourcebin='+sample+'.png')
+    plt.close()
+    
+    plt.figure()
+    plt.semilogx(rp_cent, frac_diff,'o')
+    plt.xlabel('$r_p$, Mpc/h')
+    plt.ylabel('Frac diff to $\gamma_t$ from thin lens approx')
+    plt.savefig('./frac_diff_thin_lens_approx_sourcebin='+sample+'.png')
+    plt.close()
+   
     return
 
 
@@ -439,24 +539,29 @@ else:
 #print("endfile=", endfile)
 #print("dNdztruepar=", pa.dNdzpar_true)
 
-endfile = 'test'
+endfile = 'narrow_lens'
 	
-# Set up the fiducial cosmology object
-cosmo_fid = ccl.Cosmology(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), sigma8 = pa.sigma8, n_s=pa.n_s)
+# Set up the 'true' and 'assumed' cosmology objects.
+#'true' parameters feed into gammat, boost. 'assumed' parameters feed into the distances which go into calculating sigma_crit and F.
+cosmo_t = ccl.Cosmology(Omega_c = pa.OmC_t, Omega_b = pa.OmB, h = (pa.HH0_t/100.), sigma8 = pa.sigma8, n_s=pa.n_s)
+cosmo_a = ccl.Cosmology(Omega_c = pa.OmC_a, Omega_b = pa.OmB, h = (pa.HH0_a/100.), sigma8 = pa.sigma8, n_s=pa.n_s)
 
 # Set up projected bins
 
 # Option to provide theta min and theta max and convert to rp for a given effective lens redshift:
 theta_min = 0.1
 theta_max = 200
-rp_min = setup.arcmin_to_rp(theta_min, pa.zeff,cosmo_fid)
-rp_max = setup.arcmin_to_rp(theta_max, pa.zeff,cosmo_fid)
+# Using 'true' parameters here because I am only changing to rp for convenience. Change back before reporting anything.
+rp_min = setup.arcmin_to_rp(theta_min, pa.zeff,cosmo_t)
+rp_max = setup.arcmin_to_rp(theta_max, pa.zeff,cosmo_t)
 print("rp_min=", rp_min, "rp_max=", rp_max)
 
 rp_bins 	= 	setup.setup_rp_bins(rp_min, rp_max, pa.N_bins)
 rp_cent	=	setup.rp_bins_mid(rp_bins)
 
 get_gammaIA_estimator()
+#test_thin_lens_approx('A')
+#test_thin_lens_approx('B')
 
 exit()
 
