@@ -91,7 +91,11 @@ pzpar_fid 	=	[sigz_fid] # Make this a list to make it more generic to pass aroun
 zeff 	= 	0.37  # Need to get this manually
 zLmin	= 	0.301  
 zLmax	=	0.448  
-dNdzL_file	=  '/DESY1_quantities_fromSara/z_dNdz_lenses_narrow_test.dat'
+dNdzL_file	=  '/DESY1_quantities_fromSara/z_dNdz_lenses.dat'
+
+# Parameters for testing what happens when you get the redshifts wrong
+sigma   = 0.01
+del_z   = 0.05
 
 # MAKE SURE I'M USING THE RIGHT VALUES HERE
 close_cut = 100.# Mpc/h # The maximum separation from a lens to consider part of `rand-close', in Mpc/h. Waiting on Jonathan for this value.

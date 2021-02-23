@@ -11,7 +11,6 @@ import shared_functions_wlp_wls as shared
 import pyccl as ccl
 
 SURVEY = 'DESY1'
-endfile = 'test_angular_projection'
 
 if (SURVEY=='SDSS'):
     import params_SDSS_testpz as pa
@@ -22,6 +21,8 @@ elif (SURVEY=='DESY1'):
 else:
     print("We don't have support for that survey yet; exiting.")
     exit()
+   
+endfile = 'true-redshifts-different_sigma='+str(pa.sigma)+'deltaz='+str(pa.del_z)
     
 # Set up rp vector
 
@@ -40,9 +41,10 @@ rpvec	=	setup.rp_bins_mid(rp_edges)
 
 theta_edges = setup.setup_rp_bins(theta_min, theta_max, pa.N_bins)
 theta_vec = setup.rp_bins_mid(theta_edges)
+theta_radians = theta_vec / 60.*np.pi/180.
 
 np.savetxt('./txtfiles/boosts/rpvec.txt', rpvec)
-np.savetxt('./txtfiles/boots/thetavec_'+endfile+'.txt', theta_vec)
+np.savetxt('./txtfiles/boosts/thetavec_'+endfile+'.txt', theta_vec)
 	
 # First check if we need to do this:
 Boost_file_a = './txtfiles/boosts/Boost_A_survey='+SURVEY+'_'+endfile+'.txt'
@@ -96,7 +98,7 @@ for zi in range(0, len(zLvec)):
     Pi[zi] = np.append(-np.asarray(Pi_pos_vec[index_cut:]), np.append([0],Pi_pos))
     #print("Pi=", Pi[zi])
 
-# Get the correlation function in terms of Pi and rp 
+# Get the correlation function in terms of Pi and theta(=rp/chi(zL))
 xi_interp_r = [0] * len(zLvec)
 xi_ofPi = [0] * len(zLvec)
 print("get 2D xi")
@@ -104,9 +106,9 @@ for zi in range(0,len(zLvec)):
     print("zi=", zi)
     xi_interp_r[zi] = scipy.interpolate.interp1d(np.log(r), xi[:, zi])
     xi_ofPi[zi] = np.zeros((len(rpvec), len(Pi[zi])))
-    for ri in range(0,len(rpvec)):
+    for ti in range(0,len(theta_vec)):
         for pi in range(0,len(Pi[zi])):
-            xi_ofPi[zi][ri, pi] = xi_interp_r[zi](np.log(np.sqrt(rpvec[ri]**2 + Pi[zi][pi]**2)))
+            xi_ofPi[zi][ti, pi] = xi_interp_r[zi](np.log(np.sqrt((theta_radians[ti]*chi_vec[zi])**2 + Pi[zi][pi]**2)))
     
 # Get the vector of com dist values associated to Pi values:
 com_Pi = [0]*len(zLvec)
@@ -122,8 +124,10 @@ for zi in range(0,len(zLvec)):
 # Okay, now we do the required integrals:
 # Load the weighted dNdz_mc for the two source samples:
 # Interpolate to get the weighted dNdz in terms of the required z_Pi vectors at each z_l.
-z_a = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_centres.dat')
-dNdz_a_weighted = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_weighted')
+#z_a = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_centres.dat')
+#dNdz_a_weighted = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_weighted')
+z_a, dNdz_a_weighted = setup.dNdz_perturbed('A', pa.sigma, pa.del_z)
+
 interp_dndza = scipy.interpolate.interp1d(z_a, dNdz_a_weighted) 
 
 #plt.figure()
@@ -131,8 +135,9 @@ interp_dndza = scipy.interpolate.interp1d(z_a, dNdz_a_weighted)
 #plt.savefig('./dNdz_weighted_a_boosts.png')
 #plt.close()
 
-z_b = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_centres.dat')
-dNdz_b_weighted = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_weighted')
+#z_b = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_centres.dat')
+#dNdz_b_weighted = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_weighted')
+z_b, dNdz_b_weighted = setup.dNdz_perturbed('B', pa.sigma, pa.del_z)
 interp_dndzb = scipy.interpolate.interp1d(z_b, dNdz_b_weighted) 
 
 #plt.figure()
@@ -156,37 +161,39 @@ B_1_a = np.zeros((len(zLvec), len(rpvec)))
 B_1_b = np.zeros((len(zLvec), len(rpvec)))
 for zi in range(0,len(zLvec)):
     print("zi=", zi)
-    for ri in range(len(rpvec)):
+    for ti in range(len(theta_vec)):
         # Instead of this go straight to dN_w/dz_mc * xi
         # Norm is over full dNdz because z_Pi is just cut short because we don't expect correlation outside this extent because xi drops off, should not affect norm
-        B_1_a[zi,ri] = scipy.integrate.simps(dNdz_a[zi]*xi_ofPi[zi][ri,:], z_Pi[zi]) / scipy.integrate.simps(dNdz_a_weighted, z_a)
-        B_1_b[zi,ri] = scipy.integrate.simps(dNdz_b[zi]*xi_ofPi[zi][ri,:], z_Pi[zi]) / scipy.integrate.simps(dNdz_b_weighted, z_b)
+        B_1_a[zi,ti] = scipy.integrate.simps(dNdz_a[zi]*xi_ofPi[zi][ti,:], z_Pi[zi]) / scipy.integrate.simps(dNdz_a_weighted, z_a)
+        B_1_b[zi,ti] = scipy.integrate.simps(dNdz_b[zi]*xi_ofPi[zi][ti,:], z_Pi[zi]) / scipy.integrate.simps(dNdz_b_weighted, z_b)
 
 # Now integrate these over zl
 
 # Load lens redshifts from file
 #zL, dndzl = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/z_dNdz_lenses_subbin.dat', unpack=True)
 #zL, dndzl = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/z_dNdz_lenses.dat', unpack=True)
-zL, dndzl = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/z_dNdz_lenses_narrow_test.dat', unpack=True)
+zL, dndzl = np.loadtxt('./txtfiles/'+pa.dNdzL_file, unpack=True)
 norm_L = scipy.integrate.simps(dndzl, zL)
 
-Boost_a = np.zeros(len(rpvec))
-Boost_b = np.zeros(len(rpvec))
+Boost_a = np.zeros(len(theta_vec))
+Boost_b = np.zeros(len(theta_vec))
 
-for ri in range(0,len(rpvec)):
-    Boost_a[ri] = scipy.integrate.simps(B_1_a[:, ri] * dndzl, zL) / norm_L
-    Boost_b[ri] = scipy.integrate.simps(B_1_b[:,ri]* dndzl, zL) / norm_L
+for ti in range(0,len(theta_vec)):
+    Boost_a[ti] = scipy.integrate.simps(B_1_a[:, ti] * dndzl, zL) / norm_L
+    Boost_b[ti] = scipy.integrate.simps(B_1_b[:,ti]* dndzl, zL) / norm_L
 
 np.savetxt(Boost_file_a, Boost_a)
 np.savetxt(Boost_file_b, Boost_b)
 
 print("Boosts computed")
 
-interp_B_a = scipy.interpolate.interp1d(rpvec, Boost_a)
-interp_B_b = scipy.interpolate.interp1d(rpvec, Boost_b)
+chieff = ccl.comoving_radial_distance(cosmo, 1./(1.+pa.zeff)) * (pa.HH0_t/100.)
 
-print("B_a 1 Mpc/h=", interp_B_a(1.))
-print("B_b 1 Mpc/h=", interp_B_b(1.))
+interp_B_a = scipy.interpolate.interp1d(theta_radians, Boost_a)
+interp_B_b = scipy.interpolate.interp1d(theta_radians, Boost_b)
+
+print("B_a 1 Mpc/h=", interp_B_a(1./ chieff))
+print("B_b 1 Mpc/h=", interp_B_b(1./ chieff))
 
 
 

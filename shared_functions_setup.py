@@ -333,3 +333,43 @@ def arcmin_to_rp(theta,zeff, cosmo):
     rp = rads * chieff
 
     return rp
+    
+def dNdz_perturbed(sample, sigma, deltaz):
+    """ Convolves the source dNdz with a Gaussian of scatter sigma and mean redshift bias deltaz """
+    
+    # Load the dNdz for the given sample:			
+    if(sample == 'B'):
+        z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_centres.dat')
+        dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_weighted')
+        
+    elif(sample=='A'):
+        z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_centres.dat')
+        dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_weighted')
+        
+    # Define a new redshift vector exactly the same as z_mc just to facilitate the convolution
+    z_new = z_mc
+    
+    # Set up a Gaussian to do this convolution
+    Gauss = np.zeros((len(z_mc), len(z_new)))
+    for zmi in range(0,len(z_mc)):
+        for zni in range(0,len(z_new)):
+            Gauss[zmi, zni] = np.exp( - (z_new[zni]- z_mc[zmi]-deltaz)**2 / (2.*sigma**2))
+            
+    numerator = np.zeros(len(z_new))
+    for zni in range(0, len(z_new)):
+        numerator[zni] = scipy.integrate.simps(dNdz_mc * Gauss[:, zni], z_mc)
+    
+    denominator = scipy.integrate.simps(numerator, z_new)
+    
+    dNdz_new = numerator / denominator
+    
+    norm_original = scipy.integrate.simps(dNdz_mc, z_mc)
+    
+    plt.figure()
+    plt.plot(z_mc, dNdz_mc / norm_original, label='original')
+    plt.plot(z_new, dNdz_new, label='perturbed')
+    plt.legend()
+    plt.savefig('./perturbed_dNdz_sample='+sample+'.png')
+    plt.close()
+   
+    return z_new, dNdz_new
