@@ -94,7 +94,7 @@ zLmax	=	0.448
 dNdzL_file	=  '/DESY1_quantities_fromSara/z_dNdz_lenses.dat'
 
 # Parameters for testing what happens when you get the redshifts wrong
-sigma   = 0.01
+sigma   = 0.1
 del_z   = 0.05
 
 # MAKE SURE I'M USING THE RIGHT VALUES HERE

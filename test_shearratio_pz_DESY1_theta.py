@@ -30,7 +30,7 @@ def sum_weights_DESY1(source_sample, z_cut):
     chiL = ccl.comoving_radial_distance(cosmo_a, 1./(1.+zL)) * (pa.HH0_a / 100.) # CCL returns in Mpc but we want Mpc/h
 	
     # Load weighted source redshift distributions
-    if (source_sample == 'A'):    
+    """if (source_sample == 'A'):    
         # Load the weighted dNdz_mc for source sample A:
         z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_centres.dat')
         dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_weighted')
@@ -42,7 +42,10 @@ def sum_weights_DESY1(source_sample, z_cut):
             
     else:
         print("We do not have support for that z sample cut. Exiting.")
-        exit()
+        exit()"""
+        
+    print("Using perturbed source redshift distribution in sum_weights for F")
+    z_mc, dNdz_mc = setup.dNdz_perturbed(source_sample, pa.sigma, pa.del_z)
    
     if z_cut=='nocut':
     
@@ -106,6 +109,8 @@ def get_F(photoz_sample):
 def get_SigmaC_inv(z_s_, z_l_, cosmo_):
     """ Returns the theoretical value of 1/Sigma_c, (Sigma_c = the critcial surface mass density).
     z_s_ and z_l_ can be 1d arrays, so the returned value will in general be a 2d array. """
+    
+    print("FIX UNITS OF COM_S AND COM_L")
 
     com_s = ccl.comoving_radial_distance(cosmo_, 1./(1.+z_s_))
     com_l = ccl.comoving_radial_distance(cosmo_, 1./(1.+z_l_))
@@ -587,7 +592,29 @@ theta_edges = setup.setup_rp_bins(theta_min, theta_max, pa.N_bins)
 theta_vec = setup.rp_bins_mid(theta_edges)
 theta_radians = theta_vec / 60.*np.pi/180.
 
-#dNdz_pert = setup.dNdz_perturbed('B', pa.sigma, pa.del_z)
+"""z_B, dNdz_pert_B_raw = setup.dNdz_perturbed('B', pa.sigma, pa.del_z)
+norm_B = scipy.integrate.simps(dNdz_pert_B_raw, z_B)
+dNdz_pert_B = dNdz_pert_B_raw / norm_B
+
+z_A, dNdz_pert_A_raw = setup.dNdz_perturbed('A', pa.sigma, pa.del_z)
+norm_A = scipy.integrate.simps(dNdz_pert_A_raw, z_A)
+dNdz_pert_A = dNdz_pert_A_raw / norm_A
+
+zL, dNdzL_raw = np.loadtxt('./txtfiles/'+pa.dNdzL_file, unpack=True)
+norm_L = scipy.integrate.simps(dNdzL_raw, zL)
+dNdz_L = dNdzL_raw / norm_L
+
+plt.figure()
+plt.plot(zL, dNdz_L/5., label='lens')
+plt.plot(z_A, dNdz_pert_A, label='source A')
+plt.plot(z_B, dNdz_pert_B, label='source B')
+plt.xlabel('z')
+plt.ylabel('dNdz')
+plt.savefig('./dNdz_perturbed_sigma='+str(pa.sigma)+'deltaz='+str(pa.del_z)+'.png')
+plt.close()
+
+exit()"""
+
 
 get_gammaIA_estimator()
 #test_thin_lens_approx('A')
