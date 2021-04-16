@@ -43,6 +43,7 @@ def sum_weights_DESY1(source_sample, z_cut):
     else:
         print("We do not have support for that z sample cut. Exiting.")
         exit()
+    
         
     #print("Using perturbed source redshift distribution in sum_weights for F")
     #z_mc, dNdz_mc = setup.dNdz_perturbed(source_sample, pa.sigma, pa.del_z)
@@ -88,9 +89,9 @@ def get_boost(theta_vec, sample):
 
 	#Boost = np.loadtxt('./txtfiles/boosts/Boost_'+str(sample)+'_survey='+str(SURVEY)+'_'+endfile+'.txt') + np.ones((len(theta_vec)))
 	
-	print("Loading boost from previous run")
-	Boost = np.loadtxt('./txtfiles/boosts/Boost_'+str(sample)+'_survey='+str(SURVEY)+'_true-redshifts-different_sigma='+str(pa.sigma)+'deltaz='+str(pa.del_z)+'.txt') + np.ones((len(theta_vec)))
-	#Boost = np.loadtxt('./txtfiles/boosts/Boost_'+str(sample)+'_survey='+str(SURVEY)+'_test_angular_projection.txt') + np.ones((len(theta_vec)))
+	#print("Loading boost from previous run")
+	#Boost = np.loadtxt('./txtfiles/boosts/Boost_'+str(sample)+'_survey='+str(SURVEY)+'_true-redshifts-different_sigma='+str(pa.sigma)+'deltaz='+str(pa.del_z)+'.txt') + np.ones((len(theta_vec)))
+	Boost = np.loadtxt('./txtfiles/boosts/Boost_'+str(sample)+'_survey='+str(SURVEY)+'_test_angular_projection.txt') + np.ones((len(theta_vec)))
 
 	return Boost
 	
@@ -154,6 +155,7 @@ def get_SigmaC_avg(photoz_sample):
     this function is not called when converting Delta Sigma to gammat
     from pure lensing"""
 
+    
     # Load weighted source distributions			
     if(photoz_sample == 'B'):
         z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_centres.dat')
@@ -367,16 +369,16 @@ def get_gammat_purelensing(DeltaSigma, sample, limtype='pz'):
         # The limits are in terms of spec-z
      
         
-        """if(sample == 'B'):
+        if(sample == 'B'):
             z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_centres.dat')
             dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_weighted')
         
         elif(sample=='A'):
             z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_centres.dat')
-            dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_weighted')"""
+            dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_weighted')
             
-        print("Using perturbed source redshift distribution for gammat pure lensing")
-        z_mc, dNdz_mc = setup.dNdz_perturbed(sample, pa.sigma, pa.del_z)
+        #print("Using perturbed source redshift distribution for gammat pure lensing")
+        #z_mc, dNdz_mc = setup.dNdz_perturbed(sample, pa.sigma, pa.del_z)
         
         norm_mc = scipy.integrate.simps(dNdz_mc, z_mc)   
     
@@ -498,6 +500,35 @@ def get_fred(sample):
     np.savetxt("./txtfiles/photo_z_test/fred_"+sample+".txt", fred_save)
 	
     return fred_avg
+    
+def get_IA_gammat_term(sample, F, Boost):
+    """ Returns gammaIA *not per contributing galaxy* such that it can be incorporated in gammat:
+    gammat = gammat_pure_lensing + gammaIA_not_per_galay 
+    as part of the modelling of the estimator."""
+    
+    # Get or load red fraction:
+    fred = np.loadtxt("./txtfiles/photo_z_test/fred_"+sample+"_"+SURVEY+".txt")
+    
+    # Load the projected correlations functions calculated elsewhere:
+    # This assumes the same rp values have been used elsewhere as in this file, be careful.
+    rp, wgp = np.loadtxt('./txtfiles/photo_z_test/wgp2h_'+sample+'_'+SURVEY+'_'+endfile+'.txt', unpack=True)
+    rp, wgg = np.loadtxt('./txtfiles/photo_z_test/wgg2h_'+sample+'_'+SURVEY+'_'+endfile+'.txt', unpack=True)
+    
+    gamma_IA_not_per_galaxy = (fred*wgp / (wgg + 2* pa.close_cut))* (Boost-1. + F)
+    
+    """
+    plt.figure()
+    plt.loglog(theta_vec, gamma_IA_not_per_galaxy, 'o')
+    plt.xlabel('$\\theta$, arcmin')
+    plt.ylabel('IA contribution to $\gamma_t$')
+    plt.title('sources bin 0')
+    plt.savefig('./test_gammaIA_not_per_galaxy.png')
+    plt.close()"""
+    
+    save_gammaIA = np.column_stack((theta_vec, gamma_IA_not_per_galaxy))
+    np.savetxt('./txtfiles/photo_z_test/gamma_IA_not_per_gal_'+sample+'_'+SURVEY+'.txt', save_gammaIA)
+    
+    return gamma_IA_not_per_galaxy
 		
 def get_gammaIA_estimator():
     """ Calculate gammaIA from the estimator used on data for the Blazek et al. 2012 + F method with gammat, as in Sara's project. """
@@ -547,21 +578,40 @@ def get_gammaIA_estimator():
     gammat_a_lens = get_gammat_purelensing(DeltaSigma, 'A', limtype='truez')
     gammat_b_lens = get_gammat_purelensing(DeltaSigma, 'B', limtype='truez')
     
-    # Get theoretical gamma_IA
+    print("Get gamma IA for fiducial")
+    gamma_IA_A = get_IA_gammat_term("A", F_a, B_a)
+    gamma_IA_B = get_IA_gammat_term("B", F_b, B_b)
     
-    #gamma_IA_a = fred_a * wlp_a
-    #gamma_IA_b = fred_b * wlp_b
+    plt.figure()
+    plt.loglog(theta_vec, gamma_IA_A, 'o', label='IA')
+    plt.loglog(theta_vec, gammat_a_lens, 'o', label='lensing')
+    plt.title('Contribution to $\gamma_t$ from lensing and IA, bin0')
+    plt.ylabel('$\gamma_x$')
+    plt.xlabel('$\\theta$, arcmin')
+    plt.legend()
+    plt.savefig('./gamma_t_contributions_A.png')
+    plt.close()
     
-    gamma_a = gamma_a_lens #+ gamma_IA_a
-    gamma_b = gamma_b_lens #+ gamma_IA_b
+    plt.figure()
+    plt.loglog(theta_vec, gamma_IA_B, 'o', label='IA')
+    plt.loglog(theta_vec, gammat_b_lens, 'o', label='lensing')
+    plt.title('Contribution to $\gamma_t$ from lensing and IA, bin1')
+    plt.ylabel('$\gamma_x$')
+    plt.xlabel('$\\theta$, arcmin')
+    plt.legend()
+    plt.savefig('./gamma_t_contributions_B.png')
+    plt.close()
+    
+    gammat_a = gammat_a_lens + gamma_IA_A
+    gammat_b = gammat_b_lens + gamma_IA_B
     
     # Assemble estimator
     gamma_IA_est = (gammat_b * SigB - gammat_a*SigA) / ( (B_b - 1 + F_b)*SigB - (B_a - 1 + F_a)*SigA)
     
     # Stack rp or theta with gamma_IA_est to output
-    numerator = gammat_b * SigB - gammat_a*SigA
-    save_numerator= np.column_stack((theta_vec, numerator))
-    np.savetxt('./txtfiles/photo_z_test/numerator_'+SURVEY+'_'+endfile+'.txt', save_numerator)
+    #numerator = gammat_b * SigB - gammat_a*SigA
+    #save_numerator= np.column_stack((theta_vec, numerator))
+    #np.savetxt('./txtfiles/photo_z_test/numerator_'+SURVEY+'_'+endfile+'.txt', save_numerator)
     
     # Stack rp or theta with gamma_IA_est to output
     save_gammaIA = np.column_stack((theta_vec, gamma_IA_est))
@@ -666,7 +716,8 @@ else:
 #print("dNdztruepar=", pa.dNdzpar_true)
 
 #endfile = 'assumed_OmM='+str(pa.OmC_a+pa.OmB)+'_H0='+str(pa.HH0_a)
-endfile = 'true-redshifts-different_sigma='+str(pa.sigma)+'deltaz='+str(pa.del_z)
+#endfile = 'measured-redshifts-wrong_sigma='+str(pa.sigma)+'deltaz='+str(pa.del_z)
+endfile = 'no_z_perturb_fidIA'
 	
 # Set up the 'true' and 'assumed' cosmology objects.
 #'true' parameters feed into gammat, boost. 'assumed' parameters feed into the distances which go into calculating sigma_crit and F.
@@ -713,10 +764,10 @@ plt.close()
 
 exit()"""
 
-fred_avg = get_fred('B')
+#fred_avg = get_fred('B')
 
 
-#get_gammaIA_estimator()
+get_gammaIA_estimator()
 #test_thin_lens_approx('A')
 #test_thin_lens_approx('B')
 

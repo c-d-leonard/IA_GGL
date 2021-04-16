@@ -119,13 +119,17 @@ def window(survey, sample):
         exit()
         
     if survey == 'DESY1':
+        """
         # Load dNdzs from file for the appropriate source sample
         if(sample == 'B'):
             z_s = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_centres.dat')
             dNdz_2 = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_weighted')
         elif(sample=='A'):
             z_s = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_centres.dat')
-            dNdz_2 = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_weighted')
+            dNdz_2 = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_weighted')"""
+            
+        print("Using perturbed source redshift distribution in window()")
+        z_s, dNdz_2 = setup.dNdz_perturbed(sample, pa.sigma, pa.del_z)
     else:    	
         (z, dNdz_2) = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, pa.zLmin, pa.zLmax, 100, survey)
         

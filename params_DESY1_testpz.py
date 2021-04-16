@@ -95,7 +95,7 @@ dNdzL_file	=  '/DESY1_quantities_fromSara/z_dNdz_lenses.dat'
 
 # Parameters for testing what happens when you get the redshifts wrong
 sigma   = 0.1
-del_z   = -0.08
+del_z   = -0.05
 
 # MAKE SURE I'M USING THE RIGHT VALUES HERE
 close_cut = 100.# Mpc/h # The maximum separation from a lens to consider part of `rand-close', in Mpc/h. Waiting on Jonathan for this value.
