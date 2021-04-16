@@ -88,6 +88,12 @@ sigma8	=	0.84
 A_s	=	2.2 * 10**(-9)
 n_s_cosmo	=	0.9652
 
+HH0_t =  67.26 
+OmR_t	=	2.47*10**(-5)/(HH0_t/100.)**2
+OmN_t	=	Nnu*(7./8.)*(4./11.)**(4./3.)*OmR_t
+OmC_t	=	0.1199/(HH0_t/100.)**2 
+OmM_t=  OmB+OmC_t
+
 cos_par_std = [HH0, OmC, OmB, sigma8]
 
 # We also have two other sets of cosmological parameters:
@@ -180,3 +186,7 @@ phi_0_all = 0.0094
 P_all = -0.3 # Deep 2
 lumparams_red = [Mr_s_red, Q_red, alpha_lum_red, phi_0_red, P_red]
 lumparams_all = [Mr_s_all, Q_all, alpha_lum_all, phi_0_all, P_all]
+
+A_IA_amp = 4.9
+beta_IA = 1.3
+

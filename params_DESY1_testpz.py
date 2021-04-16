@@ -137,4 +137,32 @@ delta_z = 0.17 """
 #Mmin_reid = 8.05*10**13 # Msol
 #sigLogM_reid = 0.7
 
+# Fiducial intrinsic alignment parameters (Singh et al. values)
+A_IA_amp = 4.9
+beta_IA = 1.3
 
+kpts_wgg = 10000
+kpts_wgp = 2000
+C1rho = 0.0134
+
+#Parameters required for computing the luminosity function (from Loveday 2012 / Krause et al. 2015 unless otherwise noted)
+mlim = 23.2 # Gold catalogue Y1 r band limiting magnitude. Note sure this is right. 
+Mp = -22. # From Singh et al. 2014 (but this is kind of an arbitrary choice)
+
+Mr_s_red = -20.34
+#Q_red = 1.8 # GAMA
+Q_red = 1.20 # Deep 2 (Krause et al. 2015, scaled from Faber et al. 2007)
+alpha_lum_red = -0.57
+phi_0_red = 0.011
+#P_red = -1.2
+P_red = -1.15 # Deep 2
+
+Mr_s_all = -20.70
+#Q_all 	= 0.7 # GAMA
+Q_all = 1.23 # Deep 2
+alpha_lum_all = -1.23
+phi_0_all = 0.0094
+#P_all = 1.8
+P_all = -0.3 # Deep 2
+lumparams_red = [Mr_s_red, Q_red, alpha_lum_red, phi_0_red, P_red]
+lumparams_all = [Mr_s_all, Q_all, alpha_lum_all, phi_0_all, P_all]

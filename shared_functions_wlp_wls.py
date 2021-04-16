@@ -52,69 +52,145 @@ def get_ah(survey):
 	return ah
 	
 def get_Ai(survey):
-	""" Get the amplitude of the 2-halo part of w_{l+} """
+    """ Get the amplitude of the 2-halo part of w_{l+} """
 	
-	if (survey == 'SDSS'):
-		import params as pa
-	elif (survey == 'LSST_DESI'):
-		import params_LSST_DESI as pa
-	else:
-		print("We don't have support for that survey yet; exiting.")
-		exit()
-	
-	# Don't evaluate at any redshifts higher than the highest value for which we have kcorr and ecorr corrections
-	# These high (>3) redshifts shouldn't matter anyway.
-	(z_k, kcorr, x,x,x) = np.loadtxt('./txtfiles/kcorr.dat', unpack=True)
-	(z_e, ecorr, x,x,x) = np.loadtxt('./txtfiles/ecorr.dat', unpack=True)
-	zmaxke = min(max(z_k), max(z_e))	
-	if (zmaxke<pa.zLmax):
-		z = np.linspace(pa.zLmin, zmaxke, 1000)
-	else:
-		z = np.linspace(pa.zLmin, pa.zLmax, 1000)		
-	
-	# Get the luminosity function
-	(L, phi_normed, phi) = setup.get_phi(z, pa.lumparams_red, survey)
-	# Pivot luminosity:
-	Lp = 1.
-	
-	# Get ah as a function of lens redshift.
-	Ai_ofzl = np.zeros(len(z))
-	for zi in range(len(z)):
-		Ai_ofzl[zi] = scipy.integrate.simps(np.asarray(phi_normed[zi]) * 4.9 * (np.asarray(L[zi]) / Lp)**(1.3), np.asarray(L[zi]))
-	
-	# Integrate over lens redshift	
-	dNdzl = setup.get_dNdzL(z, survey)
-	Ai = scipy.integrate.simps(Ai_ofzl * dNdzl, z)
-	
-	return Ai
+    if (survey == 'SDSS'):
+        import params as pa
+    elif (survey == 'LSST_DESI'):
+        import params_LSST_DESI as pa
+    elif (survey == 'DESY1'):
+        import params_DESY1_testpz as pa
+    else:
+        print("We don't have support for that survey yet; exiting.")
+        exit()
+        
+    (z_k, kcorr, x,x,x) = np.loadtxt('./txtfiles/kcorr.dat', unpack=True)
+    (z_e, ecorr, x,x,x) = np.loadtxt('./txtfiles/ecorr.dat', unpack=True)
+    zmaxke = min(max(z_k), max(z_e))
+        
+    if survey=='DESY1':
+        z_l, dNdz_l = np.loadtxt('./txtfiles/'+pa.dNdzL_file, unpack=True)
+        # Don't evaluate at any redshifts higher than the highest value for which we have kcorr and ecorr corrections
+        # These high (>3) redshifts shouldn't matter anyway.	
+        if (zmaxke<z_l[-1]):
+            ind = next(j[0] for j in enumerate(z_l) if j[1]>zmaxke)
+            z = z_l[0:ind]
+            dNdzl = dNdz_l[0:ind]
+        else:
+            z = z_l
+            dNdzl = dNdz_l
+        
+    else:
+        if (zmaxke<pa.zLmax):
+            z = np.linspace(pa.zLmin, zmaxke, 1000)
+        else:
+            z = np.linspace(pa.zLmin, pa.zLmax, 1000)
+    
+        dNdzl = setup.get_dNdzL(z, survey)
 
-def window(survey):
-	""" Get window function for w_{l+} and w_{ls} 2-halo terms. In both cases, this is the window functions for LENSES x SOURCES. """
-	""" Note I am just going to use the standard cosmological parameters here because it's a pain and it shouldn't matter too much. """
+    # Get the luminosity function
+    (L, phi_normed, phi) = setup.get_phi(z, pa.lumparams_red, survey)
+    # Pivot luminosity:
+    Lp = 1.
 	
-	if (survey == 'SDSS'):
-		import params as pa
-	elif (survey == 'LSST_DESI'):
-		import params_LSST_DESI as pa
-	else:
-		print("We don't have support for that survey yet; exiting.")
-		exit()
+    # Get ah as a function of lens redshift.
+    Ai_ofzl = np.zeros(len(z))
+    for zi in range(len(z)):
+        Ai_ofzl[zi] = scipy.integrate.simps(np.asarray(phi_normed[zi]) * pa.A_IA_amp * (np.asarray(L[zi]) / Lp)**(pa.beta_IA), np.asarray(L[zi]))
 	
-	z = np.linspace(pa.zLmin, pa.zLmax, 100)
-	dNdz_1 = setup.get_dNdzL(z, survey)
+    # Integrate over lens redshift	
 	
-    # UPDATE CCL - use CCL comoving distance? 
-	chi = setup.com(z, survey, pa.cos_par_std)
-	OmL = 1. - pa.OmC - pa.OmB - pa.OmR - pa.OmN
-	dzdchi = pa.H0 * ( ( pa.OmC + pa.OmB )*(1+z)**3 + OmL + (pa.OmR+pa.OmN) * (1+z)**4 )**(0.5)
+    Ai = scipy.integrate.simps(Ai_ofzl * dNdzl, z) / scipy.integrate.simps(dNdzl,z)
 	
-	(z, dNdz_2) = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, pa.zLmin, pa.zLmax, 100, survey) 
-		
-	norm = scipy.integrate.simps(dNdz_1*dNdz_2 / chi**2 * dzdchi, z)
+    return Ai
+
+def window(survey, sample):
+    """ Get window function for w_{l+} and w_{ls} 2-halo terms. In both cases, this is the window functions for LENSES x SOURCES. """
+    """ Old note: Note I am just going to use the standard cosmological parameters here because it's a pain and it shouldn't matter too much. """
 	
-	win = dNdz_1*dNdz_2 / chi**2 * dzdchi / norm
+    if (survey == 'SDSS'):
+        import params as pa
+    elif (survey == 'LSST_DESI'):
+        import params_LSST_DESI as pa
+    elif (survey == 'DESY1'):
+        import params_DESY1_testpz as pa
+    else:
+        print("We don't have support for that survey yet; exiting.")
+        exit()
+        
+    if survey == 'DESY1':
+        # Load dNdzs from file for the appropriate source sample
+        if(sample == 'B'):
+            z_s = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_centres.dat')
+            dNdz_2 = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_weighted')
+        elif(sample=='A'):
+            z_s = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_centres.dat')
+            dNdz_2 = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_weighted')
+    else:    	
+        (z, dNdz_2) = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, pa.zLmin, pa.zLmax, 100, survey)
+        
+        
+    if survey == 'DESY1':
+        # Load dNdzL from file
+        z_l, dNdz_1 = np.loadtxt('./txtfiles/'+pa.dNdzL_file, unpack=True)
+        
+        # this will not natively be over the same range as the source dNdz above - need to fix this
+        # Get the segment of the source redshift before and after the lens redshift range:
+        ind1 = next(j[0] for j in enumerate(z_s) if j[1]>min(z_l))
+        ind2 = next(j[0] for j in enumerate(z_s) if j[1]>max(z_l))
+        z_low_source = np.asarray(z_s[0:ind1])
+        z_high_source = np.asarray(z_s[ind2:])
+        
+        
+        z=np.append(np.append(z_low_source, z_l), z_high_source)
+        
+        # Okay, now we are going to set up the lens dNdz so it's zero everywhere outside its original range
+        dNdz_l_extend = np.zeros(len(z))
+        for zi in range(0, len(z)):
+            if z[zi]<min(z_l):
+                dNdz_l_extend[zi] = 0.
+            elif z[zi]>max(z_l):
+                dNdz_l_extend[zi]= 0.
+            else:
+                dNdz_l_extend[zi] = dNdz_1[zi-ind1]
+
+        #plt.figure()
+        #plt.plot(z, dNdz_l_extend)
+        #plt.savefig('./text_dNdz_l_extend.png')
+        #plt.close()
+        
+        # And now we are going to interpolate the source dNdz in this new z vector:
+        dNdzs_interp = scipy.interpolate.interp1d(z_s, dNdz_2)
+        dNdz_s_extend = dNdzs_interp(z)
+        
+        #plt.figure()
+        #plt.plot(z, dNdz_s_extend)
+        #plt.savefig('./text_dNdz_s_extend.png')
+        #plt.close()
+         
+        
+    else:
+        z = np.linspace(pa.zLmin, pa.zLmax, 100)
+        dNdz_1 = setup.get_dNdzL(z, survey)
 	
-	return (z, win )
+    #chi = setup.com(z, survey, pa.cos_par_std)
+    # 'true' cosmological parameters because this is a fiducial signal.
+    cosmo_t = ccl.Cosmology(Omega_c = pa.OmC_t, Omega_b = pa.OmB, h = (pa.HH0_t/100.), sigma8 = pa.sigma8, n_s=pa.n_s)
+    chi = ccl.comoving_radial_distance(cosmo_t, 1./(1.+z)) * (pa.HH0_t / 100.) # CCL returns in Mpc but we want Mpc/h
+    OmL = 1. - pa.OmC_t - pa.OmB - pa.OmR_t - pa.OmN_t
+    dzdchi = pa.H0 * ( ( pa.OmC_t + pa.OmB )*(1+z)**3 + OmL + (pa.OmR_t+pa.OmN_t) * (1+z)**4 )**(0.5) 
+        
+    #if max(z_s)!=max(z) or min(z_s)!=min(z):
+    #    print("in window(), need redshifts loaded for sources and lenses to span same range")
+    #    print("z_s=", z_s)
+    #    print("z=", z)
+    
+    #norm = scipy.integrate.simps(dNdz_1*dNdz_2 / chi**2 * dzdchi, z)
+    norm =  scipy.integrate.simps(dNdz_l_extend*dNdz_s_extend / chi**2 * dzdchi, z)
+	
+    win = dNdz_l_extend*dNdz_s_extend / chi**2 * dzdchi / norm
+	
+    return (z, win )
 
 # Functions to get the 1halo term of w_{l+}
 
@@ -144,29 +220,31 @@ def get_P1haloIA(z, k, q11, q12, q13, q21, q22, q23, q31, q32, q33, survey):
 	return P1halo
 
 def growth(z_,survey):
-	""" Returns the growth factor, normalized to 1 at z=0"""
+    """ Returns the growth factor, normalized to 1 at z=0"""
 	
-	if (survey == 'SDSS'):
-		import params as pa
-	elif (survey == 'LSST_DESI'):
-		import params_LSST_DESI as pa
-	else:
-		print("We don't have support for that survey yet; exiting.")
-		exit()
+    if (survey == 'SDSS'):
+        import params as pa
+    elif (survey == 'LSST_DESI'):
+        import params_LSST_DESI as pa
+    elif (survey == 'DESY1'):
+        import params_DESY1_testpz as pa
+    else:
+        print("We don't have support for that survey yet; exiting.")
+        exit()
 	
-	def int_(z):
-		OmL = 1. - pa.OmC - pa.OmB - pa.OmR - pa.OmN
-		return (1.+z) / ( (pa.OmC+pa.OmB)*(1+z)**3 + OmL + (pa.OmR+pa.OmN) * (1+z)**4 )**(1.5)
+    def int_(z):
+        OmL = 1. - pa.OmC_t - pa.OmB - pa.OmR_t - pa.OmN_t
+        return (1.+z) / ( (pa.OmC_t+pa.OmB)*(1+z)**3 + OmL + (pa.OmR_t+pa.OmN_t) * (1+z)**4 )**(1.5)
 	
-	norm = scipy.integrate.quad(int_, 0, 1000.)[0]
+    norm = scipy.integrate.quad(int_, 0, 1000.)[0]
 	
-	ans = np.zeros(len(z_))
-	for zi in range(0,len(z_)):
-		ans[zi] = scipy.integrate.quad(int_, z_[zi], 1000)[0]
+    ans = np.zeros(len(z_))
+    for zi in range(0,len(z_)):
+        ans[zi] = scipy.integrate.quad(int_, z_[zi], 1000)[0]
 	
-	D = ans / norm
+    D = ans / norm
 	
-	return D
+    return D
 
 def wgp_1halo(rp_c_, q11, q12, q13, q21, q22, q23, q31, q32, q33, savefile, survey):
 	""" Returns the 1 halo term of wg+(rp) """
@@ -212,69 +290,90 @@ def wgp_1halo(rp_c_, q11, q12, q13, q21, q22, q23, q31, q32, q33, savefile, surv
 		
 	return wgp1h
 
-def wgp_2halo(rp_cents_, bd, savefile, survey):
-	""" Returns wgp from the nonlinear alignment model (2-halo term only). """
+def wgp_2halo(rp_cents_, bd, savefile, survey, sample):
+    """ Returns wgp from the nonlinear alignment model (2-halo term only). """
 	
-	if (survey == 'SDSS'):
-		import params as pa
-	elif (survey == 'LSST_DESI'):
-		import params_LSST_DESI as pa
-	else:
-		print("We don't have support for that survey yet; exiting.")
-		exit()
+    if (survey == 'SDSS'):
+        import params as pa
+    elif (survey == 'LSST_DESI'):
+        import params_LSST_DESI as pa
+    elif (survey == 'DESY1'):
+        import params_DESY1_testpz as pa
+    else:
+        print("We don't have support for that survey yet; exiting.")
+        exit()
 	
-	# Get the redshift window function
-	z_gp, win_gp = window(survey)
+    print("Getting window")	
+    # Get the redshift window function
+    z_gp, win_gp = window(survey, sample) # this is working april 15
+    print("Got window")
 	
-	# Get the amplitude Ai (this depends on limiting luminosity
-	Ai = get_Ai(survey)
+    # Get the amplitude Ai (this depends on limiting luminosity)
+    print("Getting Ai")
+    Ai = get_Ai(survey) # this is working april 15
+    print("Got Ai")
+    print("Ai=", Ai)
 
-	# Get the required matter power spectrum from CCL
-	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), sigma8=pa.sigma8, n_s=pa.n_s_cosmo)
-	cosmo = ccl.Cosmology(p)
-	h = (pa.HH0/100.)
-	k_gp = np.logspace(-5., 7., 100000)
-	P_gp = np.zeros((len(z_gp), len(k_gp)))
-	for zi in range(0,len(z_gp)):
-		P_gp[zi, :] = h**3 * ccl.nonlin_matter_power(cosmo, k_gp * h , 1./(1.+z_gp[zi])) # CCL takes units without little h's, but we use little h units.
+    # Get the required matter power spectrum from CCL
+    #p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), sigma8=pa.sigma8, n_s=pa.n_s_cosmo)
+    #cosmo = ccl.Cosmology(p)
+    # 'true' cosmological parameters because this is a fiducial signal.
+    cosmo_t = ccl.Cosmology(Omega_c = pa.OmC_t, Omega_b = pa.OmB, h = (pa.HH0_t/100.), sigma8 = pa.sigma8, n_s=pa.n_s)
+    #chi = ccl.comoving_radial_distance(cosmo_t, 1./(1.+z)) * (pa.HH0_t / 100.) # CCL returns in Mpc but we want Mpc/h
+
+    print("Getting power spectra")	
+    h = (pa.HH0_t/100.)
+    k_gp = np.logspace(-5., 7., 100000)
+    P_gp = np.zeros((len(z_gp), len(k_gp)))
+    for zi in range(0,len(z_gp)):
+        P_gp[zi, :] = h**3 * ccl.nonlin_matter_power(cosmo_t, k_gp * h , 1./(1.+z_gp[zi])) # CCL takes units without little h's, but we use little h units.
+    print("Got power spectra")
 	
-	# Get the growth factor
-	D_gp = growth(z_gp, survey)
+    print("Getting growth")	
+    # Get the growth factor
+    D_gp = growth(z_gp, survey)
+    print("Got growth")
 	
-	# First do the integral over z. Don't yet interpolate in k.
-	zint_gp = np.zeros(len(k_gp))
-	for ki in range(0,len(k_gp)):
-		zint_gp[ki] = scipy.integrate.simps(win_gp * P_gp[:, ki] / D_gp, z_gp)
+    print("Getting redshift integrals")	
+    # First do the integral over z. Don't yet interpolate in k.
+    zint_gp = np.zeros(len(k_gp))
+    for ki in range(0,len(k_gp)):
+        zint_gp[ki] = scipy.integrate.simps(win_gp * P_gp[:, ki] / D_gp, z_gp)
+    print("Got redshift integrals")
+    
+    # Define vectors of kp (kperpendicual) and kz. 
+    kp_gp = np.logspace(np.log10(k_gp[0]), np.log10(k_gp[-1]/ np.sqrt(2.01)), pa.kpts_wgp)
+    kz_gp = np.logspace(np.log10(k_gp[0]), np.log10(k_gp[-1]/ np.sqrt(2.01)), pa.kpts_wgp)
+	
+    # Interpolate the answers to the z integral in k to get it in terms of kperp and kz
+    kinterp_gp = scipy.interpolate.interp1d(k_gp, zint_gp)
+	
+    # Get the result of the z integral in terms of kperp and kz
+    kpkz_gp = np.zeros((len(kp_gp), len(kz_gp)))
+    for kpi in range(0,len(kp_gp)):
+        for kzi in range(0, len(kz_gp)):
+            kpkz_gp[kpi, kzi] = kinterp_gp(np.sqrt(kp_gp[kpi]**2 + kz_gp[kzi]**2))
+
+    print("Getting integral in kz")			
+    # g+: integral in kz	
+    kz_int_gp = np.zeros(len(kp_gp))
+    for kpi in range(0,len(kp_gp)):
+        kz_int_gp[kpi] = scipy.integrate.simps(kpkz_gp[kpi,:] * kp_gp[kpi]**3 / ( (kp_gp[kpi]**2 + kz_gp**2)*kz_gp) * np.sin(kz_gp*pa.close_cut), kz_gp)
+    print("Got integral in kz")
+
+    print("Getting integral in kperp")			
+    # Finally, do the integrals in kperpendicular
+    kp_int_gp = np.zeros(len(rp_cents_))
+    for rpi in range(0,len(rp_cents_)):
+        kp_int_gp[rpi] = scipy.integrate.simps(scipy.special.jv(2, rp_cents_[rpi]* kp_gp) * kz_int_gp, kp_gp)
+    print("Got integral in kperp")
 		
-	# Define vectors of kp (kperpendicual) and kz. 
-	kp_gp = np.logspace(np.log10(k_gp[0]), np.log10(k_gp[-1]/ np.sqrt(2.01)), pa.kpts_wgp)
-	kz_gp = np.logspace(np.log10(k_gp[0]), np.log10(k_gp[-1]/ np.sqrt(2.01)), pa.kpts_wgp)
+    wgp_NLA = kp_int_gp * Ai * bd * pa.C1rho * (pa.OmC_t + pa.OmB) / np.pi**2
 	
-	# Interpolate the answers to the z integral in k to get it in terms of kperp and kz
-	kinterp_gp = scipy.interpolate.interp1d(k_gp, zint_gp)
+    wgp_stack = np.column_stack((rp_cents_, wgp_NLA))
+    np.savetxt(savefile, wgp_stack)
 	
-	# Get the result of the z integral in terms of kperp and kz
-	kpkz_gp = np.zeros((len(kp_gp), len(kz_gp)))
-	for kpi in range(0,len(kp_gp)):
-		for kzi in range(0, len(kz_gp)):
-			kpkz_gp[kpi, kzi] = kinterp_gp(np.sqrt(kp_gp[kpi]**2 + kz_gp[kzi]**2))
-			
-	# g+: integral in kz	
-	kz_int_gp = np.zeros(len(kp_gp))
-	for kpi in range(0,len(kp_gp)):
-		kz_int_gp[kpi] = scipy.integrate.simps(kpkz_gp[kpi,:] * kp_gp[kpi]**3 / ( (kp_gp[kpi]**2 + kz_gp**2)*kz_gp) * np.sin(kz_gp*pa.close_cut), kz_gp)
-			
-	# Finally, do the integrals in kperpendicular
-	kp_int_gp = np.zeros(len(rp_cents_))
-	for rpi in range(0,len(rp_cents_)):
-		kp_int_gp[rpi] = scipy.integrate.simps(scipy.special.jv(2, rp_cents_[rpi]* kp_gp) * kz_int_gp, kp_gp)
-		
-	wgp_NLA = kp_int_gp * Ai * bd * pa.C1rho * (pa.OmC + pa.OmB) / np.pi**2
-	
-	wgp_stack = np.column_stack((rp_cents_, wgp_NLA))
-	np.savetxt(savefile, wgp_stack)
-	
-	return wgp_NLA
+    return wgp_NLA
 
 def wgp_full(rp_c, bd, q11, q12, q13, q21, q22, q23, q31, q32, q33, savefile_1h, savefile_2h, survey):
 	""" Combine 1 and 2 halo terms of wgg """
@@ -1395,63 +1494,79 @@ def NsatNsat(alpha_sq, Nsat_1, Nsat_2):
 	
 	return NsNs
 		
-def wgg_2halo(rp_cents_, bd, bs, savefile, survey):
-	""" Returns wgg for the 2-halo term only."""
+def wgg_2halo(rp_cents_, bd, bs, savefile, survey, sample):
+    """ Returns wgg for the 2-halo term only."""
 	
-	if (survey == 'SDSS'):
-		import params as pa
-	elif (survey == 'LSST_DESI'):
-		import params_LSST_DESI as pa
-	else:
-		print("We don't have support for that survey yet; exiting.")
-		exit()
+    if (survey == 'SDSS'):
+        import params as pa
+    elif (survey == 'LSST_DESI'):
+        import params_LSST_DESI as pa
+    elif (survey == 'DESY1'):
+        import params_DESY1_testpz as pa
+    else:
+        print("We don't have support for that survey yet; exiting.")
+        exit()
+
+    print("Getting window")
+    # Get the redshift window functions
+    z_gg, win_gg = window(survey, sample)
+    print("Got window")
+
+    print("Getting matter power")
+    # Get the required matter power spectrum from CCL
+    # UPDATE CCL
+    #p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), sigma8= pa.sigma8, n_s=pa.n_s_cosmo)
+    #cosmo = ccl.Cosmology(p)
+    # 'true' cosmological parameters because this is a fiducial signal.
+    cosmo_t = ccl.Cosmology(Omega_c = pa.OmC_t, Omega_b = pa.OmB, h = (pa.HH0_t/100.), sigma8 = pa.sigma8, n_s=pa.n_s)
+    h = (pa.HH0_t/100.)
+    k_gg = np.logspace(-5., 7., 100000)
+    P_gg = np.zeros((len(z_gg), len(k_gg)))
+    for zi in range(0,len(z_gg)):
+        P_gg[zi, :] = h**3 * ccl.nonlin_matter_power(cosmo_t, k_gg * h , 1./(1.+z_gg[zi])) # CCL takes units without little h's, but we use little h unit
+    print("Got matter power")
 	
-	# Get the redshift window functions
-	z_gg, win_gg = window(survey)
-	
-	# Get the required matter power spectrum from CCL
-	# UPDATE CCL
-	p = ccl.Parameters(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), sigma8= pa.sigma8, n_s=pa.n_s_cosmo)
-	cosmo = ccl.Cosmology(p)
-	h = (pa.HH0/100.)
-	k_gg = np.logspace(-5., 7., 100000)
-	P_gg = np.zeros((len(z_gg), len(k_gg)))
-	for zi in range(0,len(z_gg)):
-		P_gg[zi, :] = h**3 * ccl.nonlin_matter_power(cosmo, k_gg * h , 1./(1.+z_gg[zi])) # CCL takes units without little h's, but we use little h unit
-	
-	# First do the integral over z. Don't yet interpolate in k.
-	zint_gg = np.zeros(len(k_gg))
-	for ki in range(0,len(k_gg)):
-		zint_gg[ki] = scipy.integrate.simps(win_gg * P_gg[:, ki], z_gg)
+    print("Getting z intergrals")
+    # First do the integral over z. Don't yet interpolate in k.
+    zint_gg = np.zeros(len(k_gg))
+    for ki in range(0,len(k_gg)):
+        zint_gg[ki] = scipy.integrate.simps(win_gg * P_gg[:, ki], z_gg)
+    print("Got z integrals")
 		
-	# Define vectors of kp (kperpendicual) and kz. Must have sufficiently high sampling to get the right answer, especially at large scales.
-	kp_gg = np.logspace(np.log10(k_gg[0]), np.log10(k_gg[-1]/ np.sqrt(2.01)), pa.kpts_wgg)
-	kz_gg = np.logspace(np.log10(k_gg[0]), np.log10(k_gg[-1]/ np.sqrt(2.01)), pa.kpts_wgg)
+    # Define vectors of kp (kperpendicual) and kz. Must have sufficiently high sampling to get the right answer, especially at large scales.
+    kp_gg = np.logspace(np.log10(k_gg[0]), np.log10(k_gg[-1]/ np.sqrt(2.01)), pa.kpts_wgg)
+    kz_gg = np.logspace(np.log10(k_gg[0]), np.log10(k_gg[-1]/ np.sqrt(2.01)), pa.kpts_wgg)
 	
-	# Interpolate in terms of kperp and kz
-	kinterp_gg = scipy.interpolate.interp1d(k_gg, zint_gg)
+    # Interpolate in terms of kperp and kz
+    kinterp_gg = scipy.interpolate.interp1d(k_gg, zint_gg)
+
+    print("Interpolate in kperp and kz")
+    # Get the result of the z integral in terms of kperp and kz
+    kpkz_gg = np.zeros((len(kp_gg), len(kz_gg)))
+    for kpi in range(0,len(kp_gg)):
+        for kzi in range(0, len(kz_gg)):
+            kpkz_gg[kpi, kzi] = kinterp_gg(np.sqrt(kp_gg[kpi]**2 + kz_gg[kzi]**2))
+    print("done interpolating")
 	
-	# Get the result of the z integral in terms of kperp and kz
-	kpkz_gg = np.zeros((len(kp_gg), len(kz_gg)))
-	for kpi in range(0,len(kp_gg)):
-		for kzi in range(0, len(kz_gg)):
-			kpkz_gg[kpi, kzi] = kinterp_gg(np.sqrt(kp_gg[kpi]**2 + kz_gg[kzi]**2))
-			
-	# Do the integrals in kz
-	kz_int_gg = np.zeros(len(kp_gg))
-	for kpi in range(0,len(kp_gg)):
-		kz_int_gg[kpi] = scipy.integrate.simps(kpkz_gg[kpi,:] * kp_gg[kpi] / kz_gg * np.sin(kz_gg*pa.close_cut), kz_gg)
+    print("getting kz integrals")			
+    # Do the integrals in kz
+    kz_int_gg = np.zeros(len(kp_gg))
+    for kpi in range(0,len(kp_gg)):
+        kz_int_gg[kpi] = scipy.integrate.simps(kpkz_gg[kpi,:] * kp_gg[kpi] / kz_gg * np.sin(kz_gg*pa.close_cut), kz_gg)
+    print("got kz integrals")
+    
+    print("getting kperp integrals")
+    # Do the integral in kperp
+    kp_int_gg = np.zeros(len(rp_cents_))
+    for rpi in range(0,len(rp_cents_)):
+        kp_int_gg[rpi] = scipy.integrate.simps(scipy.special.j0(rp_cents_[rpi]* kp_gg) * kz_int_gg, kp_gg)
+    print("got kperp integrals")
 		
-	# Do the integral in kperp
-	kp_int_gg = np.zeros(len(rp_cents_))
-	for rpi in range(0,len(rp_cents_)):
-		kp_int_gg[rpi] = scipy.integrate.simps(scipy.special.j0(rp_cents_[rpi]* kp_gg) * kz_int_gg, kp_gg)
-		
-	wgg_2h = kp_int_gg * bs * bd / np.pi**2
-	wgg_stack = np.column_stack((rp_cents_, wgg_2h))
-	np.savetxt(savefile, wgg_stack)
+    wgg_2h = kp_int_gg * bs * bd / np.pi**2
+    wgg_stack = np.column_stack((rp_cents_, wgg_2h))
+    np.savetxt(savefile, wgg_stack)
 	
-	return wgg_2h
+    return wgg_2h
 
 def wgg_full(rp_c, fsky, bd, bs, savefile_1h, savefile_2h, endfile, survey):
 	""" Combine 1 and 2 halo terms of wgg """

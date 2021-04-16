@@ -242,88 +242,96 @@ def get_dNdzL(zvec, survey):
 	
 def get_phi(z, lum_params, survey):
 	
-	""" This function outputs the Schechter luminosity function with parameters fit in Loveday 2012, following the same procedure as Krause et al. 2015, as a function of z and L 
-	The output is L[z][l], list of vectors of luminosity values in z, different at each z due to the different low luminosity limit, and phi[z][l], a list of luminosity functions at these luminosity vectors, at each z
-	lum_params are the parameters of the luminosity function that are different for different samples, e.g. red vs all. lumparams = [Mr_s, Q, alpha_lum, phi_0, P]
-	Note that the luminosity function is output both normalized (for getting Ai and ah) and unnormalized (for the red fraction)."""
+    """ This function outputs the Schechter luminosity function with parameters fit in Loveday 2012, following the same procedure as Krause et al. 2015, as a function of z and L 
+    The output is L[z][l], list of vectors of luminosity values in z, different at each z due to the different low luminosity limit, and phi[z][l], a list of luminosity functions at these luminosity vectors, at each z
+    lum_params are the parameters of the luminosity function that are different for different samples, e.g. red vs all. lumparams = [Mr_s, Q, alpha_lum, phi_0, P]
+    Note that the luminosity function is output both normalized (for getting Ai and ah) and unnormalized (for the red fraction)."""
 	
-	if (survey == 'SDSS'):
-		import params as pa
-	elif (survey == 'LSST_DESI'):
-		import params_LSST_DESI as pa
-	else:
-		print("We don't have support for that survey yet; exiting.")
-		exit()
+    if (survey == 'SDSS'):
+        import params as pa
+    elif (survey == 'LSST_DESI'):
+        import params_LSST_DESI as pa
+    elif (survey == 'DESY1'):
+        import params_DESY1_testpz as pa
+    else:
+        print("We don't have support for that survey yet; exiting.")
+        exit()
 		
-	[Mr_s, Q, alpha_lum, phi_0, P ] = lum_params
+    [Mr_s, Q, alpha_lum, phi_0, P ] = lum_params
 	
-	# Get the amplitude of the Schechter luminosity function as a function of redshift.
-	phi_s = phi_0 * 10.**(0.4 * P * z)
+    # Get the amplitude of the Schechter luminosity function as a function of redshift.
+    phi_s = phi_0 * 10.**(0.4 * P * z)
 	
-	# Get M_* (magnitude), then convert to L_*
-	Ms = Mr_s - Q * (z - 0.1)
-	Ls = 10**(-0.4 * (Ms - pa.Mp))
+    # Get M_* (magnitude), then convert to L_*
+    Ms = Mr_s - Q * (z - 0.1)
+    Ls = 10**(-0.4 * (Ms - pa.Mp))
 	
-	# Import the kcorr and ecorr correction from Poggianti (assumes elliptical galaxies)
-	# No data for sources beyon z = 3, so we keep the same value at higher z as z=3
-	(z_k, kcorr, x,x,x) = np.loadtxt('./txtfiles/kcorr.dat', unpack=True)
-	(z_e, ecorr, x,x,x) = np.loadtxt('./txtfiles/ecorr.dat', unpack=True)
-	kcorr_interp = scipy.interpolate.interp1d(z_k, kcorr)
-	ecorr_interp = scipy.interpolate.interp1d(z_e, ecorr)
-	kcorr = kcorr_interp(z)
-	ecorr = ecorr_interp(z)
+    # Import the kcorr and ecorr correction from Poggianti (assumes elliptical galaxies)
+    # No data for sources beyon z = 3, so we keep the same value at higher z as z=3
+    (z_k, kcorr, x,x,x) = np.loadtxt('./txtfiles/kcorr.dat', unpack=True)
+    (z_e, ecorr, x,x,x) = np.loadtxt('./txtfiles/ecorr.dat', unpack=True)
+    kcorr_interp = scipy.interpolate.interp1d(z_k, kcorr)
+    ecorr_interp = scipy.interpolate.interp1d(z_e, ecorr)
+    kcorr = kcorr_interp(z)
+    ecorr = ecorr_interp(z)
 	
-	# Get the absolute magnitude and luminosity corresponding to limiting apparent magntiude (as a function of z)
-	dl = com(z, survey, pa.cos_par_std) * (1. + z)
-	Mlim = pa.mlim - (5. * np.log10(dl) + 25. + kcorr + ecorr)
-	Llim = 10.**(-0.4 * (Mlim-pa.Mp))
+    # Get the absolute magnitude and luminosity corresponding to limiting apparent magntiude (as a function of z)
+    #dl = com(z, survey, pa.cos_par_std) * (1. + z)
+    # 'true' cosmological parameters because this is a fiducial signal.
+    cosmo_t = ccl.Cosmology(Omega_c = pa.OmC_t, Omega_b = pa.OmB, h = (pa.HH0_t/100.), sigma8 = pa.sigma8, n_s=pa.n_s)
+    com = ccl.comoving_radial_distance(cosmo_t, 1./(1.+z)) * (pa.HH0_t / 100.) # CCL returns in Mpc but we want Mpc/h
+    dl = com * (1.+z)
+    Mlim = pa.mlim - (5. * np.log10(dl) + 25. + kcorr + ecorr)
+    Llim = 10.**(-0.4 * (Mlim-pa.Mp))
 	
-	# Get the luminosity vectors - there will be a list of these, one for each redshift, because the limiting values are z-dependent
-	L = [0] * len(z)
-	for zi in range(0,len(z)):
-		L[zi] = scipy.logspace(np.log10(Llim[zi]), 2., 1000)
+    # Get the luminosity vectors - there will be a list of these, one for each redshift, because the limiting values are z-dependent
+    L = [0] * len(z)
+    for zi in range(0,len(z)):
+        L[zi] = scipy.logspace(np.log10(Llim[zi]), 2., 1000)
 		
-	# Now get phi(L,z), where this exists for each z because the lenghts of the L vectors are different.
-	phi_func = [0]*len(z)
-	for zi in range(0,len(z)):
-		phi_func[zi]= np.zeros(len(L[zi]))
-		for li in range(0,len(L[zi])):
-			phi_func[zi][li] = phi_s[zi] * (L[zi][li] / Ls[zi]) ** (alpha_lum) * np.exp(- L[zi][li] / Ls[zi])
+    # Now get phi(L,z), where this exists for each z because the lenghts of the L vectors are different.
+    phi_func = [0]*len(z)
+    for zi in range(0,len(z)):
+        phi_func[zi]= np.zeros(len(L[zi]))
+        for li in range(0,len(L[zi])):
+            phi_func[zi][li] = phi_s[zi] * (L[zi][li] / Ls[zi]) ** (alpha_lum) * np.exp(- L[zi][li] / Ls[zi])
 			
-	# Get the normalization in L as a function of z
+    # Get the normalization in L as a function of z
 	
-	norm= np.zeros(len(z))
-	phi_func_normed = [0]*len(z)
-	for zi in range(len(z)):
-		norm[zi] = scipy.integrate.simps(phi_func[zi], L[zi])
-		phi_func_normed[zi] = phi_func[zi] / norm[zi]
+    norm= np.zeros(len(z))
+    phi_func_normed = [0]*len(z)
+    for zi in range(len(z)):
+        norm[zi] = scipy.integrate.simps(phi_func[zi], L[zi])
+        phi_func_normed[zi] = phi_func[zi] / norm[zi]
 
-	return (L, phi_func_normed, phi_func)
+    return (L, phi_func_normed, phi_func)
 	
 def get_fred_ofz(z, survey):
-	""" This function gets the red fraction as a function of the redshift, using the Schecter luminosity function as defined in get_phi"""
+    """ This function gets the red fraction as a function of the redshift, using the Schecter luminosity function as defined in get_phi"""
 
-	if (survey == 'SDSS'):
-		import params as pa
-	elif (survey == 'LSST_DESI'):
-		import params_LSST_DESI as pa
-	else:
-		print("We don't have support for that survey yet; exiting.")
-		exit()
+    if (survey == 'SDSS'):
+        import params as pa
+    elif (survey == 'LSST_DESI'):
+        import params_LSST_DESI as pa
+    elif (survey == 'DESY1'):
+        import params_DESY1_testpz as pa
+    else:
+        print("We don't have support for that survey yet; exiting.")
+        exit()
 
-	(L_red, nothing, phi_red) = get_phi(z, pa.lumparams_red, survey)
-	(L_all, nothing, phi_all) = get_phi(z, pa.lumparams_all, survey)
+    (L_red, nothing, phi_red) = get_phi(z, pa.lumparams_red, survey)
+    (L_all, nothing, phi_all) = get_phi(z, pa.lumparams_all, survey)
 	
-	# Integrate out in luminosity (phi is already normalized in luminosity
-	phi_red_ofz = np.zeros(len(z))
-	phi_all_ofz = np.zeros(len(z))
-	for zi in range(0,len(z)):
-		phi_red_ofz[zi] = scipy.integrate.simps(phi_red[zi], L_red[zi])
-		phi_all_ofz[zi] = scipy.integrate.simps(phi_all[zi], L_all[zi])
+    # Integrate out in luminosity (phi is already normalized in luminosity
+    phi_red_ofz = np.zeros(len(z))
+    phi_all_ofz = np.zeros(len(z))
+    for zi in range(0,len(z)):
+        phi_red_ofz[zi] = scipy.integrate.simps(phi_red[zi], L_red[zi])
+        phi_all_ofz[zi] = scipy.integrate.simps(phi_all[zi], L_all[zi])
 		
-	fred_ofz = phi_red_ofz / phi_all_ofz
+    fred_ofz = phi_red_ofz / phi_all_ofz
 
-	return fred_ofz
+    return fred_ofz
 	
 	
 def arcmin_to_rp(theta,zeff, cosmo):

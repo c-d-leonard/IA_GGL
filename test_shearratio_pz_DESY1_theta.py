@@ -413,6 +413,91 @@ def get_gammat_purelensing(DeltaSigma, sample, limtype='pz'):
     np.savetxt('./txtfiles/photo_z_test/gammat_lens_'+sample+'_'+limtype+'_'+SURVEY+'_'+endfile+'.dat', save_gammat)
     
     return gammat_lens
+    
+def get_fred(sample):
+    """ This function returns the zl- and zs- averaged red fraction for the given sample."""
+	
+    #zL = np.linspace(pa.zLmin, pa.zLmax, 100)
+    zL, dNdzL = np.loadtxt('./txtfiles/'+pa.dNdzL_file, unpack=True)
+	
+    if(sample == 'B'):
+        zs = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_centres.dat')
+        dNdz_s = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_weighted')
+        
+    elif(sample=='A'):
+        zs = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_centres.dat')
+        dNdz_s = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_weighted')
+
+    # for the fiducial value of gamma_IA, we only want to consider f_red in the range of redshifts around the lenses which are subject to IA, so set up the cuts for that.
+    # this is for a fiducial signal so use the "true" parameters.
+    chiLmin = ccl.comoving_radial_distance(cosmo_t, 1./(1.+min(zL))) * (pa.HH0_t / 100.) # CCL returns in Mpc but we want Mpc/h
+    chiSmin = ccl.comoving_radial_distance(cosmo_t, 1./(1.+min(zs))) * (pa.HH0_t / 100.) # CCL returns in Mpc but we want Mpc/h
+    chiL = ccl.comoving_radial_distance(cosmo_t, 1./(1.+zL)) * (pa.HH0_t / 100.) # CCL returns in Mpc but we want Mpc/h
+	
+    if (chiLmin> (pa.close_cut + chiSmin)):
+        aminclose = ccl.scale_factor_of_chi(cosmo_t, chiL-pa.close_cut)
+        zminclose = 1./aminclose - 1.
+        #zminclose = z_of_com(com_of_z(zL) - pa.close_cut)
+    else:
+        zminclose = np.zeros(len(zL))
+        for zli in range(0,len(zL)):
+            if (chiL[zli]>(pa.close_cut + chiSmin)):
+                aminclose = ccl.scale_factor_of_chi(cosmot_t, chiL-pa.close_cut)
+                zminclose = 1./aminclose - 1.
+                #zminclose[zli] = z_of_com(com_of_z(zL[zli]) - pa.close_cut)
+            else:
+                zminclose[zli] = min(zs)
+	
+    amaxclose = ccl.scale_factor_of_chi(cosmo_t, chiL + pa.close_cut)
+    zmaxclose = 1./amaxclose - 1.
+    #zmaxclose = z_of_com(chiL + pa.close_cut)			
+    # Check the max z for which we have kcorr and ecorr corrections	
+    (z_k, kcorr, x,x,x) = np.loadtxt('./txtfiles/kcorr.dat', unpack=True)
+    (z_e, ecorr, x,x,x) = np.loadtxt('./txtfiles/ecorr.dat', unpack=True)
+    zmaxke = min(max(z_k), max(z_e))	
+    for cli in range(0,len(zL)):
+        if (zmaxclose[cli]>zmaxke):
+            zmaxclose[cli] = zmaxke
+	
+    fred_of_zL = np.zeros(len(zL))
+    #ans2 = np.zeros(len(zL))
+    #norm = np.zeros(len(zL))
+    for zi in range(0, len(zL)):
+        print("zi=", zi)
+	
+        # Cut the zs and dNdzs at zminclose and zmaxclose
+        #indmin = next(j[0] for j in enumerate(zs) if j[1]>zminclose[zi])
+        #indmax = next(j[0] for j in enumerate(zs) if j[1]>zmaxclose[zi])
+        #print("indmin=", indmin)
+        #print("indmax=", indmax)
+        
+        # Get a version of dNdzs more well sampled in the region we care about:
+        zs_cut = np.linspace(zminclose[zi], zmaxclose[zi], 100)
+        print("zminclose=", zminclose[zi])
+        print("zmaxclose=", zmaxclose[zi])
+        interp_dNdzs = scipy.interpolate.interp1d(zs, dNdz_s)
+        dNdzs_cut = interp_dNdzs(zs_cut)
+        
+        #zs_cut = zs[indmin:indmax]
+        #dNdzs_cut = dNdz_s[indmin:indmax]
+        norm_zs = scipy.integrate.simps(dNdzs_cut, zs_cut)
+
+        #(zs, dNdzs_unnormed) = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, zminclose[zi], zmaxclose[zi], 500, SURVEY)
+        #norm_zs = scipy.integrate.simps(dNdzs_unnormed, zs)
+        #dNdzs = dNdzs_unnormed / norm_zs
+        fred=  setup.get_fred_ofz(zs_cut, SURVEY)
+		
+        # Average over dNdzs
+        fred_of_zL[zi] = scipy.integrate.simps(fred*dNdzs_cut, zs_cut) / norm_zs
+		
+    fred_avg = scipy.integrate.simps(dNdzL * fred_of_zL, zL) / scipy.integrate.simps(dNdzL, zL)
+    
+    print("fred_avg=", fred_avg)
+    fred_save = [0]
+    fred_save[0] = fred_avg
+    np.savetxt("./txtfiles/photo_z_test/fred_"+sample+".txt", fred_save)
+	
+    return fred_avg
 		
 def get_gammaIA_estimator():
     """ Calculate gammaIA from the estimator used on data for the Blazek et al. 2012 + F method with gammat, as in Sara's project. """
@@ -459,8 +544,16 @@ def get_gammaIA_estimator():
     DeltaSigma = np.loadtxt('./txtfiles/DeltaSigma_test_angular_projection.txt')
     
     # Get theoretical lensing-only gammat
-    gammat_a = get_gammat_purelensing(DeltaSigma, 'A', limtype='truez')
-    gammat_b = get_gammat_purelensing(DeltaSigma, 'B', limtype='truez')
+    gammat_a_lens = get_gammat_purelensing(DeltaSigma, 'A', limtype='truez')
+    gammat_b_lens = get_gammat_purelensing(DeltaSigma, 'B', limtype='truez')
+    
+    # Get theoretical gamma_IA
+    
+    #gamma_IA_a = fred_a * wlp_a
+    #gamma_IA_b = fred_b * wlp_b
+    
+    gamma_a = gamma_a_lens #+ gamma_IA_a
+    gamma_b = gamma_b_lens #+ gamma_IA_b
     
     # Assemble estimator
     gamma_IA_est = (gammat_b * SigB - gammat_a*SigA) / ( (B_b - 1 + F_b)*SigB - (B_a - 1 + F_a)*SigA)
@@ -620,8 +713,10 @@ plt.close()
 
 exit()"""
 
+fred_avg = get_fred('B')
 
-get_gammaIA_estimator()
+
+#get_gammaIA_estimator()
 #test_thin_lens_approx('A')
 #test_thin_lens_approx('B')
 
