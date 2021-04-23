@@ -89,9 +89,9 @@ def get_boost(theta_vec, sample):
 
 	#Boost = np.loadtxt('./txtfiles/boosts/Boost_'+str(sample)+'_survey='+str(SURVEY)+'_'+endfile+'.txt') + np.ones((len(theta_vec)))
 	
-	#print("Loading boost from previous run")
-	#Boost = np.loadtxt('./txtfiles/boosts/Boost_'+str(sample)+'_survey='+str(SURVEY)+'_true-redshifts-different_sigma='+str(pa.sigma)+'deltaz='+str(pa.del_z)+'.txt') + np.ones((len(theta_vec)))
-	Boost = np.loadtxt('./txtfiles/boosts/Boost_'+str(sample)+'_survey='+str(SURVEY)+'_test_angular_projection.txt') + np.ones((len(theta_vec)))
+	print("Loading boost from previous run")
+	Boost = np.loadtxt('./txtfiles/boosts/Boost_'+str(sample)+'_survey='+str(SURVEY)+'_true-redshifts-different_sigma='+str(pa.sigma)+'deltaz='+str(pa.del_z)+'.txt') + np.ones((len(theta_vec)))
+	#Boost = np.loadtxt('./txtfiles/boosts/Boost_'+str(sample)+'_survey='+str(SURVEY)+'_test_angular_projection.txt') + np.ones((len(theta_vec)))
 
 	return Boost
 	
@@ -368,17 +368,17 @@ def get_gammat_purelensing(DeltaSigma, sample, limtype='pz'):
     elif limtype=='truez':
         # The limits are in terms of spec-z
      
-        
+        """
         if(sample == 'B'):
             z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_centres.dat')
             dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_weighted')
         
         elif(sample=='A'):
             z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_centres.dat')
-            dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_weighted')
+            dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_weighted')"""
             
-        #print("Using perturbed source redshift distribution for gammat pure lensing")
-        #z_mc, dNdz_mc = setup.dNdz_perturbed(sample, pa.sigma, pa.del_z)
+        print("Using perturbed source redshift distribution for gammat pure lensing")
+        z_mc, dNdz_mc = setup.dNdz_perturbed(sample, pa.sigma, pa.del_z)
         
         norm_mc = scipy.integrate.simps(dNdz_mc, z_mc)   
     
@@ -511,22 +511,26 @@ def get_IA_gammat_term(sample, F, Boost):
     
     # Load the projected correlations functions calculated elsewhere:
     # This assumes the same rp values have been used elsewhere as in this file, be careful.
-    rp, wgp = np.loadtxt('./txtfiles/photo_z_test/wgp2h_'+sample+'_'+SURVEY+'_'+endfile+'.txt', unpack=True)
-    rp, wgg = np.loadtxt('./txtfiles/photo_z_test/wgg2h_'+sample+'_'+SURVEY+'_'+endfile+'.txt', unpack=True)
+    #rp, wgp = np.loadtxt('./txtfiles/photo_z_test/wgp2h_'+sample+'_'+SURVEY+'_'+endfile+'.txt', unpack=True)
+    #rp, wgg = np.loadtxt('./txtfiles/photo_z_test/wgg2h_'+sample+'_'+SURVEY+'_'+endfile+'.txt', unpack=True)
+    rp, wgp = np.loadtxt('./txtfiles/photo_z_test/wgp2h_'+sample+'_'+SURVEY+'.txt', unpack=True)
+    rp, wgg = np.loadtxt('./txtfiles/photo_z_test/wgg2h_'+sample+'_'+SURVEY+'.txt', unpack=True)
     
     gamma_IA_not_per_galaxy = (fred*wgp / (wgg + 2* pa.close_cut))* (Boost-1. + F)
+    gamma_IA_fiducial_per_gal = (fred*wgp / (wgg + 2* pa.close_cut))
     
-    """
     plt.figure()
-    plt.loglog(theta_vec, gamma_IA_not_per_galaxy, 'o')
+    plt.loglog(theta_vec, gamma_IA_fiducial_per_gal, 'o')
     plt.xlabel('$\\theta$, arcmin')
     plt.ylabel('IA contribution to $\gamma_t$')
-    plt.title('sources bin 0')
-    plt.savefig('./test_gammaIA_not_per_galaxy.png')
-    plt.close()"""
+    plt.ylim(10**(-8), 10**(-2))
+    #plt.title('sources bin 0')
+    plt.title('Injected gammaIA')
+    plt.savefig('./test_gammaIA_fid_pergal_'+sample+'.png')
+    plt.close()
     
-    save_gammaIA = np.column_stack((theta_vec, gamma_IA_not_per_galaxy))
-    np.savetxt('./txtfiles/photo_z_test/gamma_IA_not_per_gal_'+sample+'_'+SURVEY+'.txt', save_gammaIA)
+    #save_gammaIA = np.column_stack((theta_vec, gamma_IA_not_per_galaxy))
+    #np.savetxt('./txtfiles/photo_z_test/gamma_IA_not_per_gal_'+sample+'_'+SURVEY+'.txt', save_gammaIA)
     
     return gamma_IA_not_per_galaxy
 		
@@ -581,6 +585,8 @@ def get_gammaIA_estimator():
     print("Get gamma IA for fiducial")
     gamma_IA_A = get_IA_gammat_term("A", F_a, B_a)
     gamma_IA_B = get_IA_gammat_term("B", F_b, B_b)
+    
+    exit()
     
     plt.figure()
     plt.loglog(theta_vec, gamma_IA_A, 'o', label='IA')
@@ -716,7 +722,7 @@ else:
 #print("dNdztruepar=", pa.dNdzpar_true)
 
 #endfile = 'assumed_OmM='+str(pa.OmC_a+pa.OmB)+'_H0='+str(pa.HH0_a)
-#endfile = 'measured-redshifts-wrong_sigma='+str(pa.sigma)+'deltaz='+str(pa.del_z)
+#endfile = 'true-redshifts-different_sigma='+str(pa.sigma)+'deltaz='+str(pa.del_z)
 endfile = 'no_z_perturb_fidIA'
 	
 # Set up the 'true' and 'assumed' cosmology objects.
