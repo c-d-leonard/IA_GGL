@@ -1,8 +1,8 @@
 import numpy as np
 import shared_functions_wlp_wls as shared
 
-survey = 'DESY1'
-endfile = 'dndz_narrow_test'
+survey = 'LSST_DESI'
+endfile = 'get_sat_frac'
 
 if (survey == 'SDSS'):
 	import params as pa
@@ -19,20 +19,22 @@ else:
 # Get y(k, M) for calculating various power spectra from the halo model
 logkmin = -6; kpts =40000; logkmax = 5; Mmax = 15;
 kvec_FT = np.logspace(logkmin, logkmax, kpts)
-#kvec_short = np.logspace(np.log10(kvec_FT[0]), np.log10(kvec_FT[-1]), 40)
-#Mhalo = np.logspace(10., Mmax, 30)
-#y_ls = shared.gety_ls(Mhalo, kvec_short, survey)
-#y_ldm = shared.gety_ldm(Mhalo, kvec_short, survey)
-#print("y computed")
+kvec_short = np.logspace(np.log10(kvec_FT[0]), np.log10(kvec_FT[-1]), 40)
+Mhalo = np.logspace(10., Mmax, 30)
+y_ls = shared.gety_ls(Mhalo, kvec_short, survey)
+y_ldm = shared.gety_ldm(Mhalo, kvec_short, survey)
+print("y computed")
 
 # Get M* low for the Zu & Mandelbaum halo model.
-#tot_nsrc = shared.vol_dens(pa.fsky, pa.N_shapes, survey)
-#Mstarlow = shared.get_Mstar_low(survey, tot_nsrc)
-#print("Mstar low computed")
+tot_nsrc = shared.vol_dens(pa.fsky, pa.N_shapes, survey)
+Mstarlow = shared.get_Mstar_low(survey, tot_nsrc)
+print("Mstar low computed")
 
 # Get the 1halo term for lxs averaged over z (save to file)
-#shared.get_Pkgg_1halo(kvec_FT, pa.fsky, Mhalo, kvec_short, y_ls, y_ldm, Mstarlow, endfile, survey)
-#print("Pkgg 1halo computed")
+shared.get_Pkgg_1halo(kvec_FT, pa.fsky, Mhalo, kvec_short, y_ls, y_ldm, Mstarlow, endfile, survey)
+print("Pkgg 1halo computed")
+
+exit()
 
 # Get the 1halo term for lxs at individual z's for the Boost (save to file)
 #shared.get_Pkgg_1halo_multiz(kvec_FT, pa.fsky, Mhalo, kvec_short, y_ls, y_ldm, Mstarlow, endfile, survey)

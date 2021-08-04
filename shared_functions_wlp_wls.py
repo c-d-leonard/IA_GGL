@@ -104,7 +104,7 @@ def get_Ai(survey):
 	
     return Ai
 
-def window(survey, sample):
+def window(survey, sample='null'):
     """ Get window function for w_{l+} and w_{ls} 2-halo terms. In both cases, this is the window functions for LENSES x SOURCES. """
     """ Old note: Note I am just going to use the standard cosmological parameters here because it's a pain and it shouldn't matter too much. """
 	
@@ -131,7 +131,7 @@ def window(survey, sample):
         print("Using perturbed source redshift distribution in window()")
         z_s, dNdz_2 = setup.dNdz_perturbed(sample, pa.sigma, pa.del_z)
     else:    	
-        (z, dNdz_2) = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, pa.zLmin, pa.zLmax, 100, survey)
+        (z, dNdz_s_extend) = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, pa.zLmin, pa.zLmax, 100, survey)
         
         
     if survey == 'DESY1':
@@ -175,7 +175,7 @@ def window(survey, sample):
         
     else:
         z = np.linspace(pa.zLmin, pa.zLmax, 100)
-        dNdz_1 = setup.get_dNdzL(z, survey)
+        dNdz_l_extend = setup.get_dNdzL(z, survey)
 	
     #chi = setup.com(z, survey, pa.cos_par_std)
     # 'true' cosmological parameters because this is a fiducial signal.
@@ -708,12 +708,20 @@ def get_Pkgg_1halo(kvec_ft, fsky, Mhalo, kvec_short, y_src, y_lens, Mstarlow, en
         Ncen_src	= 	get_Ncen_Zu(Mhalo, Mstarlow, survey) # Zu & Mandelbaum 2015
         Nsat_src_tot 	= 	get_Nsat_Zu(Mhalo, Mstarlow, 'tot', survey)  	# Zu & Mandelbaum 2015 - the halo occupation including all satelite galaxies
         Nsat_src_wlens	= 	get_Nsat_Zu(Mhalo, Mstarlow, 'with_lens', survey)  	# Zu & Mandelbaum 2015 - the halo occupation including only those satelite galaxies which share halos with central lenses
+        
+        print("Ncen_src=", Ncen_src)
+        print("Nsat_src_tot=", Nsat_src_tot)
+        print("Nsat_src_wlens=", Nsat_src_wlens)
 		
     # Get the number density predicted by the halo model
     tot_ng = np.zeros(len(z)); tot_nsrc=np.zeros(len(z))
+    tot_cen = np.zeros(len(z)); tot_sat = np.zeros(len(z))
     for zi in range(0, len(z)):
         tot_ng[zi] = scipy.integrate.simps( ( Ncen_lens + Nsat_lens) * HMF[:, zi], np.log10(Mhalo / (pa.HH0_s/100.) ) ) 
         tot_nsrc[zi] = scipy.integrate.simps(( Ncen_src + Nsat_src_tot) * HMF[:, zi], np.log10(Mhalo / (pa.HH0/100.) ) )  # all the sources in the sample 
+        tot_cen[zi] = scipy.integrate.simps( ( Ncen_src) * HMF[:, zi], np.log10(Mhalo / (pa.HH0_s/100.) ) ) 
+        tot_sat[zi] = scipy.integrate.simps( ( Nsat_src_tot) * HMF[:, zi], np.log10(Mhalo / (pa.HH0_s/100.) ) ) 
+        
 	
     # We assume Poisson statistics because it doesn't make much difference for us..
     NcNs = Ncen_lens * Nsat_src_wlens #NcenNsat(1., Ncen_lens, Nsat_src_wlens) # The average number of central-satelite pairs in a halo of mass M # Count only the sources that actually share halos with lenses. 
@@ -729,6 +737,9 @@ def get_Pkgg_1halo(kvec_ft, fsky, Mhalo, kvec_short, y_src, y_lens, Mstarlow, en
     Pkgg_zavg = np.zeros(len(kvec_short))
     for ki in range(0,len(kvec_short)):
         Pkgg_zavg[ki] = scipy.integrate.simps(W_z * Pkgg[ki, :], z)
+    
+    print("tot_cen=", scipy.integrate.simps(W_z*tot_cen, z))
+    print("tot_sat=", scipy.integrate.simps(W_z*tot_sat, z))
 	
     # Get the answer in terms of the full k vector for fourier transforming.
     Pkgg_interp = scipy.interpolate.interp1d(np.log(kvec_short), np.log(Pkgg_zavg))

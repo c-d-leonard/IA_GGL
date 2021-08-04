@@ -373,11 +373,11 @@ def dNdz_perturbed(sample, sigma, deltaz):
     
     norm_original = scipy.integrate.simps(dNdz_mc, z_mc)
     
-    plt.figure()
+    """plt.figure()
     plt.plot(z_mc, dNdz_mc / norm_original, label='original')
     plt.plot(z_new, dNdz_new, label='perturbed')
     plt.legend()
     plt.savefig('./perturbed_dNdz_sample='+sample+'.png')
-    plt.close()
+    plt.close()"""
    
     return z_new, dNdz_new

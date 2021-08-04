@@ -30,6 +30,7 @@ def sum_weights_DESY1(source_sample, z_cut):
     chiL = ccl.comoving_radial_distance(cosmo_a, 1./(1.+zL)) * (pa.HH0_a / 100.) # CCL returns in Mpc but we want Mpc/h
 	
     # Load weighted source redshift distributions
+    """
     if (source_sample == 'A'):    
         # Load the weighted dNdz_mc for source sample A:
         z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_centres.dat')
@@ -43,10 +44,12 @@ def sum_weights_DESY1(source_sample, z_cut):
     else:
         print("We do not have support for that z sample cut. Exiting.")
         exit()
+    """
     
         
-    #print("Using perturbed source redshift distribution in sum_weights for F")
-    #z_mc, dNdz_mc = setup.dNdz_perturbed(source_sample, pa.sigma, pa.del_z)
+    print("Using perturbed source redshift distribution in sum_weights for F")
+    print("HERE PZ PARAMS")
+    z_mc, dNdz_mc = setup.dNdz_perturbed(source_sample, pa.sigma, pa.del_z)
    
     if z_cut=='nocut':
     
@@ -89,9 +92,9 @@ def get_boost(theta_vec, sample):
 
 	#Boost = np.loadtxt('./txtfiles/boosts/Boost_'+str(sample)+'_survey='+str(SURVEY)+'_'+endfile+'.txt') + np.ones((len(theta_vec)))
 	
-	print("Loading boost from previous run")
-	Boost = np.loadtxt('./txtfiles/boosts/Boost_'+str(sample)+'_survey='+str(SURVEY)+'_true-redshifts-different_sigma='+str(pa.sigma)+'deltaz='+str(pa.del_z)+'.txt') + np.ones((len(theta_vec)))
-	#Boost = np.loadtxt('./txtfiles/boosts/Boost_'+str(sample)+'_survey='+str(SURVEY)+'_test_angular_projection.txt') + np.ones((len(theta_vec)))
+	#print("Loading boost from previous run")
+	#Boost = np.loadtxt('./txtfiles/boosts/Boost_'+str(sample)+'_survey='+str(SURVEY)+'_true-redshifts-different_sigma='+str(pa.sigma)+'deltaz='+str(pa.del_z)+'.txt') + np.ones((len(theta_vec)))
+	Boost = np.loadtxt('./txtfiles/boosts/Boost_'+str(sample)+'_survey='+str(SURVEY)+'_test_angular_projection.txt') + np.ones((len(theta_vec)))
 
 	return Boost
 	
@@ -157,16 +160,17 @@ def get_SigmaC_avg(photoz_sample):
 
     
     # Load weighted source distributions			
-    if(photoz_sample == 'B'):
+    """if(photoz_sample == 'B'):
         z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_centres.dat')
         dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_weighted')
         
     elif(photoz_sample=='A'):
         z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_centres.dat')
-        dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_weighted')
+        dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_weighted')"""
         
     #print("Using perturbed source redshift distribution in SigmaC_avg")
-    #z_mc, dNdz_mc = setup.dNdz_perturbed(photoz_sample, pa.sigma, pa.del_z)
+    print("HERE PZ PARAMS")
+    z_mc, dNdz_mc = setup.dNdz_perturbed(photoz_sample, pa.sigma, pa.del_z)
         
     norm_mc = scipy.integrate.simps(dNdz_mc, z_mc)  
     
@@ -368,17 +372,17 @@ def get_gammat_purelensing(DeltaSigma, sample, limtype='pz'):
     elif limtype=='truez':
         # The limits are in terms of spec-z
      
-        """
+        
         if(sample == 'B'):
             z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_centres.dat')
             dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_weighted')
         
         elif(sample=='A'):
             z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_centres.dat')
-            dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_weighted')"""
+            dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_weighted')
             
-        print("Using perturbed source redshift distribution for gammat pure lensing")
-        z_mc, dNdz_mc = setup.dNdz_perturbed(sample, pa.sigma, pa.del_z)
+        #print("Using perturbed source redshift distribution for gammat pure lensing")
+        #z_mc, dNdz_mc = setup.dNdz_perturbed(sample, pa.sigma, pa.del_z)
         
         norm_mc = scipy.integrate.simps(dNdz_mc, z_mc)   
     
@@ -582,11 +586,10 @@ def get_gammaIA_estimator():
     gammat_a_lens = get_gammat_purelensing(DeltaSigma, 'A', limtype='truez')
     gammat_b_lens = get_gammat_purelensing(DeltaSigma, 'B', limtype='truez')
     
+    """
     print("Get gamma IA for fiducial")
     gamma_IA_A = get_IA_gammat_term("A", F_a, B_a)
     gamma_IA_B = get_IA_gammat_term("B", F_b, B_b)
-    
-    exit()
     
     plt.figure()
     plt.loglog(theta_vec, gamma_IA_A, 'o', label='IA')
@@ -609,7 +612,10 @@ def get_gammaIA_estimator():
     plt.close()
     
     gammat_a = gammat_a_lens + gamma_IA_A
-    gammat_b = gammat_b_lens + gamma_IA_B
+    gammat_b = gammat_b_lens + gamma_IA_B"""
+    
+    gammat_a = gammat_a_lens
+    gammat_b = gammat_b_lens
     
     # Assemble estimator
     gamma_IA_est = (gammat_b * SigB - gammat_a*SigA) / ( (B_b - 1 + F_b)*SigB - (B_a - 1 + F_a)*SigA)
@@ -721,9 +727,18 @@ else:
 #print("endfile=", endfile)
 #print("dNdztruepar=", pa.dNdzpar_true)
 
+sigz = np.linspace(0.01,0.1, 11)
+delz = np.linspace(-0.18, 0.1, 29)
+
+print(sigz)
+print(delz)
+
+exit()
+
+print("HERE PZ PARAMS") 
 #endfile = 'assumed_OmM='+str(pa.OmC_a+pa.OmB)+'_H0='+str(pa.HH0_a)
-#endfile = 'true-redshifts-different_sigma='+str(pa.sigma)+'deltaz='+str(pa.del_z)
-endfile = 'no_z_perturb_fidIA'
+endfile = 'no_fidIA_measured-redshifts-wrong_sigma='+str(pa.sigma)+'deltaz='+str(pa.del_z)
+#endfile = 'no_z_perturb_fidIA'
 	
 # Set up the 'true' and 'assumed' cosmology objects.
 #'true' parameters feed into gammat, boost. 'assumed' parameters feed into the distances which go into calculating sigma_crit and F.
@@ -733,18 +748,20 @@ cosmo_a = ccl.Cosmology(Omega_c = pa.OmC_a, Omega_b = pa.OmB, h = (pa.HH0_a/100.
 # Set up projected bins
 
 # Option to provide theta min and theta max and convert to rp for a given effective lens redshift:
-theta_min = 0.1
-theta_max = 200
+#theta_min = 0.1
+#theta_max = 200
+theta_vec = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/theta_mid.txt')
 # Using 'true' parameters here because I am only changing to rp for convenience. Change back before reporting anything.
-rp_min = setup.arcmin_to_rp(theta_min, pa.zeff,cosmo_t)
-rp_max = setup.arcmin_to_rp(theta_max, pa.zeff,cosmo_t)
-print("rp_min=", rp_min, "rp_max=", rp_max)
+#rp_min = setup.arcmin_to_rp(theta_min, pa.zeff,cosmo_t)
+#rp_max = setup.arcmin_to_rp(theta_max, pa.zeff,cosmo_t)
+#print("rp_min=", rp_min, "rp_max=", rp_max)
+rp_cent = setup.arcmin_to_rp(theta_vec, pa.zeff,cosmo_t)
 
-rp_bins 	= 	setup.setup_rp_bins(rp_min, rp_max, pa.N_bins)
-rp_cent	=	setup.rp_bins_mid(rp_bins)
+#rp_bins 	= 	setup.setup_rp_bins(rp_min, rp_max, pa.N_bins)
+#rp_cent	=	setup.rp_bins_mid(rp_bins)
 
-theta_edges = setup.setup_rp_bins(theta_min, theta_max, pa.N_bins)
-theta_vec = setup.rp_bins_mid(theta_edges)
+#theta_edges = setup.setup_rp_bins(theta_min, theta_max, pa.N_bins)
+#theta_vec = setup.rp_bins_mid(theta_edges)
 theta_radians = theta_vec / 60.*np.pi/180.
 
 """z_B, dNdz_pert_B_raw = setup.dNdz_perturbed('B', pa.sigma, pa.del_z)
