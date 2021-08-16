@@ -6,28 +6,28 @@
 # Get 1halo and 2halo power spectrum terms that will need FFTing
 #python run_local_1.py
 
-# UPDATE - switch the 2halo cases to ccl?
 # FFT and save the results.
-#cp ./txtfiles/1halo_terms/P*test.txt ~/Software/FFTLog/test/
-cp ./txtfiles/halofit_Pk/P*test.txt ~/Software/FFTLog/test/
+cp ./txtfiles/1halo_terms/P*with1halo.txt ~/Software/FFTLog/test/
+cp ./txtfiles/halofit_Pk/P*with1halo.txt ~/Software/FFTLog/test/
 cd ~/Software/FFTLog/
 
 #make test_gg_1h.out
-#make test_gg_1h_multifile.out
-#make test_gm_1h.out
+make test_gg_1h_multifile.out
+make test_gm_1h.out
 make test_gm_2h.out
 make test_gg_2h_multifile.out
 make clean
 
 cd ~/Research/IA_measurement_GGL/IA_GGL/
-#mv ~/Software/FFTLog/xi*1h*ext_theta.txt ./txtfiles/xi_1h_terms/
-mv ~/Software/FFTLog/xi*2h*test.txt ./txtfiles/halofit_xi/
-rm ~/Software/FFTLog/test/P*_test.txt
+mv ~/Software/FFTLog/xi*1h*with1halo.txt ./txtfiles/xi_1h_terms/
+mv ~/Software/FFTLog/xi*2h*with1halo.txt ./txtfiles/halofit_xi/
+rm ~/Software/FFTLog/test/P*_with1halo.txt
 
 exit 1
 
 # Get the boost
 python get_boosts_full.py
+exit 1
 
 python test_shearratio_pz.py
 

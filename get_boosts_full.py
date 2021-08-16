@@ -11,7 +11,7 @@ import shared_functions_wlp_wls as shared
 import pyccl as ccl
 
 SURVEY = 'DESY1'
-endfile = 'test'
+endfile = 'with1halo'
 
 if (SURVEY=='SDSS'):
     print("RUNNING WITH TEST VALUE FOR SPEC Z")
@@ -26,7 +26,7 @@ else:
     
 # Set up rp vector
 
-cosmo = ccl.Cosmology(Omega_c = pa.OmC, Omega_b = pa.OmB, h = (pa.HH0/100.), sigma8 = pa.sigma8, n_s=pa.n_s)
+cosmo = ccl.Cosmology(Omega_c = pa.OmC_t, Omega_b = pa.OmB, h = (pa.HH0_t/100.), sigma8 = pa.sigma8, n_s=pa.n_s)
 
 # Option to provide theta min and theta max and convert to rp for a given effective lens redshift:
 theta_min = 0.1
@@ -177,9 +177,9 @@ xi_2h_mm = np.zeros((40000, len(zLvec)))
 xi_1h = np.zeros((40000, len(zLvec)))
 for zi in range(0,len(zLvec)):
     stringz = '{:1.12f}'.format(zLvec[zi])
-    print("IMPORTING SPECIFIC XI TERMS FOR TEST")
-    (r, xi_2h_mm[:, zi]) = np.loadtxt('./txtfiles/halofit_xi/xi2h_z='+stringz+'_ext_theta.txt', unpack=True)
-    (r, xi_1h[:, zi]) = np.loadtxt('./txtfiles/xi_1h_terms/xi1h_ls_z='+stringz+'_ext_theta.txt', unpack=True)
+    #print("IMPORTING SPECIFIC XI TERMS FOR TEST")
+    (r, xi_2h_mm[:, zi]) = np.loadtxt('./txtfiles/halofit_xi/xi2h_z='+stringz+'_'+endfile+'.txt', unpack=True)
+    (r, xi_1h[:, zi]) = np.loadtxt('./txtfiles/xi_1h_terms/xi1h_ls_z='+stringz+'_'+endfile+'.txt', unpack=True)
     for ri in range(0,len(r)):
         if r[ri]>3:
             xi_1h[ri,zi] = 0.

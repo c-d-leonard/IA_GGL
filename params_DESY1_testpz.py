@@ -49,6 +49,12 @@ OmR_a	=	2.47*10**(-5)/(HH0_a/100.)**2
 OmN_t	=	Nnu*(7./8.)*(4./11.)**(4./3.)*OmR_t
 OmN_a	=	Nnu*(7./8.)*(4./11.)**(4./3.)*OmR_a
 
+Area    = 1321. # degrees
+fsky    = Area / 41253  
+#n_source =    #The EFFECTIVE number density of sources in the sample per square ARCMINUTE - 1.2 is unweighted. This number is from Rachel in an email June 7.
+#N_shapes    = 	Area_l * n_source * 3600. # Number of galaxies in the shape sample.   
+N_shapes = 10. *10**6 # this is a totally handwaving approximation based on 21.9 M galaxies in total in the im3shape sample then redshift cut. Waiting for real number from Sara. 
+
 """# Parameters associated with the sample / shape noise calcuation 
 e_rms 			= 	0.21
 e_rms_Bl_a 		= 	e_rms # rms ellipticity of sample a, Blazek method   # from Reyes et al. 2012 (reports in terms of distortion = 0.36)
@@ -124,18 +130,53 @@ delta_z = 0.17 """
 #n_s_l = 0.95
 
 # (From Reid & Spergel paper)
-#HH0_l = 70.1
-#OmB_l = 0.0462
-#OmC_l = 0.2792-OmB_l
-#sigma8_l = 0.817
-#n_s_l = 0.960
+HH0_l = 70.1
+OmB_l = 0.0462
+OmC_l = 0.2792-OmB_l
+sigma8_l = 0.817
+n_s_l = 0.960
+
+HH0_s = 72.0
+OmC_s = 0.216
+OmB_s = 0.044
+sigma8_s = 0.77
+n_s_s = 0.95
 
 # Here are the parameters from the HOD from Reid and Spergel 2008 (0811.1025). For SDSS LRG sample 0.16<z<0.36.
-#Mcut_reid = 5.0 * 10**13 # Msol
-#M1_reid = 4.95 * 10**14 # Msol
-#alpha_reid = 1.035
-#Mmin_reid = 8.05*10**13 # Msol
-#sigLogM_reid = 0.7
+Mcut_reid = 5.0 * 10**13 # Msol
+M1_reid = 4.95 * 10**14 # Msol
+alpha_reid = 1.035
+Mmin_reid = 8.05*10**13 # Msol
+sigLogM_reid = 0.7
+
+#### Parameters of the HOD model, taken from Zu & Mandelbaum 2015, 1505.02781.  #####
+# Ncen params: these refer to the central galaxies for SDSS MGS, which I think is close enough to SDSS LRGs to be okay to map to our case:
+sigMs = 0.50
+eta = -0.04
+M1 = 10**(12.10)
+
+# Nsat params: these refer at the moment to satellite occupation for SDSS MGS galaxies, which are much brighter than the SDSS shapes sample we care about...
+Bsat = 8.98
+beta_sat =0.90
+Bcut = 0.86
+beta_cut = 0.41
+alpha_sat = 1.00
+
+# f_SHMR parameters: these are used in getting Ncen and Nsat. They are probably okay for Ncen but perhaps not for Nsat. We may need to have two sets of these parameters.
+delta = 0.42
+gamma= 1.21
+Mso = 10**(10.31)
+beta = 0.33
+
+# Here are the parameters for the CMASS HOD model of More et al. 2014 1407.1856. This is higher redshift so it's a better approximation for DESI
+kappa_CMASS = 1.25
+Mmin_CMASS = 10**(13.13)
+M1_CMASS = 10**(14.21)
+alpha_CMASS = 1.13
+alphainc_CMASS = 0.44
+Minc_CMASS = 10**(13.57)
+siglogM_CMASS = np.sqrt(0.22)
+
 
 # Fiducial intrinsic alignment parameters (Singh et al. values)
 A_IA_amp = 4.9

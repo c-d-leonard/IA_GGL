@@ -64,13 +64,18 @@ Boost_file_b = './txtfiles/boosts/Boost_B_survey='+SURVEY+'_'+endfile+'.txt'
 zLvec = np.loadtxt('./z_list_DESY1.txt')
 #print("zLvec=", zLvec)
 
-# Import the correlation function, for the 2halo term.
+# Import the correlation function
+xi_1h = np.zeros((40000, len(zLvec)))
 xi_2h_mm = np.zeros((40000, len(zLvec)))
 for zi in range(0,len(zLvec)):
     stringz = '{:1.12f}'.format(zLvec[zi])
     (r, xi_2h_mm[:, zi]) = np.loadtxt('./txtfiles/halofit_xi/xi2h_z='+stringz+'_'+endfile+'.txt', unpack=True)
     #(r, xi_2h_mm[:, zi]) = np.loadtxt('./txtfiles/halofit_xi/xi2h_z='+stringz+'_test.txt', unpack=True)
-xi = pa.bd* pa.bs * xi_2h_mm
+    (r, xi_1h[:, zi]) = np.loadtxt('./txtfiles/xi_1h_terms/xi1h_ls_z='+stringz+'_'+endfile+'.txt', unpack=True)
+    for ri in range(0,len(r)):
+        if r[ri]>3:
+            xi_1h[ri,zi] = 0.
+xi = xi_1h + pa.bd* pa.bs * xi_2h_mm
 
 # Get the comoving distance associated to the lens redshift
 chi_vec = np.zeros(len(zLvec))
