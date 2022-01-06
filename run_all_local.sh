@@ -6,9 +6,11 @@
 # Get 1halo and 2halo power spectrum terms that will need FFTing
 #python run_local_1.py
 
+#exit()
+
 # FFT and save the results.
-cp ./txtfiles/1halo_terms/P*with1halo.txt ~/Software/FFTLog/test/
-cp ./txtfiles/halofit_Pk/P*with1halo.txt ~/Software/FFTLog/test/
+cp ./txtfiles/1halo_terms/P*Planck18pars.txt ~/Software/FFTLog/test/
+cp ./txtfiles/halofit_Pk/P*Planck18pars.txt ~/Software/FFTLog/test/
 cd ~/Software/FFTLog/
 
 #make test_gg_1h.out
@@ -19,9 +21,9 @@ make test_gg_2h_multifile.out
 make clean
 
 cd ~/Research/IA_measurement_GGL/IA_GGL/
-mv ~/Software/FFTLog/xi*1h*with1halo.txt ./txtfiles/xi_1h_terms/
-mv ~/Software/FFTLog/xi*2h*with1halo.txt ./txtfiles/halofit_xi/
-rm ~/Software/FFTLog/test/P*_with1halo.txt
+mv ~/Software/FFTLog/xi*1h*Planck18pars.txt ./txtfiles/xi_1h_terms/
+mv ~/Software/FFTLog/xi*2h*Planck18pars.txt ./txtfiles/halofit_xi/
+rm ~/Software/FFTLog/test/P*_Planck18pars.txt
 
 exit 1
 

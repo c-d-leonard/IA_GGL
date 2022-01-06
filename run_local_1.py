@@ -2,7 +2,7 @@ import numpy as np
 import shared_functions_wlp_wls as shared
 
 survey = 'DESY1'
-endfile = 'with1halo'
+endfile = 'Planck18pars'
 
 if (survey == 'SDSS'):
 	import params as pa
@@ -43,7 +43,7 @@ shared.get_Pkgm_1halo(kvec_FT, Mhalo, kvec_short, y_ldm, endfile, survey)
 print("Pkgm 1halo computed")
 
 print("Run 2 halo terms")
-#shared.get_Pkgg_2h_multiz(kvec_FT, endfile, survey)
+shared.get_Pkgg_2h_multiz(kvec_FT, endfile, survey)
 print("Pkgg 2halo multiz and z averaged computed")
 
 

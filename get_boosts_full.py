@@ -11,7 +11,7 @@ import shared_functions_wlp_wls as shared
 import pyccl as ccl
 
 SURVEY = 'DESY1'
-endfile = 'with1halo'
+endfile = 'Planck18pars'
 
 if (SURVEY=='SDSS'):
     print("RUNNING WITH TEST VALUE FOR SPEC Z")

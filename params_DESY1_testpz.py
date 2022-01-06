@@ -30,18 +30,28 @@ c=2.99792458*10**(8)
 # Cosmological parameters. Using the same ones that Sara used as fiducial values in her analysis (as a default).
 # Need to work out how to vary these for the shear-ratio test.
 Nnu	=	3.046    # Massless neutrinos, standard value
-OmB	=	0.05 
+#OmB	=	0.05 
+OmB     =      0.0494  # From Planck 2018 parameters (Plik best fit values from table 1 of 1807.06209)
 H0	=	10**(5)/c
-sigma8  =      0.817 	# From DES Y1
-n_s	=	0.9652
+sigma8  = 0.812  # From Planck 2018 parameters (Plik best fit values from table 1 of 1807.06209)
+n_s     = 0.96605 # From Planck 2018 parameters (Plik best fit values from table 1 of 1807.06209)
+#sigma8  =      0.817 	# From DES Y1
+#n_s	=	0.9652
 
 # For HH0 and OmM, we set up two versions so we can vary to see if assumed cosmology will affect measurement. 
 # Subscript t is for true i.e. goes into boost and pure gammat.
 # Subscript a is for assumed i.e. goes into Sigmacrit and F in computing distances.
-HH0_t 	=   	72.0     # Default value Sara used
-OmM_t	= 	0.3	 # Default value Sara used
-HH0_a	=	72.0
-OmM_a	=	0.3
+#HH0_t 	=   	72.0     # Default value Sara used
+#OmM_t	= 	0.3	 # Default value Sara used
+#HH0_a	=	68.0
+#OmM_a	=	0.28
+
+
+# Use Planck 2018 parameters (Plik best fit values from table 1 of 1807.06209):
+HH0_t  =       67.32  
+HH0_a  =       72.0
+OmM_t  =       0.3158
+OmM_a  =       0.28
 OmC_t	=	OmM_t-OmB 
 OmC_a	=	OmM_a-OmB 
 OmR_t	=	2.47*10**(-5)/(HH0_t/100.)**2
@@ -97,14 +107,14 @@ pzpar_fid 	=	[sigz_fid] # Make this a list to make it more generic to pass aroun
 zeff 	= 	0.37  # Need to get this manually
 zLmin	= 	0.301  
 zLmax	=	0.448  
-dNdzL_file	=  '/DESY1_quantities_fromSara/z_dNdz_lenses.dat'
+dNdzL_file	=  '/DESY1_quantities_fromSara/10KsourceBins_1KlensBins/z_dNdz_lenses_highres.dat'
 
 # Parameters for testing what happens when you get the redshifts wrong
-sigma   = 0.1
-del_z   = -0.18
+#sigma   = 0.1
+#del_z   = -0.18
 
 # MAKE SURE I'M USING THE RIGHT VALUES HERE
-close_cut = 100.# Mpc/h # The maximum separation from a lens to consider part of `rand-close', in Mpc/h. Waiting on Jonathan for this value.
+#close_cut = 100.# Mpc/h # The maximum separation from a lens to consider part of `rand-close', in Mpc/h. Waiting on Jonathan for this value.
 """#Blazek et al. case
 zsmin 	=	0.02
 zsmax 	= 	3.0

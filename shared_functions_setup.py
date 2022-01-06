@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import scipy.signal
 import astropy.convolution
 import pyccl as ccl
+import scipy.stats
 
 # Functions to set up the rp bins
 
@@ -335,37 +336,45 @@ def get_fred_ofz(z, survey):
 	
 	
 def arcmin_to_rp(theta,zeff, cosmo):
-    chieff = ccl.comoving_radial_distance(cosmo,1./(1.+zeff)) 
+    chieff = ccl.comoving_radial_distance(cosmo,1./(1.+zeff)) #MPc 
     rads = theta * np.pi / 60. / 180.
 
     rp = rads * chieff
 
     return rp
     
-def dNdz_perturbed(sample, sigma, deltaz):
-    """ Convolves the source dNdz with a Gaussian of scatter sigma and mean redshift bias deltaz """
+def dNdz_perturbed(sample, F_or_SigC, sigma, deltaz):
+    """ Convolves the source dNdz with a Gaussian of scatter sigma and mean redshift bias deltaz 
+    F_or_SigC is to indicate if we should use the high res dNdz (for F) or not"""
     
     # Load the dNdz for the given sample:			
     if(sample == 'B'):
-        z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_centres.dat')
-        dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_weighted')
+        if(F_or_SigC=='SigC'):
+            z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/10KsourceBins_1KlensBins/planck2018_params/bin1_centres.dat')
+            dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/10KsourceBins_1KlensBins/planck2018_params/source1Binned')
+        elif(F_or_SigC=='F'):
+            z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/10KsourceBins_1KlensBins/planck2018_params/bin1_centres.dat')
+            dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/10KsourceBins_1KlensBins/planck2018_params/source1Binned')
         
     elif(sample=='A'):
-        z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_centres.dat')
-        dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_weighted')
+        if (F_or_SigC=='SigC'):
+        
+            z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/10KsourceBins_1KlensBins/planck2018_params/bin0_centres.dat')
+            dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/10KsourceBins_1KlensBins/planck2018_params/source0Binned')
+        elif(F_or_SigC=='F'):
+            z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/10KsourceBins_1KlensBins/planck2018_params/bin0_centres.dat')
+            dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/10KsourceBins_1KlensBins/planck2018_params/source0Binned')
         
     # Define a new redshift vector exactly the same as z_mc just to facilitate the convolution
     z_new = z_mc
     
-    # Set up a Gaussian to do this convolution
-    Gauss = np.zeros((len(z_mc), len(z_new)))
+    Gauss = [0]*len(z_mc)
     for zmi in range(0,len(z_mc)):
-        for zni in range(0,len(z_new)):
-            Gauss[zmi, zni] = np.exp( - (z_new[zni]- z_mc[zmi]-deltaz)**2 / (2.*sigma**2))
-            
+        Gauss[zmi] = scipy.stats.multivariate_normal.pdf(z_new, mean = z_mc[zmi]+deltaz, cov=sigma)
+
     numerator = np.zeros(len(z_new))
     for zni in range(0, len(z_new)):
-        numerator[zni] = scipy.integrate.simps(dNdz_mc * Gauss[:, zni], z_mc)
+        numerator[zni] = scipy.integrate.simps(dNdz_mc * Gauss[zni], z_mc)
     
     denominator = scipy.integrate.simps(numerator, z_new)
     

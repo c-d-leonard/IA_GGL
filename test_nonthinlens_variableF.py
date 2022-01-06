@@ -17,40 +17,50 @@ np.set_printoptions(linewidth=240)
 
 ################### THEORETICAL VALUES FOR FRACTIONAL ERROR CALCULATION ########################333
 	
-def sum_weights_DESY1(source_sample, z_cut, sigmaz, deltaz):
+def sum_weights_DESY1(source_sample, z_cut):
     """ Returns the sum over weights for each projected radial bin. 
     photoz_sample = 'A', 'B', or 'full'
     specz_cut = 'close', or 'nocut'
     """
 
     # Load lens redshift distribution from file
-    #zL, dNdzL = np.loadtxt('./txtfiles/'+pa.dNdzL_file, unpack=True)
-    zL, dNdzL = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/10KsourceBins_1KlensBins/planck2018_params/z_dNdz_lenses_highres.dat', unpack=True)
+    zL, dNdzL = np.loadtxt('./txtfiles/'+pa.dNdzL_file, unpack=True)
     
+    # Use the assumed parameters because this is for the cut on F which is an analysis choice we make.
+    chiL = ccl.comoving_radial_distance(cosmo_a, 1./(1.+zL)) * (pa.HH0_a / 100.) # CCL returns in Mpc but we want Mpc/h
 	
     # Load weighted source redshift distributions
     
     if (source_sample == 'A'):    
         # Load the weighted dNdz_mc for source sample A:
-        #print("Using perturbed source redshift distribution in sum_weights for F for sample A")
-        z_mc, dNdz_mc = setup.dNdz_perturbed(source_sample, 'F', sigmaz, deltaz)
-        
-        # Use higher resolution source samples for r_p dependent calculation
-        #z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/10KsourceBins_1KlensBins/bin0_centres.dat')
-        #dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/10KsourceBins_1KlensBins/source0Binned')
+        z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_centres.dat')
+        dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_weighted')
         							
     elif(source_sample == 'B'): 
         # Load the weighted dNdz_mc for source sample B:
-        #z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_centres.dat')
-        #dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_weighted')
-        
-        # Use higher resolution source samples for r_p dependent calculation
-        z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/10KsourceBins_1KlensBins/planck2018_params/bin1_centres.dat')
-        dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/10KsourceBins_1KlensBins/planck2018_params/source1Binned')
+        z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_centres.dat')
+        dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_weighted')
             
     else:
         print("We do not have support for that z sample cut. Exiting.")
         exit()
+    
+    
+    """
+    if (source_sample == 'A'):    
+        # Load the weighted dNdz_mc for source sample A:
+        print("Using perturbed source redshift distribution in sum_weights for F for sample A")
+        z_mc, dNdz_mc = setup.dNdz_perturbed(source_sample, sigmaz, deltaz)
+        							
+    elif(source_sample == 'B'): 
+        # Load the weighted dNdz_mc for source sample B:
+        z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_centres.dat')
+        dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_weighted')
+            
+    else:
+        print("We do not have support for that z sample cut. Exiting.")
+        exit()
+    """
 
     if z_cut=='nocut':
     
@@ -58,36 +68,29 @@ def sum_weights_DESY1(source_sample, z_cut, sigmaz, deltaz):
         sum_source = scipy.integrate.simps(dNdz_mc, z_mc)
         sum_ans = sum_lens*sum_source
         
-        #print("sum_ans=", sum_ans)
-        
     elif z_cut=='close':
-        
-        # Use the assumed parameters because this is for the cut on F which is an analysis choice we make.
-        chiL = ccl.comoving_radial_distance(cosmo_a, 1./(1.+zL)) # Keep this in MPc for convenience
-          
+    
         # We implement here a r_p dependent projection for F where for r_p< 2 Mpc we integrate out to 2 Mpc and for r_p>2 Mpc we integrate to r_p
-        sum_ans = np.zeros(len(rp_cent_a))
-        for ri in range(0,len(rp_cent_a)):
-            if (rp_cent_a[ri] /(pa.HH0_a / 100.))  <= 2.0: # (use assumed cosmology rp and assumed Hubble to convert because this is an analysis choice)
-                proj_len = 2.0 # MPc
+        sum_ans = np.zeros(len(rp_cent))
+        for ri in range(0,len(rp_cent)):
+            if rp_cent[ri] <= 2.0 * (pa.HH0_t / 100.): # (use true value of h for unit conversion because that is what we used to convert from theta)
+                proj_len = 2.0 * (pa.HH0_t / 100.)
             else:
-                proj_len = rp_cent_a[ri] /(pa.HH0_a / 100.) # MPc
-            #print("rp=", rp_cent[ri], "proj=", proj_len) 
+                proj_len = rp_cent[ri]
+            print("rp=", rp_cent[ri], "proj=", proj_len) 
               
-            chiSmin = ccl.comoving_radial_distance(cosmo_a, 1./(1.+min(z_mc)))  # Also keep in MPc
+            chiSmin = ccl.comoving_radial_distance(cosmo_a, 1./(1.+min(z_mc))) * (pa.HH0_a / 100.) # CCL returns in Mpc but we want Mpc/h
             if (min(chiL)> (proj_len + chiSmin)):
-                zminclose = 1./(ccl.scale_factor_of_chi(cosmo_a, chiL - proj_len)) - 1.
-
+                zminclose = 1./(ccl.scale_factor_of_chi(cosmo_a, (chiL - proj_len)/(pa.HH0_a / 100.))) - 1.
             else:
                 zminclose = np.zeros(len(chiL))
                 for cli in range(0,len(chiL)):
                     if (chiL[cli]>proj_len + chiSmin):
-                        zminclose[cli] = 1./(ccl.scale_factor_of_chi(cosmo_a, chiL[cli]-proj_len))-1.
+                        zminclose[cli] = 1./(ccl.scale_factor_of_chi(cosmo_a, (chiL[cli]-proj_len)/(pa.HH0_a / 100.)))-1.
                     else:
                         zminclose[cli] = min(z_mc)
 
-            zmaxclose = 1./(ccl.scale_factor_of_chi(cosmo_a, chiL + proj_len)) - 1.  
-            
+            zmaxclose = 1./(ccl.scale_factor_of_chi(cosmo_a, (chiL + pa.close_cut)/(pa.HH0_a / 100.))) - 1.  
            
             sum_close = np.zeros(len(zL))
             for zi in range(0,len(zL)):
@@ -101,8 +104,6 @@ def sum_weights_DESY1(source_sample, z_cut, sigmaz, deltaz):
 	
     return sum_ans
     
-
-
 	
 def get_boost(theta_vec, sample):
 	"""Returns the boost factor in radial bins. propfact is a tunable parameter giving the proportionality constant by which boost goes like projected correlation function (= value at 1 Mpc/h). """
@@ -111,18 +112,18 @@ def get_boost(theta_vec, sample):
 	
 	#print("Loading boost from previous run")
 	#Boost = np.loadtxt('./txtfiles/boosts/Boost_'+str(sample)+'_survey='+str(SURVEY)+'_true-redshifts-different_sigma='+str(pa.sigma)+'deltaz='+str(pa.del_z)+'.txt') + np.ones((len(theta_vec)))
-	Boost = np.loadtxt('./txtfiles/boosts/Boost_'+str(sample)+'_survey='+str(SURVEY)+'_Planck18pars.txt') + np.ones((len(theta_vec)))
+	Boost = np.loadtxt('./txtfiles/boosts/Boost_'+str(sample)+'_survey='+str(SURVEY)+'_with1halo.txt') + np.ones((len(theta_vec)))
 
 	return Boost
 	
-def get_F(photoz_sample, sigmaz, deltaz):
+def get_F(photoz_sample):
 	""" Returns F (the weighted fraction of lens-source pairs from the smooth dNdz which are contributing to IA) """
 
 	# Sum over `rand-close'
-	numerator = sum_weights_DESY1(photoz_sample, 'close', sigmaz, deltaz)
+	numerator = sum_weights_DESY1(photoz_sample, 'close')
 
 	#Sum over all `rand'
-	denominator = sum_weights_DESY1(photoz_sample, 'nocut', sigmaz, deltaz)
+	denominator = sum_weights_DESY1(photoz_sample, 'nocut')
 
 	F = np.asarray(numerator) / np.asarray(denominator)
 
@@ -169,7 +170,7 @@ def get_SigmaC_inv(z_s_, z_l_, cosmo_, HH0_):
                     
     return Sigma_c_inv
     
-def get_SigmaC_avg(photoz_sample, sigmaz, deltaz):
+def get_SigmaC_avg(photoz_sample):
     """ Get the average over Sigma C for the given sample.
     This is only used for the estimated SigmaCinv_avg_inv,
     this function is not called when converting Delta Sigma to gammat
@@ -177,23 +178,21 @@ def get_SigmaC_avg(photoz_sample, sigmaz, deltaz):
 
     
     # Load weighted source distributions			
-    """if(photoz_sample == 'B'):
+    if(photoz_sample == 'B'):
         z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_centres.dat')
         dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_weighted')
         
     elif(photoz_sample=='A'):
         z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_centres.dat')
-        dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_weighted')"""
+        dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_weighted')
         
-    if(photoz_sample == 'B'):
-        z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/10KsourceBins_1KlensBins/planck2018_params/bin1_centres.dat')
-        dNdz_mc =  np.loadtxt('./txtfiles/DESY1_quantities_fromSara/10KsourceBins_1KlensBins/planck2018_params/source1Binned')
+    """if(photoz_sample == 'B'):
+        z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_centres.dat')
+        dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_weighted')
         
     elif(photoz_sample=='A'):
-        #print("Using perturbed source redshift distribution in SigmaC_avg")
-        z_mc, dNdz_mc = setup.dNdz_perturbed(photoz_sample, 'SigC', sigmaz, deltaz)
-        #z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_centres.dat')
-        #dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_weighted')
+        print("Using perturbed source redshift distribution in SigmaC_avg")
+        z_mc, dNdz_mc = setup.dNdz_perturbed(photoz_sample, sigmaz, deltaz)"""
         
     norm_mc = scipy.integrate.simps(dNdz_mc, z_mc)  
     
@@ -402,12 +401,12 @@ def get_gammat_purelensing(DeltaSigma, sample, limtype='pz'):
      
         
         if(sample == 'B'):
-            z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/10KsourceBins_1KlensBins/planck2018_params/bin1_centres.dat')
-            dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/10KsourceBins_1KlensBins/planck2018_params/source1Binned')
+            z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_centres.dat')
+            dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_weighted')
         
         elif(sample=='A'):
-            z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/10KsourceBins_1KlensBins/planck2018_params/bin0_centres.dat')
-            dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/10KsourceBins_1KlensBins/planck2018_params/source0Binned')
+            z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_centres.dat')
+            dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_weighted')
             
         #print("Using perturbed source redshift distribution for gammat pure lensing")
         #z_mc, dNdz_mc = setup.dNdz_perturbed(sample, pa.sigma, pa.del_z)
@@ -566,12 +565,12 @@ def get_IA_gammat_term(sample, F, Boost):
     
     return gamma_IA_not_per_galaxy
 		
-def get_gammaIA_estimator(sigmaz, deltaz):
+def get_gammaIA_estimator():
     """ Calculate gammaIA from the estimator used on data for the Blazek et al. 2012 + F method with gammat, as in Sara's project. """
     
     # Get F factors
-    F_a = get_F('A', sigmaz, deltaz)
-    F_b = get_F('B', sigmaz, deltaz)
+    F_a = get_F('A')
+    F_b = get_F('B')
     
     print("F_a=", F_a)
     print("F_b=", F_b)
@@ -586,19 +585,17 @@ def get_gammaIA_estimator(sigmaz, deltaz):
     
     print("B_a=", B_a)
     print("B_b=", B_b)
-
     
     # Write to file:
     #np.savetxt('./txtfiles/photo_z_test/B_a_'+SURVEY+'_'+endfile+'.txt', B_a)
     #np.savetxt('./txtfiles/photo_z_test/B_b_'+SURVEY+'_'+endfile+'.txt', B_b)
     
     # Get SigmaC
-    SigA = get_SigmaC_avg('A', sigmaz, deltaz)
-    SigB = get_SigmaC_avg('B', sigmaz, deltaz)
+    SigA = get_SigmaC_avg('A')
+    SigB = get_SigmaC_avg('B')
     
     print("Sigma_c_inv_avg_inv A=", SigA)
     print("Sigma_c_inv_avg_inv B=", SigB)
-    
     
     # Write to file:
     np.savetxt('./txtfiles/photo_z_test/SigmaC_a_'+SURVEY+'_'+endfile+'.txt', [SigA])
@@ -611,12 +608,12 @@ def get_gammaIA_estimator(sigmaz, deltaz):
     #np.savetxt('./txtfiles/DeltaSigma_with1halo.txt', DeltaSigma)
     #exit()
     print("Loading Delta Sigma from previous run")
-    DeltaSigma = np.loadtxt('./txtfiles/DeltaSigma_Planck18_pars.txt')
+    DeltaSigma = np.loadtxt('./txtfiles/DeltaSigma_with1halo.txt')
     
     # Get theoretical lensing-only gammat
     gammat_a_lens = get_gammat_purelensing(DeltaSigma, 'A', limtype='truez')
     gammat_b_lens = get_gammat_purelensing(DeltaSigma, 'B', limtype='truez')
-
+    
     """
     print("Get gamma IA for fiducial")
     gamma_IA_A = get_IA_gammat_term("A", F_a, B_a)
@@ -705,7 +702,7 @@ def test_thin_lens_approx(sample):
     # Without the approximation:
     
     # Load Delta Sigma as a function of lens redshift and rp because this takes ages to compute
-    DeltaSigma = np.loadtxt('./txtfiles/DeltaSigma.txt')
+    DeltaSigma = np.loadtxt('./txtfiles/DeltaSigma_with1halo.txt')
     
     no_approx = np.zeros(len(rp_cent))
     for ri in range(len(rp_cent)):
@@ -752,42 +749,30 @@ else:
 	exit()
 
 #sigz = [0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1] #np.linspace(0.01,0.1, 11)
-delz =  [-0.18, -0.17, -0.16, -0.15, -0.14, -0.13, -0.12, -0.11, -0.10, -0.09, -0.08, -0.07, -0.06, -0.05, -0.04, -0.03, -0.02, 
-         -0.01, 0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1] #np.linspace(-0.18, 0.1, 29)
+#delz =  [-0.18, -0.17, -0.16, -0.15, -0.14, -0.13, -0.12, -0.11, -0.10, -0.09, -0.08, -0.07, -0.06, -0.05, -0.04, -0.03, -0.02, 
+#         -0.01, 0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1] #np.linspace(-0.18, 0.1, 29)
 
-sigz= [0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1]
-#delz = [0.08, 0.09, 0.1]
-#sigz = [0.0001]
-#delz = [0.0]
-
-for si in range(0,len(sigz)):
-    for zi in range(0,len(delz)):
-        print("sigz=", sigz[si], "delz=", delz[zi])
         
-        endfile = 'no_fidIA_measured-redshifts-wrong_variableF_Planck18pars_sigma='+str(sigz[si])+'deltaz='+str(delz[zi])
+endfile = 'no_fidIA_assumedpar_OmM='+str(pa.OmC_a+pa.OmB)+'_HH0='+str(pa.HH0_a)
 	
-        # Set up the 'true' and 'assumed' cosmology objects.
-        #'true' parameters feed into gammat, boost. 'assumed' parameters feed into the distances which go into calculating sigma_crit and F.
-        cosmo_t = ccl.Cosmology(Omega_c = pa.OmC_t, Omega_b = pa.OmB, h = (pa.HH0_t/100.), sigma8 = pa.sigma8, n_s=pa.n_s)
-        cosmo_a = ccl.Cosmology(Omega_c = pa.OmC_a, Omega_b = pa.OmB, h = (pa.HH0_a/100.), sigma8 = pa.sigma8, n_s=pa.n_s)
+# Set up the 'true' and 'assumed' cosmology objects.
+#'true' parameters feed into gammat, boost. 'assumed' parameters feed into the distances which go into calculating sigma_crit and F.
+cosmo_t = ccl.Cosmology(Omega_c = pa.OmC_t, Omega_b = pa.OmB, h = (pa.HH0_t/100.), sigma8 = pa.sigma8, n_s=pa.n_s)
+cosmo_a = ccl.Cosmology(Omega_c = pa.OmC_a, Omega_b = pa.OmB, h = (pa.HH0_a/100.), sigma8 = pa.sigma8, n_s=pa.n_s)
 
-        # Set up projected bins
+# Set up projected bins
 
-        # Option to provide theta min and theta max and convert to rp for a given effective lens redshift:
-        theta_vec = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/theta_mid.txt')
-        # We need two versions of rp - one converted from theta with the true parameters for use in Delta Sigma calculation
-        # and one converted from theta with the assumed parameters for use in r_p projection length calculation.
-        #rp_cent_t = setup.arcmin_to_rp(theta_vec, pa.zeff,cosmo_t) * (pa.HH0_t / 100.) # We don't actually use this, only use internally created rp in function for Delta Sigma theory.
-        rp_cent_a = setup.arcmin_to_rp(theta_vec, pa.zeff, cosmo_a) * (pa.HH0_a / 100.)
+# Option to provide theta min and theta max and convert to rp for a given effective lens redshift:
+theta_vec = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/theta_mid.txt')
+# Using 'true' parameters here because I am only changing to rp for convenience. Change back before reporting anything.
+rp_cent = setup.arcmin_to_rp(theta_vec, pa.zeff,cosmo_t)
+rp_max = setup.arcmin_to_rp(200, pa.zeff, cosmo_t)
+print(rp_max)
 
-        # rp max is only use for delta sigma calculation so use the true parameters
-        rp_max = setup.arcmin_to_rp(200, pa.zeff, cosmo_t)
-        #print(rp_max)
-
-        theta_radians = theta_vec / 60.*np.pi/180.
+theta_radians = theta_vec / 60.*np.pi/180.
 
 
-        get_gammaIA_estimator(sigz[si], delz[zi])
+get_gammaIA_estimator()
         
 
 exit()

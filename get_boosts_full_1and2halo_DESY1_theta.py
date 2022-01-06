@@ -11,7 +11,7 @@ import shared_functions_wlp_wls as shared
 import pyccl as ccl
 
 SURVEY = 'DESY1'
-endfile = 'with1halo' #'measured-redshifts-wrong_sigma='+str(pa.sigma)+'deltaz='+str(pa.del_z)
+endfile = 'Planck18pars' #'measured-redshifts-wrong_sigma='+str(pa.sigma)+'deltaz='+str(pa.del_z)
 
 if (SURVEY=='SDSS'):
     import params_SDSS_testpz as pa
@@ -61,7 +61,7 @@ Boost_file_b = './txtfiles/boosts/Boost_B_survey='+SURVEY+'_'+endfile+'.txt'
 	
     exit()"""
 
-zLvec = np.loadtxt('./z_list_DESY1.txt')
+zLvec = np.loadtxt('./txtfiles/z_list_DESY1.txt')
 #print("zLvec=", zLvec)
 
 # Import the correlation function
@@ -128,8 +128,11 @@ for zi in range(0,len(zLvec)):
 # Okay, now we do the required integrals:
 # Load the weighted dNdz_mc for the two source samples:
 # Interpolate to get the weighted dNdz in terms of the required z_Pi vectors at each z_l.
-z_a = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_centres.dat')
-dNdz_a_weighted = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_weighted')
+#z_a = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_centres.dat')
+#dNdz_a_weighted = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin0_zmc_weighted')
+z_a = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/10KsourceBins_1KlensBins/planck2018_params/bin0_centres.dat')
+dNdz_a_weighted = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/10KsourceBins_1KlensBins/planck2018_params/source0Binned')
+
 interp_dndza = scipy.interpolate.interp1d(z_a, dNdz_a_weighted) 
 
 #plt.figure()
@@ -137,8 +140,11 @@ interp_dndza = scipy.interpolate.interp1d(z_a, dNdz_a_weighted)
 #plt.savefig('./dNdz_weighted_a_boosts.png')
 #plt.close()
 
-z_b = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_centres.dat')
-dNdz_b_weighted = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_weighted')
+#z_b = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_centres.dat')
+#dNdz_b_weighted = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/bin1_zmc_weighted')
+z_b = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/10KsourceBins_1KlensBins/planck2018_params/bin1_centres.dat')
+dNdz_b_weighted = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/10KsourceBins_1KlensBins/planck2018_params/source1Binned')
+
 interp_dndzb = scipy.interpolate.interp1d(z_b, dNdz_b_weighted) 
 
 #plt.figure()
