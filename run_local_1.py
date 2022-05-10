@@ -21,9 +21,12 @@ logkmin = -6; kpts =40000; logkmax = 5; Mmax = 15;
 kvec_FT = np.logspace(logkmin, logkmax, kpts)
 kvec_short = np.logspace(np.log10(kvec_FT[0]), np.log10(kvec_FT[-1]), 40)
 Mhalo = np.logspace(10., Mmax, 30)
+#Mhalo = np.asarray([10**14])
 y_ls = shared.gety_ls(Mhalo, kvec_short, survey)
 y_ldm = shared.gety_ldm(Mhalo, kvec_short, survey)
 print("y computed")
+#np.savez("y_gm.npz", y=y_ldm, M=Mhalo, k=kvec_short)
+#exit()
 
 # Get M* low for the Zu & Mandelbaum halo model.
 tot_nsrc= shared.vol_dens(pa.fsky, pa.N_shapes, survey)
@@ -35,12 +38,13 @@ print("Mstar low computed")
 #print("Pkgg 1halo computed")
 
 # Get the 1halo term for lxs at individual z's for the Boost (save to file)
-shared.get_Pkgg_1halo_multiz(kvec_FT, pa.fsky, Mhalo, kvec_short, y_ls, y_ldm, Mstarlow, endfile, survey)
-print("Pkgg 1halo multiz computed")
+#shared.get_Pkgg_1halo_multiz(kvec_FT, pa.fsky, Mhalo, kvec_short, y_ls, y_ldm, Mstarlow, endfile, survey)
+#print("Pkgg 1halo multiz computed")
 
 # Get the 1halo term for lxmatter integrated over z to get Delta Sigma theory (save to file)
 shared.get_Pkgm_1halo(kvec_FT, Mhalo, kvec_short, y_ldm, endfile, survey)
 print("Pkgm 1halo computed")
+exit()
 
 print("Run 2 halo terms")
 shared.get_Pkgg_2h_multiz(kvec_FT, endfile, survey)

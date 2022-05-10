@@ -782,7 +782,7 @@ def get_Pkgg_1halo(kvec_ft, fsky, Mhalo, kvec_short, y_src, y_lens, Mstarlow, en
 
 def get_Pkgm_1halo(kvec_FT, Mhalo, kvec_short, y, endfile, survey):
     """ Returns (and more usefully saves) the 1halo lens galaxies x dark matter power spectrum, for the calculation of Delta Sigma (theoretical) """
-	
+    #print("in function")	
     if (survey == 'SDSS'):
         import params as pa
     elif (survey == 'LSST_DESI'):
@@ -825,7 +825,7 @@ def get_Pkgm_1halo(kvec_FT, Mhalo, kvec_short, y, endfile, survey):
     else:
         print("We don't have support for that survey yet!")
         exit()
-		
+    print("and here")	
     # Check total number of galaxies:
     tot_ng= np.zeros(len(zLvec))
     for zi in range(0,len(zLvec)):
@@ -837,9 +837,15 @@ def get_Pkgm_1halo(kvec_FT, Mhalo, kvec_short, y, endfile, survey):
 	
     # Get Pk
     Pkgm = np.zeros((len(kvec_short), len(zLvec)))
+    #Pkgm = np.zeros(len(kvec_short))
     for ki in range(0,len(kvec_short)):
         for zi in range(0, len(zLvec)):
             Pkgm[ki, zi] = scipy.integrate.simps( HMF[:, zi] * (Mhalo / rho_m) * (Ncen_lens * y[ki, :] + Nsat_lens * y[ki, :]**2), np.log10(Mhalo / (pa.HH0_l/ 100.))) / (tot_ng[zi]) / (pa.HH0_l / 100.)**3
+        #Pkgm[ki] = (10**14 / rho_m) * y[ki, 23] 
+    #print("here")   
+    #Pkgm_save = np.column_stack((kvec_short, Pkgm))
+    #np.savetxt('./txtfiles/1halo_terms/Pkgm_1h_debug_Jonathan.txt', Pkgm_save)
+    #exit()
 		
     # Now integrate this over the appropriate lens redshift distribution:
 
