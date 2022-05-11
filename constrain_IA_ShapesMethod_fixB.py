@@ -200,7 +200,9 @@ def get_fred():
 	return fred_avg
 	
 def gamma_fid(rp):
-	""" Returns the fiducial gamma_IA from a combination of terms from different models which are valid at different scales """
+	""" Returns the fiducial gamma_IA from a combination of terms from different models which are valid at different scales
+    This is the fiducial model from the direct signal (eq. 8 of Leonard et al. 2018) rather than a theoretical model for the estimator.
+    For getting the signal to test systematics, we can't really use this because it doesn't use the estimator expression. """
 	
 	if (SURVEY =='SDSS'):
 		
@@ -237,6 +239,17 @@ def gamma_fid(rp):
 	gammaIA = (f_red * wgp_rp) / (wgg_rp + 2. * pa.close_cut) 
 	
 	return gammaIA
+
+def estimator_with_mult_bias():
+    """ This function should calculate from theory the expected spurious signal for (1-a)gammaIA, in the case when the two methods have different multiplicative biases."""
+    
+    # Start with a situation where we assume that the true gammaIA is 0.
+    # Then, spurious signal = ((delta_m - delta m') gamma_t) / (B-1+F)
+
+    # gamma_t and boost should be calcualted using a full 1halo term so needs a HOD for the lenses and for the sources.
+    
+  
+    return
 
 def N_of_zph_unweighted(z_a_def, z_b_def, z_a_norm, z_b_norm, z_a_def_ph, z_b_def_ph, z_a_norm_ph, z_b_norm_ph, dNdz_par, pz_par):
 	""" Returns dNdz_ph, the number density in terms of photometric redshift, defined and normalized over the photo-z range (z_a_norm_ph, z_b_norm_ph), normalized over the spec-z range (z_a_norm, z_b_norm), but defined on the spec-z range (z_a_def, z_b_def)"""
@@ -484,12 +497,14 @@ rp_bins 	= 	setup.setup_rp_bins(pa.rp_min, pa.rp_max, pa.N_bins) # Edges
 rp_cents	=	setup.rp_bins_mid(rp_bins) # Centers
 
 # Set up to get z as a function of comoving distance and vice-versa
-z_of_com, com_of_z 	= 	setup.z_interpof_com(SURVEY)
+# REPLACE WITH CCL
+#z_of_com, com_of_z 	= 	setup.z_interpof_com(SURVEY)
 
 ns = get_ns_partial()
 
 # Get the fiducial value of gamma_IA in each projected radial bin 
 fid_gIA		=	gamma_fid(rp_cents)
+exit()
 
 # Get the values of Ncorr, the boost, and the error on Ncorr - these take some time and don't depend on the stuff we loop over so just do it once.
 boost = get_boost(rp_cents, 'close')
