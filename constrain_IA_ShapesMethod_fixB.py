@@ -248,8 +248,127 @@ def estimator_with_mult_bias():
 
     # gamma_t and boost should be calcualted using a full 1halo term so needs a HOD for the lenses and for the sources.
     
-  
+    # need to get gamma_t from lensing only. In principle this will be the same for each estimator up to systematic issues (such as the mag bias difference).
+    
+    # We can probably get this directly from CCL by generating gammat but with a cosmo object which uses matter_power_spectrum = halo_model. 
+    # We'll have to pick what we want for the other cosmo parameters mass_function and halo concentration (can use defaults for now but should think about this.)
+    # Need to test to make sure this gives a different gammat than if we just use matter_power_spectrum = halofit.
+    # This also annoyingly does not account for the halo occupation distribution of the galaxies, just the halo model for the dark matter.
+    # How to do this? Would we possibly be okay with just perturbative bias expansion (fastPT)?
+    
+    # Probably we can use the function get_Pkgm_1halo (from shared_functions_wlp_wls.py). 
+    # That function takes as input 'y' which is the 1halo power spectrum of matter with a given concentration model and an NFW profile. 
+    # We can get something for this using the CCL function 'one_halo_matter_power'. 
+    # We can then use CCL calculator mode with this as the power spectrum and the galaxy bias set to 1 to construct a tracer with suitable small scale bias. 
+    # Can add 1halo and 2halo power spectra before constructing tracer in this way with calculator mode. Then CCL will do the FFT to gammat for us.
+    
+    # We also need the boost - this require an HOD for both lenses and sources. Still need to work out what to do here.
+    
+    # Also need F.
+    
+    # Then put them together with with the multiplicative bias offset values to get the estimated signal.
+    
     return
+    
+def get_gammat_purelensing(DeltaSigma, sample, limtype='truez'):
+    """ Get gammat for a given source sample with only the lensing signal (not IA)"""
+    
+    # We need to get <Sigma_c^{-1}>^{-1}
+    # This function supports setting the limits of this integration in terms of photo-z (closer to the real scenario) 
+    # and in terms of spec-z / true-z (to cross check how much this matters)
+    if limtype=='pz': # NOT UPDATED FOR DES REDSHIFT DISTRIBUTIONS
+        """print(" the version of pz limits is not updated to allow for des y1 input redshift distributions")
+        # The limits are in terms of photo-z
+        if sample=='A':
+            zphmin = pa.zeff
+            zphmax = pa.zeff+pa.delta_z
+        elif sample=='B':
+            zphmin = pa.zeff+pa.delta_z
+            zphmax = pa.zphmax
+        else:
+            ValueError("We don't support that sample for the calculation of gammat from pure lensing.")
+        
+        # Set up two vectors of spec-z limits over which we will integrate
+        zsi = np.linspace(pa.zsmin, pa.zsmax, 1000)
+        zsf = np.linspace(pa.zsmin, pa.zsmax, 1000)
+        
+        # For each of these limits in both cases, call the dNdz and get the integral
+        
+        inner_integral = np.zeros((len(zsi), len(zsf)))
+        for i in range(0,len(zsi)):
+            print("zsi=", zsi[i])
+            for f in range(0,len(zsf)):
+                
+                (zs, dNdzs) = setup.get_NofZ_unnormed(pa.dNdzpar_fid, pa.dNdztype, zsi[i], zsf[f], 1000, SURVEY)
+                
+                Siginv = get_SigmaC_inv(zs, pa.zeff)
+                
+                int_num_temp = scipy.integrate.simps(dNdzs*Siginv, zs)
+                int_norm = scipy.integrate.simps(dNdzs,zs)
+                
+                inner_integral[i,f] = int_num_temp / int_norm
+                
+        # Now integrate the spec-z limit over the photo-z uncertainty function in both cases:
+        pzi = setup.p_z(zphmin, zsi, pa.pzpar_fid, pa.pztype)
+        int_pz_1 = np.zeros((len(zsf)))
+        for f in range(0,len(zsf)):
+            int_pz_1[f] = scipy.integrate.simps(pzi*inner_integral[:,f], zsi)
+        
+        psf = setup.p_z(zphmax, zsf, pa.pzpar_fid, pa.pztype)
+        SigInv_avg = scipy.integrate.simps(pzf*int_pz_1, zsf)
+        print("SigInv_avg=", 1./SigInv_avg)"""
+        print("we don't have support for pz limits actually, sorry!")
+                  
+    elif limtype=='truez':
+        # The limits are in terms of spec-z
+        
+        # Charlie: This needs to be changed to support whatever sample source sample dNdz we are going with. Really this should probably be an ini file parameter.
+        if(sample == 'B'):
+            z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/10KsourceBins_1KlensBins/planck2018_params/bin1_centres.dat')
+            dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/10KsourceBins_1KlensBins/planck2018_params/source1Binned')
+        
+        elif(sample=='A'):
+            z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/10KsourceBins_1KlensBins/planck2018_params/bin0_centres.dat')
+            dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/10KsourceBins_1KlensBins/planck2018_params/source0Binned')
+            
+        #print("Using perturbed source redshift distribution for gammat pure lensing")
+        #z_mc, dNdz_mc = setup.dNdz_perturbed(sample, pa.sigma, pa.del_z)
+        
+        norm_mc = scipy.integrate.simps(dNdz_mc, z_mc)   
+    
+        # Load lens distribution:
+        #zL, dNdzL = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/z_dNdz_lenses_subbin.dat', unpack=True)
+        zL, dNdzL = np.loadtxt('./txtfiles/'+pa.dNdzL_file, unpack=True)
+        norm_L = scipy.integrate.simps(dNdzL, zL)
+        
+        Siginv = get_SigmaC_inv(z_mc, zL, cosmo_t, pa.HH0_t)
+        #print("sample="+sample+" Sig=", 1./Siginv)
+        
+        Siginv_zL = np.zeros(len(zL))
+        for zi in range(len(zL)):
+            Siginv_zL[zi] = scipy.integrate.simps(Siginv[:, zi]*dNdz_mc, z_mc) / norm_mc
+            #Siginv_zL[zi] = scipy.integrate.simps(dNdz_mc, z_mc) / norm_mc
+        #print("Siginv=", 1./Siginv_zL)
+        
+        #np.savetxt('./txtfiles/siginv_zl_gammat_debug_'+sample+'.txt', Siginv_zL)
+           
+    else:
+        raise ValueError("We don't have support for that type of limit on the pure lensing integral.")
+        
+    #int_Siginv_zL = scipy.integrate.simps(Siginv_zL*dNdzL, zL) / norm_L
+    #print("sample="+sample+",Sigavg in gammat=", 1./int_Siginv_zL)
+        
+    gammat_lens = np.zeros(len(theta_vec))
+    for ti in range(len(theta_vec)):
+        #gammat_lens[ri] = scipy.integrate.simps(Siginv_zL * dNdzL, zL) / norm_L
+        gammat_lens[ti] = scipy.integrate.simps(DeltaSigma[ti,:] * Siginv_zL * dNdzL, zL) / norm_L
+        #gammat_lens[ri] = scipy.integrate.simps(DeltaSigma[ri,:] * dNdzL, zL) / norm_L
+    
+    # save answer
+    save_gammat = np.column_stack((theta_vec, gammat_lens))
+    np.savetxt('./txtfiles/photo_z_test/gammat_lens_'+sample+'_'+limtype+'_'+SURVEY+'_'+endfile+'.dat', save_gammat)
+    
+    return gammat_lens
 
 def N_of_zph_unweighted(z_a_def, z_b_def, z_a_norm, z_b_norm, z_a_def_ph, z_b_def_ph, z_a_norm_ph, z_b_norm_ph, dNdz_par, pz_par):
 	""" Returns dNdz_ph, the number density in terms of photometric redshift, defined and normalized over the photo-z range (z_a_norm_ph, z_b_norm_ph), normalized over the spec-z range (z_a_norm, z_b_norm), but defined on the spec-z range (z_a_def, z_b_def)"""
