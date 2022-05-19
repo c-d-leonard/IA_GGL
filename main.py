@@ -423,7 +423,6 @@ F_fid = get_F(rp_bins, pa.dNdzpar_fid, pa.pzpar_fid)
 # Get the estimator given a level of multiplicative bias:
 estimator_with_mult_bias() # need to add arguments and write this function.
 
-
 ns = get_ns_partial()
 
 # Get the desired S-to_N ratios for the case of stat error plus sys error from the boost (sys error due to z subdominant), for the case of sys error due to z, and for the case of statistical only.
