@@ -429,7 +429,10 @@ def Rhalo(M_insol, survey):
     #rho_crit = 3. * 10**10 * pa.mperMpc / (8. * np.pi * pa.Gnewt * pa.Msun * (pa. HH0 / 100.)) # Msol h^3 / Mpc^3, for use with M in Msol.
     rho_crit = 3. * 10**10 * pa.mperMpc / (8. * np.pi * pa.Gnewt * pa.Msun)  # Msol h^2 / Mpc^3, for use with M in Msol / h
     rho_m = rho_crit * (pa.OmC_s + pa.OmB_s)
-    Rvir = ( 3. * M_insol / (4. * np.pi * rho_m * 200.))**(1./3.) # We use the 200 * rho_M overdensity definition. 
+    Rvir = ( 3. * M_insol / (4. * np.pi * rho_m * 200.))**(1./3.) # We use the 200 * rho_M overdensity definition.
+    
+    mass_sn= "{:e}".format(M_insol)
+    print("Rvir=", Rvir, "M=", mass_sn) 
 	
     return Rvir
 
@@ -441,11 +444,13 @@ def cvir_ls(M_insol):
 	return cvi
 	
 def cvir_ldm(M_insol):
-	""" Returns the concentration parameter of the NFW profile, c_{vir}. """
+     """ Returns the concentration parameter of the NFW profile, c_{vir}. """
 
-	cvi = 5. * (M_insol / 10**14)**(-0.1)
+     mass_sn= "{:e}".format(M_insol)
+     cvi = 5. * (M_insol / 10**14)**(-0.1)
+     print("cvi=", cvi, "mass_sn=", mass_sn)
 	
-	return cvi
+     return cvi
 
 def rho_s(cvi, Rvi, M_insol):
 	""" Returns rho_s, the NFW parameter representing the density at the `scale radius', Rvir / cvir. Units: Mvir units * ( 1 / (Rvir units)**3), usualy Msol * h^3 / Mpc^3 with comoving distances. Sometimes also Msol h^2 / Mpc^3 (when Mvir is in Msol / h). """
