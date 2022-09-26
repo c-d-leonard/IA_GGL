@@ -140,17 +140,17 @@ delta_z = 0.17 """
 #n_s_l = 0.95
 
 # (From Reid & Spergel paper)
-HH0_l = 70.1
-OmB_l = 0.0462
-OmC_l = 0.2792-OmB_l
-sigma8_l = 0.817
-n_s_l = 0.960
+#HH0_l = 70.1
+#OmB_l = 0.0462
+#OmC_l = 0.2792-OmB_l
+#sigma8_l = 0.817
+#n_s_l = 0.960
 
-HH0_s = 72.0
-OmC_s = 0.216
-OmB_s = 0.044
-sigma8_s = 0.77
-n_s_s = 0.95
+#HH0_s = 72.0
+#OmC_s = 0.216
+#OmB_s = 0.044
+#sigma8_s = 0.77
+#n_s_s = 0.95
 
 # Here are the parameters from the HOD from Reid and Spergel 2008 (0811.1025). For SDSS LRG sample 0.16<z<0.36.
 Mcut_reid = 5.0 * 10**13 # Msol
@@ -158,6 +158,25 @@ M1_reid = 4.95 * 10**14 # Msol
 alpha_reid = 1.035
 Mmin_reid = 8.05*10**13 # Msol
 sigLogM_reid = 0.7
+
+# Parameters for the HOD model from DES Y3 paper 2106.08438
+HH0_l = 67.37
+OmB_l = 0.0486
+OmC_l = 0.341-OmB_l
+sigma8_l = 0.735
+n_s_l = 0.9649
+
+HH0_s = 67.37
+OmB_s = 0.0486
+OmC_s = 0.341-OmB_l
+sigma8_s = 0.735
+n_s_s = 0.9649
+
+fcen = 0.13
+logMmin_RMG = 12.03
+sigLogM_RMG = 0.34
+alpha_RMG =  2.61
+logM1_RMG = 13.79
 
 #### Parameters of the HOD model, taken from Zu & Mandelbaum 2015, 1505.02781.  #####
 # Ncen params: these refer to the central galaxies for SDSS MGS, which I think is close enough to SDSS LRGs to be okay to map to our case:

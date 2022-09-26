@@ -793,9 +793,9 @@ def get_Pkgm_1halo(kvec_FT, Mhalo, kvec_short, y, endfile, survey):
         print("We don't have support for that survey yet; exiting.")
         exit()
 		
-    if (os.path.isfile('./txtfiles/1halo_terms/Pkgm_1h_'+survey+'_'+endfile+'.txt')):
-        print("Pkgm 1halo averaged over z already exists.")
-        return
+    #if (os.path.isfile('./txtfiles/1halo_terms/Pkgm_1h_'+survey+'_'+endfile+'.txt')):
+    #    print("Pkgm 1halo averaged over z already exists.")
+    #    return
 
     if survey == 'SDSS' or survey == 'LSST_DESI':
         # Define the vector of lens redshifts over which we will average.
@@ -820,16 +820,33 @@ def get_Pkgm_1halo(kvec_FT, Mhalo, kvec_short, y, endfile, survey):
         Ncen_lens = get_Ncen_More(Mhalo, survey)
         Nsat_lens = get_Nsat_More(Mhalo, survey)
     elif (survey == 'DESY1'):
-        Ncen_lens = get_Ncen_Reid(Mhalo, survey) # We use the LRG model for the lenses from Reid & Spergel 2008
-        Nsat_lens = get_Nsat_Reid(Mhalo, survey)
+        Ncen_lens = get_Ncen_redmagic(Mhalo, survey) # We use the LRG model for the lenses from Reid & Spergel 2008
+        Nsat_lens = get_Nsat_redmagic(Mhalo, survey)
+        print("Ncen_lens=", Ncen_lens)
+        print("Nsat_lens=", Nsat_lens)
     else:
         print("We don't have support for that survey yet!")
         exit()
     print("and here")	
     # Check total number of galaxies:
+    # Also get the components of the satelite fraction to compare with redmagic HOD fit.
     tot_ng= np.zeros(len(zLvec))
+    Ncen_avg_z = np.zeros(len(zLvec))
+    Nsat_avg_z = np.zeros(len(zLvec))
     for zi in range(0,len(zLvec)):
         tot_ng[zi] = scipy.integrate.simps( ( Ncen_lens + Nsat_lens) * HMF[:, zi], np.log10(Mhalo / (pa.HH0_l/100.) ) ) / (pa.HH0_l / 100.)**3
+        Ncen_avg_z[zi] = scipy.integrate.simps( Ncen_lens * HMF[:, zi], np.log10(Mhalo / (pa.HH0_l/100.) ) ) / (pa.HH0_l / 100.)**3
+        Nsat_avg_z[zi] = scipy.integrate.simps( ( Nsat_lens) * HMF[:, zi], np.log10(Mhalo / (pa.HH0_l/100.) ) ) / (pa.HH0_l / 100.)**3
+        
+    # Calculate the satelite fraction for comparison
+    Ncen_avg = scipy.integrate.simps(dndzl*Ncen_avg_z, zLvec)
+    Nsat_avg = scipy.integrate.simps(dndzl*Nsat_avg_z, zLvec)
+    tot_ng_avg = scipy.integrate.simps(dndzl*tot_ng, zLvec)
+    print("tot ng=", tot_ng_avg)
+    sat_frac = Nsat_avg / (tot_ng_avg)
+    print("Ncen =", Ncen_avg, "Nsat=", Nsat_avg, "sat frac=", sat_frac)
+    exit()
+    
 	
     # Get the density of matter in comoving coordinates
     rho_crit = 3. * 10**10 * pa.mperMpc / (8. * np.pi * pa.Gnewt * pa.Msun)  # Msol h^2 / Mpc^3, for use with M in Msol / h (comoving distances)
@@ -1579,6 +1596,45 @@ def alpha_sq(Mh):
 			a_sq[mi] = 1
 	
 	return a_sq
+	
+	
+def get_Ncen_redmagic(Mh, survey):
+    """ Central galaxies model from DES Y1 redmagic paper"""
+    if (survey == 'SDSS'):
+        import params as pa
+    elif (survey == 'LSST_DESI'):
+        import params_LSST_DESI as pa
+    elif (survey == 'DESY1'):
+        import params_DESY1_testpz as pa
+    else:
+        print("We don't have support for that survey yet; exiting.")
+        exit()
+    
+    Ncen = pa.fcen/2.0* (1. + scipy.special.erf((np.log10(Mh / (pa.HH0_l/100.)) - pa.logMmin_RMG) / pa.sigLogM_RMG))
+    # redMaGIC halo parameters from 2106.08438 are in Msol units so we convert our Mhalo in Msol / h units.   
+        
+	
+    return Ncen
+	
+def get_Nsat_redmagic(Mh, survey):
+    """ Satellite galaxies model from DES Y1 redmagic paper """
+    if (survey == 'SDSS'):
+        import params as pa
+    elif (survey == 'LSST_DESI'):
+        import params_LSST_DESI as pa
+    elif (survey == 'DESY1'):
+        import params_DESY1_testpz as pa
+    else:
+        print("We don't have support for that survey yet; exiting.")
+        exit()
+        
+    Ncen = get_Ncen_redmagic(Mh, survey)
+    
+    Nsat= Ncen * 10**( pa.alpha_RMG*(np.log10(Mh/ (pa.HH0_l/100.)) - pa.logM1_RMG))
+    
+    # redMaGIC halo parameters from 2106.08438 are in Msol units so we convert our Mhalo in Msol / h units.
+	
+    return Nsat
 	
 def NsatNsat(alpha_sq, Nsat_1, Nsat_2):
 	""" Returns the average number of pairs of satelite galaxies per halo. """

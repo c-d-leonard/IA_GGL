@@ -22,15 +22,15 @@ kvec_FT = np.logspace(logkmin, logkmax, kpts)
 kvec_short = np.logspace(np.log10(kvec_FT[0]), np.log10(kvec_FT[-1]), 40)
 Mhalo = np.logspace(10., Mmax, 30)
 #Mhalo = np.asarray([10**14])
-y_ls = shared.gety_ls(Mhalo, kvec_short, survey)
+#y_ls = shared.gety_ls(Mhalo, kvec_short, survey)
 y_ldm = shared.gety_ldm(Mhalo, kvec_short, survey)
 print("y computed")
 #np.savez("y_gm.npz", y=y_ldm, M=Mhalo, k=kvec_short)
 #exit()
 
 # Get M* low for the Zu & Mandelbaum halo model.
-tot_nsrc= shared.vol_dens(pa.fsky, pa.N_shapes, survey)
-Mstarlow = shared.get_Mstar_low(survey, tot_nsrc)
+#tot_nsrc= shared.vol_dens(pa.fsky, pa.N_shapes, survey)
+#Mstarlow = shared.get_Mstar_low(survey, tot_nsrc)
 print("Mstar low computed")
 
 # Get the 1halo term for lxs averaged over z (save to file)
