@@ -9,8 +9,8 @@
 #exit()
 
 # FFT and save the results.
-cp ./txtfiles/1halo_terms/P*Planck18pars.txt ~/Software/FFTLog/test/
-cp ./txtfiles/halofit_Pk/P*Planck18pars.txt ~/Software/FFTLog/test/
+cp ./txtfiles/1halo_terms/P*DESHoD.txt ~/Software/FFTLog/test/
+cp ./txtfiles/halofit_Pk/P*DESHoD.txt ~/Software/FFTLog/test/
 cd ~/Software/FFTLog/
 
 #make test_gg_1h.out
@@ -21,9 +21,9 @@ make test_gg_2h_multifile.out
 make clean
 
 cd ~/Research/IA_measurement_GGL/IA_GGL/
-mv ~/Software/FFTLog/xi*1h*Planck18pars.txt ./txtfiles/xi_1h_terms/
-mv ~/Software/FFTLog/xi*2h*Planck18pars.txt ./txtfiles/halofit_xi/
-rm ~/Software/FFTLog/test/P*_Planck18pars.txt
+mv ~/Software/FFTLog/xi*1h*DESHoD.txt ./txtfiles/xi_1h_terms/
+mv ~/Software/FFTLog/xi*2h*DESHoD.txt ./txtfiles/halofit_xi/
+rm ~/Software/FFTLog/test/P*_DESHoD.txt
 
 exit 1
 
