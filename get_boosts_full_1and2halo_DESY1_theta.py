@@ -11,7 +11,7 @@ import shared_functions_wlp_wls as shared
 import pyccl as ccl
 
 SURVEY = 'DESY1'
-endfile = 'Planck18pars' #'measured-redshifts-wrong_sigma='+str(pa.sigma)+'deltaz='+str(pa.del_z)
+endfile = 'DESHoD' #'measured-redshifts-wrong_sigma='+str(pa.sigma)+'deltaz='+str(pa.del_z)
 
 if (SURVEY=='SDSS'):
     import params_SDSS_testpz as pa

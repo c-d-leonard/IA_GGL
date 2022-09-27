@@ -111,7 +111,7 @@ def get_boost(theta_vec, sample):
 	
 	#print("Loading boost from previous run")
 	#Boost = np.loadtxt('./txtfiles/boosts/Boost_'+str(sample)+'_survey='+str(SURVEY)+'_true-redshifts-different_sigma='+str(pa.sigma)+'deltaz='+str(pa.del_z)+'.txt') + np.ones((len(theta_vec)))
-	Boost = np.loadtxt('./txtfiles/boosts/Boost_'+str(sample)+'_survey='+str(SURVEY)+'_Planck18pars.txt') + np.ones((len(theta_vec)))
+	Boost = np.loadtxt('./txtfiles/boosts/Boost_'+str(sample)+'_survey='+str(SURVEY)+'_DESHoD.txt') + np.ones((len(theta_vec)))
 
 	return Boost
 	
@@ -251,8 +251,8 @@ def get_DeltaSig_theory():
         print("Delta_Sig_theory, zi=", zL[zi])
         zload=str('{:1.12f}'.format(zL[zi]))
         # Import the appropriate correlation function
-        r_hf, corr_hf_2h = np.loadtxt('./txtfiles/halofit_xi/xi2h_z='+zload+'_with1halo.txt', unpack=True)
-        r_hf, corr_1h = np.loadtxt('./txtfiles/xi_1h_terms/xi1h_ls_z='+zload+'_with1halo.txt', unpack=True)
+        r_hf, corr_hf_2h = np.loadtxt('./txtfiles/halofit_xi/xi2h_z='+zload+'_DESHoD.txt', unpack=True)
+        r_hf, corr_1h = np.loadtxt('./txtfiles/xi_1h_terms/xi1h_ls_z='+zload+'_DESHoD.txt', unpack=True)
         for ri in range(0,len(r_hf)):
             if r_hf[ri]>3:
                 corr_1h[ri] = 0.
@@ -604,14 +604,14 @@ def get_gammaIA_estimator(sigmaz, deltaz):
     np.savetxt('./txtfiles/photo_z_test/SigmaC_a_'+SURVEY+'_'+endfile+'.txt', [SigA])
     np.savetxt('./txtfiles/photo_z_test/SigmaC_b_'+SURVEY+'_'+endfile+'.txt', [SigB])
     
-    #print("before delta sigma theory")
+    print("before delta sigma theory")
     # First get Delta Sigma, this is the same for all source samples
-    #DeltaSigma = get_DeltaSig_theory()
-    #print("after delta sigma theory")
-    #np.savetxt('./txtfiles/DeltaSigma_with1halo.txt', DeltaSigma)
+    DeltaSigma = get_DeltaSig_theory()
+    print("after delta sigma theory")
+    np.savetxt('./txtfiles/DeltaSigma_with1halo_DESHoD.txt', DeltaSigma)
     #exit()
-    print("Loading Delta Sigma from previous run")
-    DeltaSigma = np.loadtxt('./txtfiles/DeltaSigma_Planck18_pars.txt')
+    #print("Loading Delta Sigma from previous run")
+    #DeltaSigma = np.loadtxt('./txtfiles/DeltaSigma_Planck18_pars.txt')
     
     # Get theoretical lensing-only gammat
     gammat_a_lens = get_gammat_purelensing(DeltaSigma, 'A', limtype='truez')
@@ -764,7 +764,7 @@ for si in range(0,len(sigz)):
     for zi in range(0,len(delz)):
         print("sigz=", sigz[si], "delz=", delz[zi])
         
-        endfile = 'no_fidIA_measured-redshifts-wrong_variableF_Planck18pars_sigma='+str(sigz[si])+'deltaz='+str(delz[zi])
+        endfile = 'no_fidIA_measured-redshifts-wrong_variableF_DESHoD_sigma='+str(sigz[si])+'deltaz='+str(delz[zi])
 	
         # Set up the 'true' and 'assumed' cosmology objects.
         #'true' parameters feed into gammat, boost. 'assumed' parameters feed into the distances which go into calculating sigma_crit and F.
@@ -788,6 +788,7 @@ for si in range(0,len(sigz)):
 
 
         get_gammaIA_estimator(sigz[si], delz[zi])
+        exit()
         
 
 exit()

@@ -138,7 +138,7 @@ def get_boost(theta_vec, sample):
 	
 	#print("Loading boost from previous run")
 	#Boost = np.loadtxt('./txtfiles/boosts/Boost_'+str(sample)+'_survey='+str(SURVEY)+'_true-redshifts-different_sigma='+str(pa.sigma)+'deltaz='+str(pa.del_z)+'.txt') + np.ones((len(theta_vec)))
-	Boost = np.loadtxt('./txtfiles/boosts/Boost_'+str(sample)+'_survey='+str(SURVEY)+'_Planck18pars.txt') + np.ones((len(theta_vec)))
+	Boost = np.loadtxt('./txtfiles/boosts/Boost_'+str(sample)+'_survey='+str(SURVEY)+'_DESHoD.txt') + np.ones((len(theta_vec)))
 
 	return Boost
 	
@@ -276,8 +276,8 @@ def get_DeltaSig_theory():
         print("Delta_Sig_theory, zi=", zL[zi])
         zload=str('{:1.12f}'.format(zL[zi]))
         # Import the appropriate correlation function
-        r_hf, corr_hf_2h = np.loadtxt('./txtfiles/halofit_xi/xi2h_z='+zload+'_Planck18pars.txt', unpack=True)
-        r_hf, corr_1h = np.loadtxt('./txtfiles/xi_1h_terms/xi1h_ls_z='+zload+'_Planck18pars.txt', unpack=True)
+        r_hf, corr_hf_2h = np.loadtxt('./txtfiles/halofit_xi/xi2h_z='+zload+'_DESHoD.txt', unpack=True)
+        r_hf, corr_1h = np.loadtxt('./txtfiles/xi_1h_terms/xi1h_ls_z='+zload+'_DESHoD.txt', unpack=True)
         for ri in range(0,len(r_hf)):
             if r_hf[ri]>3:
                 corr_1h[ri] = 0.
@@ -635,7 +635,7 @@ def get_gammaIA_estimator():
     #np.savetxt('./txtfiles/DeltaSigma_Planck18_pars.txt', DeltaSigma)
     #exit()
     #print("Loading Delta Sigma from previous run")
-    DeltaSigma = np.loadtxt('./txtfiles/DeltaSigma_Planck18_pars.txt')
+    DeltaSigma = np.loadtxt('./txtfiles/DeltaSigma_DESHoD.txt')
     
     # Get theoretical lensing-only gammat
     gammat_a_lens = get_gammat_purelensing(DeltaSigma, 'A', limtype='truez')
@@ -715,7 +715,7 @@ def test_thin_lens_approx(sample):
     
     # Load lens distribution:
     #zL, dNdzL = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/z_dNdz_lenses_subbin.dat', unpack=True)
-    zL, dNdzL = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/z_dNdz_lenses.dat', unpack=True)
+    zL, dNdzL = np.loadtxt('./txtfiles/'+pa.dNdzL_file, unpack=True)
     norm_L = scipy.integrate.simps(dNdzL, zL)
     
     # Get Sigma crit inverse as a function of zL and zs (need this for both cases)
@@ -729,7 +729,7 @@ def test_thin_lens_approx(sample):
     # Without the approximation:
     
     # Load Delta Sigma as a function of lens redshift and rp because this takes ages to compute
-    DeltaSigma = np.loadtxt('./txtfiles/DeltaSigma_with1halo.txt')
+    DeltaSigma = np.loadtxt('./txtfiles/DeltaSigma_with1halo_DESHoD.txt')
     
     no_approx = np.zeros(len(rp_cent))
     for ri in range(len(rp_cent)):
@@ -780,7 +780,7 @@ else:
 #         -0.01, 0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1] #np.linspace(-0.18, 0.1, 29)
 
         
-endfile = 'no_fidIA_Planck18pars_assumedpar_OmM='+str(pa.OmC_a+pa.OmB)+'_HH0='+str(pa.HH0_a)
+endfile = 'no_fidIA_DESHoD_assumedpar_OmM='+str(pa.OmC_a+pa.OmB)+'_HH0='+str(pa.HH0_a)
 #endfile = 'Planck18_pars'
 	
 # Set up the 'true' and 'assumed' cosmology objects.
