@@ -635,7 +635,7 @@ def get_gammaIA_estimator():
     #np.savetxt('./txtfiles/DeltaSigma_Planck18_pars.txt', DeltaSigma)
     #exit()
     #print("Loading Delta Sigma from previous run")
-    DeltaSigma = np.loadtxt('./txtfiles/DeltaSigma_DESHoD.txt')
+    DeltaSigma = np.loadtxt('./txtfiles/DeltaSigma_with1halo_DESHoD.txt')
     
     # Get theoretical lensing-only gammat
     gammat_a_lens = get_gammat_purelensing(DeltaSigma, 'A', limtype='truez')

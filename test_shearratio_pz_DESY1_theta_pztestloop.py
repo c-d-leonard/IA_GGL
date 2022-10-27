@@ -604,14 +604,14 @@ def get_gammaIA_estimator(sigmaz, deltaz):
     np.savetxt('./txtfiles/photo_z_test/SigmaC_a_'+SURVEY+'_'+endfile+'.txt', [SigA])
     np.savetxt('./txtfiles/photo_z_test/SigmaC_b_'+SURVEY+'_'+endfile+'.txt', [SigB])
     
-    print("before delta sigma theory")
+    #print("before delta sigma theory")
     # First get Delta Sigma, this is the same for all source samples
-    DeltaSigma = get_DeltaSig_theory()
-    print("after delta sigma theory")
-    np.savetxt('./txtfiles/DeltaSigma_with1halo_DESHoD.txt', DeltaSigma)
+    #DeltaSigma = get_DeltaSig_theory()
+    #print("after delta sigma theory")
+    #np.savetxt('./txtfiles/DeltaSigma_with1halo_DESHoD.txt', DeltaSigma)
     #exit()
-    #print("Loading Delta Sigma from previous run")
-    #DeltaSigma = np.loadtxt('./txtfiles/DeltaSigma_Planck18_pars.txt')
+    print("Loading Delta Sigma from previous run")
+    DeltaSigma = np.loadtxt('./txtfiles/DeltaSigma_with1halo_DESHoD.txt')
     
     # Get theoretical lensing-only gammat
     gammat_a_lens = get_gammat_purelensing(DeltaSigma, 'A', limtype='truez')
@@ -788,7 +788,6 @@ for si in range(0,len(sigz)):
 
 
         get_gammaIA_estimator(sigz[si], delz[zi])
-        exit()
         
 
 exit()

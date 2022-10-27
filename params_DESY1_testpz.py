@@ -49,9 +49,9 @@ n_s     = 0.96605 # From Planck 2018 parameters (Plik best fit values from table
 
 # Use Planck 2018 parameters (Plik best fit values from table 1 of 1807.06209):
 HH0_t  =       67.32  
-HH0_a  =       72.0
+HH0_a  =       67.32
 OmM_t  =       0.3158
-OmM_a  =       0.28
+OmM_a  =       0.3158
 OmC_t	=	OmM_t-OmB 
 OmC_a	=	OmM_a-OmB 
 OmR_t	=	2.47*10**(-5)/(HH0_t/100.)**2
