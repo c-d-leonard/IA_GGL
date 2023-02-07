@@ -53,6 +53,42 @@ def get_Ai(A0, beta, cosmo, dndz, Mr_s=-20.70, Q=1.23, alpha_lum=-1.23, phi_0=0.
 	
 	return Ai
 	
+def get_Ai_of_z(A0, beta, cosmo, z_input, Mr_s=-20.70, Q=1.23, alpha_lum=-1.23, phi_0=0.0094, P=-0.3, mlim=25.3, Lp= 1.):
+	""" Get the amplitude of the 2-halo part of w_{l+}
+	A0 is the amplitude, beta is the power law exponent (see Krause et al. 2016) 
+	cosmo is a CCL cosmology object 
+	Lp is a pivot luminosity (default = 1)
+	dndz is (z, dNdz) - vector of z and dNdz for the galaxies
+	(does not need to be normalised) 
+	"""
+		
+	# Don't evaluate at any redshifts higher than the highest value for which we have kcorr and ecorr corrections or lower than lowest
+	# These high (>3) and low (<0.02) redshifts shouldn't matter anyway.
+	(z_k, kcorr, x,x,x) = np.loadtxt('./txtfiles/kcorr.dat', unpack=True)
+	(z_e, ecorr, x,x,x) = np.loadtxt('./txtfiles/ecorr.dat', unpack=True)
+	zmaxke = min(max(z_k), max(z_e))
+	zminke = max(min(z_k), min(z_e))
+	if (zminke>min(z_input) and zmaxke<max(z_input)):
+		z = np.linspace(zminke, zmaxke, 1000)   	
+	elif (zmaxke<max(z_input)):
+		z = np.linspace(min(z_input), zmaxke, 1000)
+	elif (zminke>min(z_input)):
+		z = np.linspace(zminke, max(z_input), 1000)
+	else:
+		z = z_input	
+		
+	# Get the luminosity function
+	(L, phi_normed) = get_phi(z, cosmo, Mr_s, Q, alpha_lum, phi_0, P, mlim)
+	# Pivot luminosity:
+	Lp = 1.
+	
+	# Get Ai as a function of redshift.
+	Ai_ofzl = np.zeros(len(z))
+	for zi in range(len(z)):
+		Ai_ofzl[zi] = scipy.integrate.simps(np.asarray(phi_normed[zi]) * A0 * (np.asarray(L[zi]) / Lp)**(beta), np.asarray(L[zi]))
+	
+	return (z, Ai_ofzl)
+	
 def get_phi(z, cosmo, Mr_s, Q, alpha_lum, phi_0, P, mlim, Mp=-22.):
 	
 	""" This function outputs the Schechter luminosity function with parameters fit in Loveday 2012, following the same procedure as Krause et al. 2015, as a function of z and L 
