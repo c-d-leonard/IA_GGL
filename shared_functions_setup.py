@@ -46,7 +46,7 @@ def get_areas(bins, z_eff, survey):
 	elif (survey == 'LSST_DESI'):
 		import params_LSST_DESI as pa
 	else:
-		print "We don't have support for that survey yet; exiting."
+		print("We don't have support for that survey yet; exiting.")
 		exit()
 
 	# Areas in units (Mpc/h)^2
@@ -91,7 +91,7 @@ def com(z_, survey, cosmo_par):
 	elif (survey == 'LSST_DESI'):
 		import params_LSST_DESI as pa
 	else:
-		print "We don't have support for that survey yet; exiting."
+		print("We don't have support for that survey yet; exiting.")
 		exit()
 
 	OmL = 1. - OmC - OmB - pa.OmR - pa.OmN
@@ -116,7 +116,7 @@ def z_interpof_com(survey):
 	elif (survey == 'LSST_DESI'):
 		import params_LSST_DESI as pa
 	else:
-		print "We don't have support for that survey yet; exiting."
+		print("We don't have support for that survey yet; exiting.")
 		exit()
 
 	z_vec = scipy.linspace(0., 20., 10000) # This hardcodes that we don't care about anything over z=2100
@@ -135,7 +135,7 @@ def p_z(z_ph, z_sp, pzpar, pztype):
 		sigz = pzpar[0]
 		p_z_ = np.exp(-(z_ph - z_sp)**2 / (2.*(sigz*(1.+z_sp))**2)) / (np.sqrt(2.*np.pi)*(sigz*(1.+z_sp)))
 	else:
-		print "Photo-z probability distribution "+str(pztype)+" not yet supported; exiting."
+		print("Photo-z probability distribution "+str(pztype)+" not yet supported; exiting.")
 		exit()
 		
 	return p_z_
@@ -148,7 +148,7 @@ def get_NofZ_unnormed(dNdzpar, dNdztype, z_min, z_max, zpts, survey):
 	elif (survey == 'LSST_DESI'):
 		import params_LSST_DESI as pa
 	else:
-		print "We don't have support for that survey yet; exiting."
+		print("We don't have support for that survey yet; exiting.")
 		exit()
 
 	z = scipy.linspace(z_min, z_max, zpts)
@@ -168,7 +168,7 @@ def get_NofZ_unnormed(dNdzpar, dNdztype, z_min, z_max, zpts, survey):
 			beta = dNdzpar[2]
 			nofz_ = z**alpha * np.exp( - (z / z0)**beta)
 		else: # if rlim != 25.3 we have to compute the redshift distribution from the luminosity function
-			print "dNdz (sources) for rlim != 25.3 is not working yet."
+			print("dNdz (sources) for rlim != 25.3 is not working yet.")
 			exit()
 		#(L, phi_normed, phi) = get_phi(z, pa.lumparams_all, survey)
 		#(L_red, phi_normed_red, phi_red) = get_phi(z, pa.lumparams_red, survey)
@@ -202,7 +202,7 @@ def get_dNdzL(zvec, survey):
 	elif (survey == 'LSST_DESI'):
 		import params_LSST_DESI as pa
 	else:
-		print "We don't have support for that survey yet; exiting."
+		print("We don't have support for that survey yet; exiting.")
 		exit()
 		
 	z, dNdz = np.loadtxt('./txtfiles/'+pa.dNdzL_file, unpack=True)
@@ -229,7 +229,7 @@ def get_dNdzL(zvec, survey):
 	if ((zvec[0]>=z[0]) and (zvec[-1]<=z[-1])):
 		dNdz_return = interpolation(zvec)
 	else:
-		print "You have asked for dN/dzl at redshifts out of the known range."
+		print("You have asked for dN/dzl at redshifts out of the known range.")
 		exit()
 	
 	return  dNdz_return / norm
