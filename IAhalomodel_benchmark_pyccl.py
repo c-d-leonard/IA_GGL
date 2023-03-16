@@ -6,7 +6,8 @@ import pyccl as ccl
 import matplotlib.pyplot as plt
 
 def get_Pkgm_1halo(kvec, Mhalo, y, cosmo, z):
-    """ Returns the 1halo lens galaxy position x intrinsic shape power spectrum
+    """ Returns the 1halo satellite lens galaxy position x intrinsic shape power spectrum.
+    Assume that the alignment of the satellite galaxies have radially independent alignment with the amplitude set to 1 (just for comparison).s
     kvec is the vector of wavenumbers to use in units of h/Mpc
     Mhalo is the vector of halo masses over which to integrate in units of Msol / h
     y is the Fourier-space NFW profile assuming a lens galaxies is at the center
@@ -44,9 +45,9 @@ def get_Pkgm_1halo(kvec, Mhalo, y, cosmo, z):
     # Get Pk
     Pkgm = np.zeros(len(kvec))
     for ki in range(0,len(kvec)):
-        Pkgm[ki] = scipy.integrate.simps( HMF * (Mhalo / rho_m) * f_s * (Nsat_lens * y[ki, :]), np.log10(Mhalo / h)) / (tot_ns) / h**3
+        Pkgm[ki] = scipy.integrate.simps( HMF * (Mhalo / rho_m) * f_s * (Nsat_lens * y[ki, :]**2), np.log10(Mhalo / h)) / (tot_ns) # output in Mpc^3
 		
-    return (kvec, Pkgm)
+    return (kvec * h, Pkgm) # Ouptut in 1/Mpc not h/Mpc
 	
 def gety_ldm(Mvec, kvec,cosmo, z):
     """ Fourier transforms the density profile to get the power spectrum. """
@@ -72,8 +73,13 @@ def rho_NFW_ldm(r_, M_insol,cosmo, z):
     Rv = Rhalo(M_insol,cosmo)
     cv = conc.get_concentration(cosmo, M_insol, 1./(1.+z))
     rhos = rho_s(cv, Rv, M_insol)
-	
+
     rho_nfw = rhos  / ( (cv * r_ / Rv) * (1. + cv * r_ / Rv)**2) 
+    
+    # Truncate at Rvir:
+    for i in range(0,len(r_)):
+        if r_[i]>Rv:
+            rho_nfw[i]=0
 	
     return rho_nfw
 	
@@ -117,10 +123,10 @@ if (__name__ == "__main__"):
     
     conc = ccl.halos.ConcentrationDuffy08()
 
-    #y = gety_ldm(Mhalo, kvec, cosmo, z)
+    y = gety_ldm(Mhalo, kvec, cosmo, z)
 
-    #np.savetxt('./y_ldm.txt', y)
-    y = np.loadtxt('./y_ldm.txt')
+    np.savetxt('./y_ldm.txt', y)
+    #y = np.loadtxt('./y_ldm.txt')
     
     (k, Pkgm) = get_Pkgm_1halo(kvec, Mhalo, y, cosmo, z)
     
