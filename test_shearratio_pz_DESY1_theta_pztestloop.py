@@ -610,12 +610,12 @@ def get_gammaIA_estimator(sigmaz, deltaz):
     #print("after delta sigma theory")
     #np.savetxt('./txtfiles/DeltaSigma_with1halo_DESHoD.txt', DeltaSigma)
     #exit()
-    print("Loading Delta Sigma from previous run")
-    DeltaSigma = np.loadtxt('./txtfiles/DeltaSigma_with1halo_DESHoD.txt')
+    #print("Loading Delta Sigma from previous run")
+    #DeltaSigma = np.loadtxt('./txtfiles/DeltaSigma_with1halo_DESHoD.txt')
     
     # Get theoretical lensing-only gammat
-    gammat_a_lens = get_gammat_purelensing(DeltaSigma, 'A', limtype='truez')
-    gammat_b_lens = get_gammat_purelensing(DeltaSigma, 'B', limtype='truez')
+    #gammat_a_lens = get_gammat_purelensing(DeltaSigma, 'A', limtype='truez')
+    #gammat_b_lens = get_gammat_purelensing(DeltaSigma, 'B', limtype='truez')
 
     """
     print("Get gamma IA for fiducial")

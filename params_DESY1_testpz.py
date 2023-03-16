@@ -104,7 +104,7 @@ pzpar_fid 	=	[sigz_fid] # Make this a list to make it more generic to pass aroun
 # Parameters related to the spec and photo z's of the source sample and other redshift cuts.
 
 # Lenses: Bin 2 of galaxy clustering sample from DES Y1
-zeff 	= 	0.37  # Need to get this manually
+zeff 	= 	0.3829  # Need to get this manually
 zLmin	= 	0.301  
 zLmax	=	0.448  
 dNdzL_file	=  '/DESY1_quantities_fromSara/10KsourceBins_1KlensBins/z_dNdz_lenses_highres.dat'

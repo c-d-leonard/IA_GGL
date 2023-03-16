@@ -430,8 +430,10 @@ def Rhalo(M_insol, survey):
     rho_crit = 3. * 10**10 * pa.mperMpc / (8. * np.pi * pa.Gnewt * pa.Msun)  # Msol h^2 / Mpc^3, for use with M in Msol / h
     rho_m = rho_crit * (pa.OmC_s + pa.OmB_s)
     Rvir = ( 3. * M_insol / (4. * np.pi * rho_m * 200.))**(1./3.) # We use the 200 * rho_M overdensity definition. 
+    
+    print('OmegaM=', (pa.OmC_s + pa.OmB_s))
 	
-    return Rvir
+    return rho_m, Rvir
 
 def cvir_ls(M_insol):
 	""" Returns the concentration parameter of the NFW profile, c_{vir}. """
@@ -1148,7 +1150,7 @@ def gety_ldm(Mvec, kvec_gety, survey):
     rvec = [0]*len(Mvec)
     rho = [0]*len(Mvec)
     for Mi in range(0,len(Mvec)):
-        Rvir = Rhalo(Mvec[Mi], survey)
+        Rvir = Rhalod(Mvec[Mi], survey)
         rvec[Mi] = np.logspace(-8, np.log10(Rvir), 10**6)
         rho[Mi] = rho_NFW_ldm(rvec[Mi], Mvec[Mi], survey)  # Units Msol h^2 / Mpc^3, comoving. 
 
