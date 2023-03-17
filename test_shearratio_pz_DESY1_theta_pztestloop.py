@@ -570,15 +570,21 @@ def get_gammaIA_estimator(sigmaz, deltaz):
     """ Calculate gammaIA from the estimator used on data for the Blazek et al. 2012 + F method with gammat, as in Sara's project. """
     
     # Get F factors
-    F_a = get_F('A', sigmaz, deltaz)
-    F_b = get_F('B', sigmaz, deltaz)
+    #F_a = get_F('A', sigmaz, deltaz)
+    #F_b = get_F('B', sigmaz, deltaz)
     
-    print("F_a=", F_a)
-    print("F_b=", F_b)
+    #print("F_a=", F_a)
+    #print("F_b=", F_b)
     
     # Write to file:
-    np.savetxt('./txtfiles/photo_z_test/F_a_'+SURVEY+'_'+endfile+'.txt', [F_a])
-    np.savetxt('./txtfiles/photo_z_test/F_b_'+SURVEY+'_'+endfile+'.txt', [F_b])
+    #np.savetxt('./txtfiles/photo_z_test/F_a_'+SURVEY+'_'+endfile+'.txt', [F_a])
+    #np.savetxt('./txtfiles/photo_z_test/F_b_'+SURVEY+'_'+endfile+'.txt', [F_b])
+    
+    F_a =  np.loadtxt('./txtfiles/photo_z_test/F_a_'+SURVEY+'_'+endfile+'.txt')
+    F_b =  np.loadtxt('./txtfiles/photo_z_test/F_a_'+SURVEY+'_'+endfile+'.txt')
+
+    print("F_a=", F_a)
+    print("F_b=", F_b)
 
     # Load boosts
     B_a = get_boost(theta_vec, 'A')
@@ -599,10 +605,13 @@ def get_gammaIA_estimator(sigmaz, deltaz):
     print("Sigma_c_inv_avg_inv A=", SigA)
     print("Sigma_c_inv_avg_inv B=", SigB)
     
+    # Write to file:
+    #np.savetxt('./txtfiles/photo_z_test/SigmaC_a_'+SURVEY+'_'+endfile+'.txt', [SigA])
+    #np.savetxt('./txtfiles/photo_z_test/SigmaC_b_'+SURVEY+'_'+endfile+'.txt', [SigB])
     
     # Write to file:
-    np.savetxt('./txtfiles/photo_z_test/SigmaC_a_'+SURVEY+'_'+endfile+'.txt', [SigA])
-    np.savetxt('./txtfiles/photo_z_test/SigmaC_b_'+SURVEY+'_'+endfile+'.txt', [SigB])
+    SigA = np.loadtxt('./txtfiles/photo_z_test/SigmaC_a_'+SURVEY+'_'+endfile+'.txt')
+    SigB = np.loadtxt('./txtfiles/photo_z_test/SigmaC_b_'+SURVEY+'_'+endfile+'.txt')
     
     #print("before delta sigma theory")
     # First get Delta Sigma, this is the same for all source samples
@@ -610,19 +619,24 @@ def get_gammaIA_estimator(sigmaz, deltaz):
     #print("after delta sigma theory")
     #np.savetxt('./txtfiles/DeltaSigma_with1halo_DESHoD.txt', DeltaSigma)
     #exit()
-    #print("Loading Delta Sigma from previous run")
-    #DeltaSigma = np.loadtxt('./txtfiles/DeltaSigma_with1halo_DESHoD.txt')
+    print("Loading Delta Sigma from previous run")
+    DeltaSigma = np.loadtxt('./txtfiles/DeltaSigma_with1halo_DESHoD.txt')
     
     # Get theoretical lensing-only gammat
     #gammat_a_lens = get_gammat_purelensing(DeltaSigma, 'A', limtype='truez')
     #gammat_b_lens = get_gammat_purelensing(DeltaSigma, 'B', limtype='truez')
-
-    """
+    
+    #np.savetxt('./txtfiles/photo_z_test/gammat_a_'+SURVEY+'.txt', gammat_a_lens)
+    #np.savetxt('./txtfiles/photo_z_test/gammat_b_'+SURVEY+'.txt', gammat_b_lens)
+    
+    gammat_a_lens = np.loadtxt('./txtfiles/photo_z_test/gammat_a_'+SURVEY+'.txt')
+    gammat_b_lens = np.loadtxt('./txtfiles/photo_z_test/gammat_b_'+SURVEY+'.txt')
+    
     print("Get gamma IA for fiducial")
     gamma_IA_A = get_IA_gammat_term("A", F_a, B_a)
     gamma_IA_B = get_IA_gammat_term("B", F_b, B_b)
     
-    plt.figure()
+    """plt.figure()
     plt.loglog(theta_vec, gamma_IA_A, 'o', label='IA')
     plt.loglog(theta_vec, gammat_a_lens, 'o', label='lensing')
     plt.title('Contribution to $\gamma_t$ from lensing and IA, bin0')
@@ -645,11 +659,11 @@ def get_gammaIA_estimator(sigmaz, deltaz):
     gammat_a = gammat_a_lens + gamma_IA_A
     gammat_b = gammat_b_lens + gamma_IA_B"""
     
-    gammat_a = gammat_a_lens
-    gammat_b = gammat_b_lens
+    #gammat_a = gammat_a_lens
+    #gammat_b = gammat_b_lens
     
     # Assemble estimator
-    gamma_IA_est = (gammat_b * SigB - gammat_a*SigA) / ( (B_b - 1 + F_b)*SigB - (B_a - 1 + F_a)*SigA)
+    #gamma_IA_est = (gammat_b * SigB - gammat_a*SigA) / ( (B_b - 1 + F_b)*SigB - (B_a - 1 + F_a)*SigA)
     
     # Stack rp or theta with gamma_IA_est to output
     #numerator = gammat_b * SigB - gammat_a*SigA
@@ -657,8 +671,8 @@ def get_gammaIA_estimator(sigmaz, deltaz):
     #np.savetxt('./txtfiles/photo_z_test/numerator_'+SURVEY+'_'+endfile+'.txt', save_numerator)
     
     # Stack rp or theta with gamma_IA_est to output
-    save_gammaIA = np.column_stack((theta_vec, gamma_IA_est))
-    np.savetxt('./txtfiles/photo_z_test/gamma_IA_est_'+SURVEY+'_'+endfile+'.txt', save_gammaIA)
+    #save_gammaIA = np.column_stack((theta_vec, gamma_IA_est))
+    #np.savetxt('./txtfiles/photo_z_test/gamma_IA_est_'+SURVEY+'_'+endfile+'.txt', save_gammaIA)
     
     """# Load the version with the true dNdzL for our distribution to see the difference:
     #rp_load, gamma_IA_load = np.loadtxt('./txtfiles/photo_z_test/gamma_IA_est_DESY1_test.txt', unpack=True)
@@ -752,8 +766,10 @@ else:
 	exit()
 
 #sigz = [0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1] #np.linspace(0.01,0.1, 11)
-delz =  [-0.18, -0.17, -0.16, -0.15, -0.14, -0.13, -0.12, -0.11, -0.10, -0.09, -0.08, -0.07, -0.06, -0.05, -0.04, -0.03, -0.02, 
-         -0.01, 0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1] #np.linspace(-0.18, 0.1, 29)
+#delz =  [-0.18, -0.17, -0.16, -0.15, -0.14, -0.13, -0.12, -0.11, -0.10, -0.09, -0.08, -0.07, -0.06, -0.05, -0.04, -0.03, -0.02, 
+#         -0.01, 0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1] #np.linspace(-0.18, 0.1, 29)
+
+delz = [ -0.10, -0.09, -0.08, -0.07, -0.06, -0.05, -0.04, -0.03, -0.02, -0.01, 0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1] 
 
 #sigz= [0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1]
 #delz = [0.08, 0.09, 0.1]
