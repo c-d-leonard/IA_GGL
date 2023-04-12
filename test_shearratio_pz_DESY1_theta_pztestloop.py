@@ -595,8 +595,8 @@ def get_gammaIA_estimator(sigmaz, deltaz):
 
     
     # Write to file:
-    #np.savetxt('./txtfiles/photo_z_test/B_a_'+SURVEY+'_'+endfile+'.txt', B_a)
-    #np.savetxt('./txtfiles/photo_z_test/B_b_'+SURVEY+'_'+endfile+'.txt', B_b)
+    np.savetxt('./txtfiles/photo_z_test/B_a_'+SURVEY+'_'+endfile+'.txt', B_a)
+    np.savetxt('./txtfiles/photo_z_test/B_b_'+SURVEY+'_'+endfile+'.txt', B_b)
     
     # Get SigmaC
     SigA = get_SigmaC_avg('A', sigmaz, deltaz)
