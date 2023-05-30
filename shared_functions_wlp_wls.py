@@ -9,7 +9,7 @@ import numpy as np
 import shared_functions_setup as setup
 import os.path
 import pyccl as ccl
-from halotools.empirical_models import PrebuiltHodModelFactory
+#from halotools.empirical_models import PrebuiltHodModelFactory
 
 # Functions shared between w_{l+} and w_{ls}
 
