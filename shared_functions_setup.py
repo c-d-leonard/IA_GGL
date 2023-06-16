@@ -364,29 +364,59 @@ def dNdz_perturbed(sample, F_or_SigC, sigma, deltaz):
         elif(F_or_SigC=='F'):
             z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/10KsourceBins_1KlensBins/planck2018_params/bin0_centres.dat')
             dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/10KsourceBins_1KlensBins/planck2018_params/source0Binned')
+            
+    if (np.abs(sigma)>10**(-12)):
         
-    # Define a new redshift vector exactly the same as z_mc just to facilitate the convolution
-    z_new = z_mc
+        # Define a new redshift vector exactly the same as z_mc just to facilitate the convolution
+        z_new = z_mc
     
-    Gauss = [0]*len(z_mc)
-    for zmi in range(0,len(z_mc)):
-        Gauss[zmi] = scipy.stats.multivariate_normal.pdf(z_new, mean = z_mc[zmi]+deltaz, cov=sigma)
+        Gauss = [0]*len(z_mc)
+        for zmi in range(0,len(z_mc)):
+            Gauss[zmi] = scipy.stats.multivariate_normal.pdf(z_new, mean = z_mc[zmi]+deltaz, cov=sigma)
 
-    numerator = np.zeros(len(z_new))
-    for zni in range(0, len(z_new)):
-        numerator[zni] = scipy.integrate.simps(dNdz_mc * Gauss[zni], z_mc)
+        numerator = np.zeros(len(z_new))
+        for zni in range(0, len(z_new)):
+            numerator[zni] = scipy.integrate.simps(dNdz_mc * Gauss[zni], z_mc)
     
-    denominator = scipy.integrate.simps(numerator, z_new)
+        denominator = scipy.integrate.simps(numerator, z_new)
     
-    dNdz_new = numerator / denominator
+        dNdz_new = numerator / denominator
     
-    norm_original = scipy.integrate.simps(dNdz_mc, z_mc)
+        norm_original = scipy.integrate.simps(dNdz_mc, z_mc)
     
-    """plt.figure()
-    plt.plot(z_mc, dNdz_mc / norm_original, label='original')
-    plt.plot(z_new, dNdz_new, label='perturbed')
-    plt.legend()
-    plt.savefig('./perturbed_dNdz_sample='+sample+'.png')
-    plt.close()"""
+        """plt.figure()
+        plt.plot(z_mc, dNdz_mc / norm_original, label='original')
+        plt.plot(z_new, dNdz_new, label='perturbed')
+        plt.legend()
+        plt.savefig('./perturbed_dNdz_sample='+sample+'.png')
+        plt.close()"""
+        
+    else:
+        # In the case where we only have a mean shift, we don't need to do the full integral and it's faster so just do that.
+        z_new_temp = z_mc + deltaz
+        
+        if any(z_new_temp<0):
+            # Make sure that if this makes the redshifts negative we cut those.
+            ind = next(j[0] for j in enumerate(z_new_temp) if j[1]>=0)
+            z_new = z_new_temp[ind:]
+            dNdz_new_temp = dNdz_mc[ind:]
+        else:
+            # Nothing to do here but just rename so we have uniformity outside this loop
+            z_new = z_new_temp
+            dNdz_new_temp = dNdz_mc
+        
+        # Normalise
+        norm = scipy.integrate.simps(dNdz_new_temp, z_new)
+        
+        dNdz_new = dNdz_new_temp / norm
+        
+        norm_original = scipy.integrate.simps(dNdz_mc, z_mc)
+        
+        plt.figure()
+        plt.plot(z_mc, dNdz_mc / norm_original, label='original')
+        plt.plot(z_new, dNdz_new, label='perturbed')
+        plt.legend()
+        plt.savefig('./perturbed_dNdz_sample='+sample+'_test.png')
+        plt.close()
    
     return z_new, dNdz_new
