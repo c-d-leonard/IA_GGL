@@ -86,7 +86,9 @@ def sum_weights_DESY1(source_sample, z_cut, sigmaz, deltaz):
                     else:
                         zminclose[cli] = min(z_mc)
 
-            zmaxclose = 1./(ccl.scale_factor_of_chi(cosmo_a, chiL + proj_len)) - 1.  
+            zmaxclose = 1./(ccl.scale_factor_of_chi(cosmo_a, chiL + proj_len)) - 1.
+            
+            
             
            
             sum_close = np.zeros(len(zL))
@@ -573,24 +575,24 @@ def get_gammaIA_estimator(sigmaz, deltaz_A, deltaz_B, Aia):
     """ Calculate gammaIA from the estimator used on data for the Blazek et al. 2012 + F method with gammat, as in Sara's project. """
     
     # Get F factors
-    F_a = get_F('A', sigmaz, deltaz_A)
+    #F_a = get_F('A', sigmaz, deltaz_A)
     
-    F_b = get_F('B', sigmaz, deltaz_B)
+    #F_b = get_F('B', sigmaz, deltaz_B)
     
     # Write to file:
-    np.savetxt('./txtfiles/photo_z_test/F_a_'+SURVEY+'_'+endfile+'_sigz='+str(sigmaz)+'_delzA='+str(deltaz_A)+'.txt', [F_a])
-    np.savetxt('./txtfiles/photo_z_test/F_b_'+SURVEY+'_'+endfile+'_sigz='+str(sigmaz)+'_delzB='+str(deltaz_B)+'.txt', [F_b])
+    #np.savetxt('./txtfiles/photo_z_test/F_a_'+SURVEY+'_'+endfile+'_sigz='+str(sigmaz)+'_delzA='+str(deltaz_A)+'.txt', [F_a])
+    #np.savetxt('./txtfiles/photo_z_test/F_b_'+SURVEY+'_'+endfile+'_sigz='+str(sigmaz)+'_delzB='+str(deltaz_B)+'.txt', [F_b])
 
     #Load from file if we already did this:
-    #F_a = np.loadtxt('./txtfiles/photo_z_test/F_a_'+SURVEY+'_'+endfile+'_sigz='+str(sigmaz)+'_delzA='+str(deltaz_A)+'.txt')
-    #F_b = np.loadtxt('./txtfiles/photo_z_test/F_b_'+SURVEY+'_'+endfile+'_sigz='+str(sigmaz)+'_delzB='+str(deltaz_B)+'.txt')
+    F_a = np.loadtxt('./txtfiles/photo_z_test/F_a_'+SURVEY+'_'+endfile+'_sigz='+str(sigmaz)+'_delzA='+str(deltaz_A)+'.txt')
+    F_b = np.loadtxt('./txtfiles/photo_z_test/F_b_'+SURVEY+'_'+endfile+'_sigz='+str(sigmaz)+'_delzB='+str(deltaz_B)+'.txt')
 
     print("F_a=", F_a)
     print("F_b=", F_b)
 
     # Load boosts
-    #B_a = get_boost(theta_vec, 'A')
-    #B_b = get_boost(theta_vec, 'B')
+    B_a = get_boost(theta_vec, 'A')
+    B_b = get_boost(theta_vec, 'B')
     
     #print("B_a=", B_a)
     #print("B_b=", B_b)
@@ -601,17 +603,17 @@ def get_gammaIA_estimator(sigmaz, deltaz_A, deltaz_B, Aia):
     #np.savetxt('./txtfiles/photo_z_test/B_b_'+SURVEY+'_'+endfile+'.txt', B_b)
     
     # Get SigmaC
-    SigA = get_SigmaC_avg('A', sigmaz, deltaz_A)
-    SigB = get_SigmaC_avg('B', sigmaz, deltaz_B)
+    #SigA = get_SigmaC_avg('A', sigmaz, deltaz_A)
+    #SigB = get_SigmaC_avg('B', sigmaz, deltaz_B)
 
     
     # Write to file:
-    np.savetxt('./txtfiles/photo_z_test/SigmaC_a_'+SURVEY+'_'+endfile+'_sigz='+str(sigmaz)+'_delz='+str(deltaz_A)+'.txt', [SigA])
-    np.savetxt('./txtfiles/photo_z_test/SigmaC_b_'+SURVEY+'_'+endfile+'_sigz='+str(sigmaz)+'_delz='+str(deltaz_B)+'.txt', [SigB])
+    #np.savetxt('./txtfiles/photo_z_test/SigmaC_a_'+SURVEY+'_'+endfile+'_sigz='+str(sigmaz)+'_delz='+str(deltaz_A)+'.txt', [SigA])
+    #np.savetxt('./txtfiles/photo_z_test/SigmaC_b_'+SURVEY+'_'+endfile+'_sigz='+str(sigmaz)+'_delz='+str(deltaz_B)+'.txt', [SigB])
     
     # Load from file if we've already computed this:
-    #SigA = np.loadtxt('./txtfiles/photo_z_test/SigmaC_a_'+SURVEY+'_'+endfile+'_sigz='+str(sigmaz)+'_delz='+str(deltaz)+'.txt')
-    #SigB = np.loadtxt('./txtfiles/photo_z_test/SigmaC_b_'+SURVEY+'_'+endfile+'_sigz='+str(sigmaz)+'_delz='+str(deltaz)+'.txt')
+    SigA = np.loadtxt('./txtfiles/photo_z_test/SigmaC_a_'+SURVEY+'_'+endfile+'_sigz='+str(sigmaz)+'_delz='+str(deltaz_A)+'.txt')
+    SigB = np.loadtxt('./txtfiles/photo_z_test/SigmaC_b_'+SURVEY+'_'+endfile+'_sigz='+str(sigmaz)+'_delz='+str(deltaz_B)+'.txt')
 
     print("Sigma_c_inv_avg_inv A=", SigA)
     print("Sigma_c_inv_avg_inv B=", SigB)
@@ -636,7 +638,7 @@ def get_gammaIA_estimator(sigmaz, deltaz_A, deltaz_B, Aia):
     #np.savetxt('./txtfiles/photo_z_test/gammat_lens_B_'+SURVEY+'_'+endfile+'.dat', save_gammat_b)
     
     # Load answer if we've already calculated it:
-    """theta, gammat_a_lens = np.loadtxt('./txtfiles/photo_z_test/gammat_lens_A_'+SURVEY+'_'+endfile+'.dat', unpack=True)
+    theta, gammat_a_lens = np.loadtxt('./txtfiles/photo_z_test/gammat_lens_A_'+SURVEY+'_'+endfile+'.dat', unpack=True)
     theta, gammat_b_lens = np.loadtxt('./txtfiles/photo_z_test/gammat_lens_B_'+SURVEY+'_'+endfile+'.dat', unpack=True)
 
     print("Get gamma IA for fiducial")
@@ -651,7 +653,7 @@ def get_gammaIA_estimator(sigmaz, deltaz_A, deltaz_B, Aia):
     #gamma_IA_pergal = np.loadtxt('./txtfiles/photo_z_test/gamma_IA_pergal_'+SURVEY+'_'+endfile+'_Aia2h='+str(Aia_2h)+'_Aia1h='+str(Aia_1h)+'.txt')
 
     gamma_IA_A = gamma_IA_pergal*(B_a-1.0+F_a) #get_IA_gammat_term(Aia, "A", F_a, B_a)
-    gamma_IA_B = gamma_IA_pergal*(B_b-1.0+F_b)#get_IA_gammat_term(Aia, "B", F_b, B_b)"""
+    gamma_IA_B = gamma_IA_pergal*(B_b-1.0+F_b)#get_IA_gammat_term(Aia, "B", F_b, B_b)
     
     """plt.figure()
     plt.loglog(theta_vec, gamma_IA_A, 'o', label='IA')
@@ -673,7 +675,7 @@ def get_gammaIA_estimator(sigmaz, deltaz_A, deltaz_B, Aia):
     plt.savefig('./gamma_t_contributions_B.png'). Its on
     plt.close()"""
     
-    """gammat_a = gammat_a_lens + gamma_IA_A
+    gammat_a = gammat_a_lens + gamma_IA_A
     gammat_b = gammat_b_lens + gamma_IA_B
     
     # Assemble estimator
@@ -681,7 +683,7 @@ def get_gammaIA_estimator(sigmaz, deltaz_A, deltaz_B, Aia):
     
     # Stack rp or theta with gamma_IA_est to output
     save_gammaIA = np.column_stack((theta_vec, gamma_IA_est))
-    np.savetxt('./txtfiles/photo_z_test/gamma_IA_est_'+SURVEY+'_'+endfile+'_sigz='+str(sigmaz)+'_delz='+str(deltaz)+'_Aia='+str(Aia)+'.txt', save_gammaIA)"""
+    np.savetxt('./txtfiles/photo_z_test/gamma_IA_est_'+SURVEY+'_'+endfile+'_sigz='+str(sigmaz)+'_delzA='+str(deltaz_A)+'_delzB='+str(deltaz_B)+'_Aia='+str(Aia)+'.txt', save_gammaIA)
     
     """# Load the version with the true dNdzL for our distribution to see the difference:
     #rp_load, gamma_IA_load = np.loadtxt('./txtfiles/photo_z_test/gamma_IA_est_DESY1_test.txt', unpack=True)
@@ -712,7 +714,19 @@ else:
 	print("We don't have support for that survey yet; exiting.")
 	exit()
 
-delz = [-0.1, -0.09, -0.08, -0.07, -0.06, -0.05, -0.04, -0.03, -0.02, -0.01, 0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1]
+delza = ([-0.2, -0.19, -0.18, -0.17, -0.16, -0.15, -0.14, -0.13, -0.12, -0.11, -0.1, -0.09, -0.08, -0.07, -0.06, 
+          -0.05, -0.04, -0.03, -0.02, -0.01, 0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 
+         0.07, 0.08, 0.09, 0.1])
+         
+#delzb = ([0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 
+#         0.07, 0.08, 0.09, 0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.2, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.3, 0.31, 0.32, 0.33, 0.34, 0.35, 0.36, 0.37, 0.38, 0.39, #0.4])
+
+#delzb = ([0.41,0.42,0.43,0.44,0.45, 0.46, 0.47, 0.48, 0.49, 0.5, 0.51,0.52,0.53,0.54,0.55,0.56, 0.57, 0.58, 0.59, 0.6])
+delzb =([0.61,0.62,0.63,0.64, 0.65, 0.66, 0.67, 0.68, 0.69, 0.7, 0.71, 0.72, 0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 0.8, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.9])
+         
+#delzb = [0.3]
+
+#delzb = ([-0.2, -0.19, -0.18, -0.17, -0.16, -0.15, -0.14, -0.13, -0.12, -0.11, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.3, 0.31, 0.32, 0.33, 0.34, 0.35, 0.36, 0.37, 0.38, 0.39, 0.4])
 
 #endfile = 'wfidIA_measured-redshifts-wrong_variableF_DESHoD_sigma='+str(sigz[si])+'deltaz='+str(delz[zi])+'_AIA2h='+str(AIA_NLA[ai2])+'_AIA1h='+str(AIA_1h[ai1])
 endfile = 'wfidIA_measured-redshifts-wrong_variableF_DESHoD'
@@ -735,50 +749,40 @@ rp_max = setup.arcmin_to_rp(200, pa.zeff, cosmo_t)
 
 theta_radians = theta_vec / 60.*np.pi/180.
 
-for i in range(0,len(delz)):
+"""for i in range(0,len(delza)):
 
-    print('delz=', delz[i])
-    F_a = get_F('A', 0.0, delz[i])
-    F_b = get_F('B', 0.0, delz[i])
-    np.savetxt('./txtfiles/photo_z_test/F_a_'+SURVEY+'_'+endfile+'_sigz=0.0_delzA='+str(delz[i])+'.txt', [F_a])
-    np.savetxt('./txtfiles/photo_z_test/F_b_'+SURVEY+'_'+endfile+'_sigz=0.0_delzB='+str(delz[i])+'.txt', [F_b])
+    print('delz=', delza[i])
+    F_a = get_F('A', 0.0, delza[i])
+    np.savetxt('./txtfiles/photo_z_test/F_a_'+SURVEY+'_'+endfile+'_sigz=0.0_delzA='+str(delza[i])+'.txt', [F_a])
+
     
     # Get SigmaC
-    SigA = get_SigmaC_avg('A', 0.0, delz[i])
-    SigB = get_SigmaC_avg('B', 0.0, delz[i])
-
-    
+    SigA = get_SigmaC_avg('A', 0.0, delza[i]) 
     # Write to file:
-    np.savetxt('./txtfiles/photo_z_test/SigmaC_a_'+SURVEY+'_'+endfile+'_sigz=0.0_delz='+str(delz[i])+'.txt', [SigA])
-    np.savetxt('./txtfiles/photo_z_test/SigmaC_b_'+SURVEY+'_'+endfile+'_sigz=0.0_delz='+str(delz[i])+'.txt', [SigB])
+    np.savetxt('./txtfiles/photo_z_test/SigmaC_a_'+SURVEY+'_'+endfile+'_sigz=0.0_delz='+str(delza[i])+'.txt', [SigA])"""
     
-exit()
 
-print(delz)
-#delz = [1.61, 1.62, 1.63, 1.64, 1.65, 1.66, 1.67, 1.68, 1.69, 1.7]
-#delz = [1.41, 1.42, 1.43, 1.44, 1.45, 1.46, 1.47, 1.47, 1.49, 1.50, 1.51, 1.52, 1.53, 1.54, 1.55, 1.54, 1.57, 1.58, 1.59, 1.6]
-#delz = [1.11, 1.12, 1.13, 1.14, 1.15, 1.16, 1.17, 1.18, 1.19, 1.2,1.21, 1.22, 1.23, 1.24, 1.25, 1.26, 1.27, 1.28, 1.29, 1.3, 1.31, 1.32, 1.33, 1.34, 1.35, 1.36, 1.37, 1.38, 1.39, 1.4]
-#delz = [0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.2, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.3, 0.31, 0.32, 0.33, 0.34, 0.35, 0.36, 0.37, 0.38, 0.39, 0.4, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49, 0.5, 0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.6]
-#delz = [0.61, 0.62, 0.63, 0.64, 0.65, 0.66, 0.67, 0.68, 0.69, 0.7,
-#         0.71, 0.72, 0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 0.8, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 
-#          0.89, 0.9, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99]
-#delz = [0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.2, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.3, 0.31, 0.32, 0.33, 0.34, 0.35, 0.36, 0.37, 0.38, 0.39, 0.4, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49, 0.5, 0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.6, 0.61, 0.62, 0.63, 0.64, 0.65, 0.66, 0.67, 0.68, 0.69, 0.7]
-#delz = [-0.05, -0.04, -0.03, -0.02, -0.01, 0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.2, 0.21, 0.22] #[0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1] #np.linspace(-0.18, 0.1, 29)
+"""for i in range(0, len(delzb)):    
+    
+    print('delz=', delzb[i])
+    F_b = get_F('B', 0.0001, delzb[i])
+    np.savetxt('./txtfiles/photo_z_test/F_b_'+SURVEY+'_'+endfile+'_sigz=0.0_delzB='+str(delzb[i])+'.txt', [F_b])
+    
+    SigB = get_SigmaC_avg('B', 0.0, delzb[i])
+    np.savetxt('./txtfiles/photo_z_test/SigmaC_b_'+SURVEY+'_'+endfile+'_sigz=0.0_delz='+str(delzb[i])+'.txt', [SigB])
+
+exit()"""
 
 sigz= [0.0]
-#sigz = [0.0001, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.2, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.3, 0.31, 0.32, 0.33, 0.34, 0.35, 0.36, 0.37, 0.38, 0.39, 0.4]
-#sigz = [0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.3, 0.31, 0.32, 0.33, 0.34, 0.35, 0.36, 0.37, 0.38, 0.39, 0.4]
 
-#AIA= [-1.2, -1.0, -0.8, -0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2]
-
-AIA = [0.0]
-#AIA = [-0.1, -0.08, -0.06, -0.04, -0.02, 0.0, 0.02, 0.04, 0.06, 0.08, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.22, 0.24, 0.26, 0.28, 0.3, 0.32, 0.34, 0.36]
+#AIA = [0.0]
+AIA = [-0.1, -0.08, -0.06, -0.04, -0.02, 0.0, 0.02, 0.04, 0.06, 0.08, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.22, 0.24, 0.26, 0.28, 0.3, 0.32, 0.34, 0.36]
 
 for si in range(0,len(sigz)):
     for ai in range(0,len(AIA)):
-        for zi_a in range(0,len(delz)):
-            for zi_b in range(0,len(delz)):
-                print("sigz=", sigz[si], "delzA=", delz[zi_a], "delzB=", delz[zi_b], "A_IA=", AIA[ai])
+        for zi_a in range(0,len(delza)):
+            for zi_b in range(0,len(delzb)):
+                print("sigz=", sigz[si], "delzA=", delza[zi_a], "delzB=", delzb[zi_b], "A_IA=", AIA[ai])
 
-                get_gammaIA_estimator(sigz[si], delz[zi_a], delz[zi_b], AIA[ai])
+                get_gammaIA_estimator(sigz[si], delza[zi_a], delzb[zi_b], AIA[ai])
         

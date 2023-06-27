@@ -365,35 +365,65 @@ def dNdz_perturbed(sample, F_or_SigC, sigma, deltaz):
             z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/10KsourceBins_1KlensBins/planck2018_params/bin0_centres.dat')
             dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/10KsourceBins_1KlensBins/planck2018_params/source0Binned')
             
+    norm_original = scipy.integrate.simps(dNdz_mc, z_mc)
+    dNdz_mc_orig = dNdz_mc
+            
     if (np.abs(sigma)>10**(-12)):
         
         # Define a new redshift vector exactly the same as z_mc just to facilitate the convolution
         z_new = z_mc
     
-        Gauss = [0]*len(z_mc)
+        Gauss = np.zeros((len(z_new), len(z_mc)))
         for zmi in range(0,len(z_mc)):
-            Gauss[zmi] = scipy.stats.multivariate_normal.pdf(z_new, mean = z_mc[zmi]+deltaz, cov=sigma)
+            Gauss[:,zmi] = scipy.stats.multivariate_normal.pdf(z_new, mean = z_mc[zmi]+deltaz, cov=sigma)
+        #print('zmc0=', z_mc[0])
+        #plt.figure()
+        #plt.plot(z_new, Gauss[:,0])
+        #plt.savefig('./test_Gauss.png')
+        #plt.close()
+            
 
         numerator = np.zeros(len(z_new))
         for zni in range(0, len(z_new)):
-            numerator[zni] = scipy.integrate.simps(dNdz_mc * Gauss[zni], z_mc)
+            numerator[zni] = scipy.integrate.simps(dNdz_mc * Gauss[zni,:], z_mc)
     
         denominator = scipy.integrate.simps(numerator, z_new)
     
         dNdz_new = numerator / denominator
     
-        norm_original = scipy.integrate.simps(dNdz_mc, z_mc)
-    
-        """plt.figure()
-        plt.plot(z_mc, dNdz_mc / norm_original, label='original')
-        plt.plot(z_new, dNdz_new, label='perturbed')
-        plt.legend()
-        plt.savefig('./perturbed_dNdz_sample='+sample+'.png')
-        plt.close()"""
+        #plt.figure()
+        #plt.plot(z_mc, dNdz_mc / norm_original, label='original')
+        #plt.plot(z_new, dNdz_new, label='perturbed')
+        #plt.legend()
+        #plt.savefig('./perturbed_dNdz_sample='+sample+'_Gaussianintegral.png')
+        #plt.close()
         
     else:
         # In the case where we only have a mean shift, we don't need to do the full integral and it's faster so just do that.
-        z_new_temp = z_mc + deltaz
+        
+        # Shift all the redshifts 
+        z_new_temp = z_mc + deltaz 
+        
+        
+        # If deltaz is positive, we now have a z that starts above 0. If deltaz is big, this starts to cause a problem for F calculations.
+        # Pad out the dndz below this:
+        if deltaz>0:
+            
+            # Check if z vec is linearly spaced, hopefully yes:
+            if np.abs((z_new_temp[1]-z_new_temp[0])-(z_new_temp[2]-z_new_temp[1]))>0.000001:
+                print(z_new_temp[1]-z_new_temp[0])
+                print(z_new_temp[2]-z_new_temp[1])
+                print('z is not linearly spaced, not set up for that')
+                exit() 
+            
+            # Get number of z's we want:
+            numz_pad = np.int(z_new_temp[0] / (z_new_temp[1]-z_new_temp[0]))
+            #print('numz pad=', numz_pad)
+            
+            padding_z = np.linspace(0,z_new_temp[0], numz_pad)
+            
+            z_new_temp = np.append(padding_z, z_new_temp)
+            dNdz_mc = np.append(np.zeros(len(padding_z)), dNdz_mc)
         
         if any(z_new_temp<0):
             # Make sure that if this makes the redshifts negative we cut those.
@@ -410,13 +440,12 @@ def dNdz_perturbed(sample, F_or_SigC, sigma, deltaz):
         
         dNdz_new = dNdz_new_temp / norm
         
-        norm_original = scipy.integrate.simps(dNdz_mc, z_mc)
         
         plt.figure()
-        plt.plot(z_mc, dNdz_mc / norm_original, label='original')
+        plt.plot(z_mc, dNdz_mc_orig / norm_original, label='original')
         plt.plot(z_new, dNdz_new, label='perturbed')
         plt.legend()
-        plt.savefig('./perturbed_dNdz_sample='+sample+'_test.png')
+        plt.savefig('./perturbed_dNdz_sample='+sample+'_shift.png')
         plt.close()
    
     return z_new, dNdz_new
