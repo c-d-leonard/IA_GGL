@@ -352,18 +352,25 @@ def dNdz_perturbed(sample, F_or_SigC, sigma, deltaz):
         if(F_or_SigC=='SigC'):
             z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/10KsourceBins_1KlensBins/planck2018_params/bin1_centres.dat')
             dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/10KsourceBins_1KlensBins/planck2018_params/source1Binned')
+            #z_mc = np.loadtxt('./txtfiles/photo_z_test/weighted_dNdz_w_mbias/binB_centres.dat')
+            #dNdz_mc = np.loadtxt('./txtfiles/photo_z_test/weighted_dNdz_w_mbias/binB_dNdz.dat')
         elif(F_or_SigC=='F'):
             z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/10KsourceBins_1KlensBins/planck2018_params/bin1_centres.dat')
             dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/10KsourceBins_1KlensBins/planck2018_params/source1Binned')
+            #z_mc = np.loadtxt('./txtfiles/photo_z_test/weighted_dNdz_w_mbias/binB_centres.dat')
+            #dNdz_mc = np.loadtxt('./txtfiles/photo_z_test/weighted_dNdz_w_mbias/binB_dNdz.dat')
         
     elif(sample=='A'):
         if (F_or_SigC=='SigC'):
-        
+            #z_mc = np.loadtxt('./txtfiles/photo_z_test/weighted_dNdz_w_mbias/binA_centres.dat')
+            #dNdz_mc = np.loadtxt('./txtfiles/photo_z_test/weighted_dNdz_w_mbias/binA_dNdz.dat')
             z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/10KsourceBins_1KlensBins/planck2018_params/bin0_centres.dat')
             dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/10KsourceBins_1KlensBins/planck2018_params/source0Binned')
         elif(F_or_SigC=='F'):
             z_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/10KsourceBins_1KlensBins/planck2018_params/bin0_centres.dat')
             dNdz_mc = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/10KsourceBins_1KlensBins/planck2018_params/source0Binned')
+            #z_mc = np.loadtxt('./txtfiles/photo_z_test/weighted_dNdz_w_mbias/binA_centres.dat')
+            #dNdz_mc = np.loadtxt('./txtfiles/photo_z_test/weighted_dNdz_w_mbias/binA_dNdz.dat')
             
     norm_original = scipy.integrate.simps(dNdz_mc, z_mc)
     dNdz_mc_orig = dNdz_mc
@@ -440,12 +447,12 @@ def dNdz_perturbed(sample, F_or_SigC, sigma, deltaz):
         
         dNdz_new = dNdz_new_temp / norm
         
-        
+        """
         plt.figure()
         plt.plot(z_mc, dNdz_mc_orig / norm_original, label='original')
         plt.plot(z_new, dNdz_new, label='perturbed')
         plt.legend()
         plt.savefig('./perturbed_dNdz_sample='+sample+'_shift.png')
-        plt.close()
+        plt.close()"""
    
     return z_new, dNdz_new

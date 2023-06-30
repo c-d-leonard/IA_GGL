@@ -111,6 +111,9 @@ def get_boost(theta_vec, sample):
 	#print("Loading boost from previous run")
 	#Boost = np.loadtxt('./txtfiles/boosts/Boost_'+str(sample)+'_survey='+str(SURVEY)+'_true-redshifts-different_sigma='+str(pa.sigma)+'deltaz='+str(pa.del_z)+'.txt') + np.ones((len(theta_vec)))
 	Boost = np.loadtxt('./txtfiles/boosts/Boost_'+str(sample)+'_survey='+str(SURVEY)+'_DESHoD.txt') + np.ones((len(theta_vec)))
+	
+	# Let's use the Boost directly as measured:
+	
 
 	return Boost
 	
@@ -624,18 +627,18 @@ def get_gammaIA_estimator(sigmaz, deltaz_A, deltaz_B, Aia):
     #print("after delta sigma theory")
     #np.savetxt('./txtfiles/DeltaSigma_with1halo_DESHoD.txt', DeltaSigma)
     #exit()
-    #print("Loading Delta Sigma from previous run")
-    #DeltaSigma = np.loadtxt('./txtfiles/DeltaSigma_with1halo_DESHoD.txt')
+    print("Loading Delta Sigma from previous run")
+    DeltaSigma = np.loadtxt('./txtfiles/DeltaSigma_with1halo_DESHoD.txt')
     
     # Get theoretical lensing-only gammat
-    #gammat_a_lens = get_gammat_purelensing(DeltaSigma, 'A', limtype='truez')
-    #gammat_b_lens = get_gammat_purelensing(DeltaSigma, 'B', limtype='truez')
+    gammat_a_lens = get_gammat_purelensing(DeltaSigma, 'A', limtype='truez')
+    gammat_b_lens = get_gammat_purelensing(DeltaSigma, 'B', limtype='truez')
 
     # save answer
-    #save_gammat_a = np.column_stack((theta_vec, gammat_a_lens))
-    #np.savetxt('./txtfiles/photo_z_test/gammat_lens_A_'+SURVEY+'_'+endfile+'.dat', save_gammat_a)
-    #save_gammat_b = np.column_stack((theta_vec, gammat_b_lens))
-    #np.savetxt('./txtfiles/photo_z_test/gammat_lens_B_'+SURVEY+'_'+endfile+'.dat', save_gammat_b)
+    save_gammat_a = np.column_stack((theta_vec, gammat_a_lens))
+    np.savetxt('./txtfiles/photo_z_test/gammat_lens_A_'+SURVEY+'_'+endfile+'.dat', save_gammat_a)
+    save_gammat_b = np.column_stack((theta_vec, gammat_b_lens))
+    np.savetxt('./txtfiles/photo_z_test/gammat_lens_B_'+SURVEY+'_'+endfile+'.dat', save_gammat_b)
     
     # Load answer if we've already calculated it:
     theta, gammat_a_lens = np.loadtxt('./txtfiles/photo_z_test/gammat_lens_A_'+SURVEY+'_'+endfile+'.dat', unpack=True)
@@ -722,7 +725,13 @@ delza = ([-0.2, -0.19, -0.18, -0.17, -0.16, -0.15, -0.14, -0.13, -0.12, -0.11, -
 #         0.07, 0.08, 0.09, 0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.2, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.3, 0.31, 0.32, 0.33, 0.34, 0.35, 0.36, 0.37, 0.38, 0.39, #0.4])
 
 #delzb = ([0.41,0.42,0.43,0.44,0.45, 0.46, 0.47, 0.48, 0.49, 0.5, 0.51,0.52,0.53,0.54,0.55,0.56, 0.57, 0.58, 0.59, 0.6])
-delzb =([0.61,0.62,0.63,0.64, 0.65, 0.66, 0.67, 0.68, 0.69, 0.7, 0.71, 0.72, 0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 0.8, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.9])
+delzb =([-0.2, -0.19, -0.18, -0.17, -0.16, -0.15, -0.14, -0.13, -0.12, -0.11,-0.1, -0.09, -0.08, -0.07, -0.06, 
+          -0.05, -0.04, -0.03, -0.02, -0.01, 0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 
+         0.07, 0.08, 0.09, 0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.2,  0.21, 0.22, 0.23, 
+          0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.3, 0.31, 0.32, 0.33, 0.34, 0.35, 0.36, 0.37, 0.38, 0.39, 0.4,
+         0.41,0.42,0.43,0.44,0.45, 0.46, 0.47, 0.48, 0.49, 0.5, 0.51,0.52,0.53,0.54,0.55,0.56, 0.57, 0.58, 0.59, 0.6,
+         0.61,0.62,0.63,0.64, 0.65, 0.66, 0.67, 0.68, 0.69, 0.7, 0.71, 0.72, 0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 
+          0.8, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.9])
          
 #delzb = [0.3]
 
@@ -759,10 +768,10 @@ theta_radians = theta_vec / 60.*np.pi/180.
     # Get SigmaC
     SigA = get_SigmaC_avg('A', 0.0, delza[i]) 
     # Write to file:
-    np.savetxt('./txtfiles/photo_z_test/SigmaC_a_'+SURVEY+'_'+endfile+'_sigz=0.0_delz='+str(delza[i])+'.txt', [SigA])"""
+    np.savetxt('./txtfiles/photo_z_test/SigmaC_a_'+SURVEY+'_'+endfile+'_sigz=0.0_delz='+str(delza[i])+'.txt', [SigA])
     
 
-"""for i in range(0, len(delzb)):    
+for i in range(0, len(delzb)):    
     
     print('delz=', delzb[i])
     F_b = get_F('B', 0.0001, delzb[i])
