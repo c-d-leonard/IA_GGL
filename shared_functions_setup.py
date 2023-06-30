@@ -447,8 +447,8 @@ def dNdz_perturbed(sample, F_or_SigC, sigma, deltaz):
         
         dNdz_new = dNdz_new_temp / norm
         
-        """
-        plt.figure()
+        
+        """plt.figure()
         plt.plot(z_mc, dNdz_mc_orig / norm_original, label='original')
         plt.plot(z_new, dNdz_new, label='perturbed')
         plt.legend()
