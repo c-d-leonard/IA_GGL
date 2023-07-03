@@ -110,9 +110,16 @@ def get_boost(theta_vec, sample):
 	
 	#print("Loading boost from previous run")
 	#Boost = np.loadtxt('./txtfiles/boosts/Boost_'+str(sample)+'_survey='+str(SURVEY)+'_true-redshifts-different_sigma='+str(pa.sigma)+'deltaz='+str(pa.del_z)+'.txt') + np.ones((len(theta_vec)))
-	Boost = np.loadtxt('./txtfiles/boosts/Boost_'+str(sample)+'_survey='+str(SURVEY)+'_DESHoD.txt') + np.ones((len(theta_vec)))
+	#Boost = np.loadtxt('./txtfiles/boosts/Boost_'+str(sample)+'_survey='+str(SURVEY)+'_DESHoD.txt') + np.ones((len(theta_vec)))
 	
 	# Let's use the Boost directly as measured:
+	if sample=='A':
+	    Boost = np.loadtxt('./txtfiles/results_sara/Fiducial/AvgBoost0')
+	elif sample=='B':
+	    Boost = np.loadtxt('./txtfiles/results_sara/Fiducial/AvgBoost1')
+	else:
+	    print('not sure what Boost sample that is, exiting')
+	    exit()
 	
 	
 
@@ -687,7 +694,7 @@ def get_gammaIA_estimator(sigmaz, deltaz_A, deltaz_B, Aia):
     
     # Stack rp or theta with gamma_IA_est to output
     save_gammaIA = np.column_stack((theta_vec, gamma_IA_est))
-    np.savetxt('./txtfiles/photo_z_test/gamma_IA_est_'+SURVEY+'_'+endfile+'_sigz='+str(sigmaz)+'_delzA='+str(deltaz_A)+'_delzB='+str(deltaz_B)+'_Aia='+str(Aia)+'.txt', save_gammaIA)
+    np.savetxt('./txtfiles/photo_z_test/gamma_IA_est_'+SURVEY+'_'+endfile+'_measuredboosts_sigz='+str(sigmaz)+'_delzA='+str(deltaz_A)+'_delzB='+str(deltaz_B)+'_Aia='+str(Aia)+'.txt', save_gammaIA)
     
     """# Load the version with the true dNdzL for our distribution to see the difference:
     #rp_load, gamma_IA_load = np.loadtxt('./txtfiles/photo_z_test/gamma_IA_est_DESY1_test.txt', unpack=True)
@@ -718,9 +725,16 @@ else:
 	print("We don't have support for that survey yet; exiting.")
 	exit()
 
-delza = ([-0.2, -0.19, -0.18, -0.17, -0.16, -0.15, -0.14, -0.13, -0.12, -0.11, -0.1, -0.09, -0.08, -0.07, -0.06, 
-          -0.05, -0.04, -0.03, -0.02, -0.01, 0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 
-         0.07, 0.08, 0.09, 0.1])
+#delza = ([-0.2, -0.19, -0.18, -0.17, -0.16, -0.15, -0.14, -0.13, -0.12, -0.11, -0.1, -0.09, -0.08, -0.07, -0.06, 
+#          -0.05, -0.04, -0.03, -0.02, -0.01, 0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 
+#         0.07, 0.08, 0.09, 0.1])
+
+delza = ([-0.019, -0.018, -0.017, -0.016, -0.015, -0.014, -0.013, -0.012, -0.011, -0.009, -0.008, -0.007, -0.006, -0.005, -0.004, -0.003, -0.002, -0.001, 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.011, 0.012, 0.013, 0.014, 0.015, 0.016, 0.017, 0.018, 0.019])
+
+delzb = ([-0.019, -0.018, -0.017, -0.016, -0.015, -0.014, -0.013, -0.012, -0.011, -0.009, -0.008, -0.007, -0.006, -0.005, -0.004, -0.003, -0.002, -0.001, 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.011, 0.012, 0.013, 0.014, 0.015, 0.016, 0.017, 0.018, 0.019])
+
+#delza = ([0.019])
+#delzb = ([0.019])
          
 #delzb = ([0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 
 #         0.07, 0.08, 0.09, 0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.2, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.3, 0.31, 0.32, 0.33, 0.34, 0.35, 0.36, 0.37, 0.38, 0.39, #0.4])
@@ -734,7 +748,8 @@ delza = ([-0.2, -0.19, -0.18, -0.17, -0.16, -0.15, -0.14, -0.13, -0.12, -0.11, -
 #         0.61,0.62,0.63,0.64, 0.65, 0.66, 0.67, 0.68, 0.69, 0.7, 0.71, 0.72, 0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 
 #          0.8, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.9])
 
-delzb = ([1.51, 1.52, 1.53, 1.54, 1.55, 1.56, 1.57, 1.58, 1.59, 1.60, 1.61, 1.62, 1.63, 1.64, 1.65, 1.66, 1.67, 1.68, 1.69, 1.70, 1.71, 1.72, 1.73, 1.74, 1.75, 1.76, 1.77, 1.78, 1.79, 1.80, 1.81, 1.82, 1.83, 1.84, 1.85, 1.86, 1.87, 1.88, 1.89, 1.90, 1.91, 1.92, 1.93, 1.94, 1.95, 1.96, 1.97, 1.98, 1.99, 2.00])
+#delzb = ([1.51, 1.52, 1.53, 1.54, 1.55, 1.56, 1.57, 1.58, 1.59, 1.60, 1.61, 1.62, 1.63, 1.64, 1.65, 1.66, 1.67, 1.68, 1.69, 1.70, 1.71, 1.72, 1.73, 1.74, 1.75, 1.76, 1.77, 1.78, 1.79, 1.80, 1.81, 1.82, 1.83, 1.84, 1.85, 1.86, 1.87, 1.88, 1.89, 1.90, 1.91, 1.92, 1.93, 1.94, 1.95, 1.96, 1.97, 1.98, 1.99, 2.00])
+#delzb = ([2.01, 2.02, 2.03, 2.04, 2.05, 2.06, 2.07, 2.08, 2.09, 2.10, 2.11, 2.12, 2.13, 2.14, 2.15, 2.16, 2.17, 2.18, 2.19, 2.20, 2.21, 2.22, 2.23, 2.24, 2.25, 2.26, 2.27, 2.28, 2.29, 2.30, 2.31, 2.32, 2.33, 2.34, 2.35, 2.36, 2.37, 2.38, 2.39, 2.4, 2.41, 2.42, 2.43, 2.44, 2.45, 2.46, 2.47, 2.48, 
          
 
 #delzb = ([-0.2, -0.19, -0.18, -0.17, -0.16, -0.15, -0.14, -0.13, -0.12, -0.11, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.3, 0.31, 0.32, 0.33, 0.34, 0.35, 0.36, 0.37, 0.38, 0.39, 0.4])
@@ -760,7 +775,8 @@ rp_max = setup.arcmin_to_rp(200, pa.zeff, cosmo_t)
 
 theta_radians = theta_vec / 60.*np.pi/180.
 
-"""for i in range(0,len(delza)):
+"""
+for i in range(0,len(delza)):
 
     print('delz=', delza[i])
     F_a = get_F('A', 0.0, delza[i])
@@ -770,10 +786,10 @@ theta_radians = theta_vec / 60.*np.pi/180.
     # Get SigmaC
     SigA = get_SigmaC_avg('A', 0.0, delza[i]) 
     # Write to file:
-    np.savetxt('./txtfiles/photo_z_test/SigmaC_a_'+SURVEY+'_'+endfile+'_sigz=0.0_delz='+str(delza[i])+'.txt', [SigA])"""
+    np.savetxt('./txtfiles/photo_z_test/SigmaC_a_'+SURVEY+'_'+endfile+'_sigz=0.0_delz='+str(delza[i])+'.txt', [SigA])
     
 
-"""for i in range(0, len(delzb)):    
+for i in range(0, len(delzb)):    
     
     print('delz=', delzb[i])
     F_b = get_F('B', 0.0001, delzb[i])
