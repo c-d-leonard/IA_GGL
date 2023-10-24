@@ -159,7 +159,6 @@ alpha_reid = 1.035
 Mmin_reid = 8.05*10**13 # Msol
 sigLogM_reid = 0.7
 
-# Parameters for the HOD model from DES Y3 paper 2106.08438
 HH0_l = 67.37
 OmB_l = 0.0486
 OmC_l = 0.341-OmB_l

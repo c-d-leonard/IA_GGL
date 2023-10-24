@@ -51,6 +51,9 @@ def sum_weights_DESY1(source_sample, z_cut, sigmaz, deltaz):
     else:
         print("We do not have support for that z sample cut. Exiting.")
         exit()
+        
+    print('zmc=', z_mc)
+    print('dNdz_mc', dNdz_mc)
 
     if z_cut=='nocut':
     
@@ -241,56 +244,75 @@ def get_DeltaSig_theory():
     # Note that since CAMB / class uses comoving distances, all distances here should be comoving. rpvec and Pivec are in Mpc/h.	
 
     # Get a more well sampled rp, and Pi	
-    rpvec 	= np.logspace(np.log10(0.00002), np.log10(rp_max), 300)
+    rpvec 	= np.logspace(-4, np.log10(rp_max), 500)
+    print('rpvec=', rpvec)
     # Pivec a little more complicated because we want it log-spaced about zero
-    Pi_neg = -np.logspace(np.log10(rpvec[0]), np.log10(500), 250)
-    Pi_pos = np.logspace(np.log10(rpvec[0]), np.log10(500), 250)
+    Pi_neg = -np.logspace(np.log10(rpvec[0]), np.log10(500), 500)
+    Pi_pos = np.logspace(np.log10(rpvec[0]), np.log10(500), 500)
     Pi_neg_list = list(Pi_neg)
     Pi_neg_list.reverse()
     Pi_neg_rev = np.asarray(Pi_neg_list)
     Pivec = np.append(Pi_neg_rev, Pi_pos)
+    print('Pivec=', Pivec)
 	
     # Get rho_m in comoving coordinates (independent of redshift)
     rho_crit = 3. * 10**10 * pa.mperMpc / (8. * np.pi * pa.Gnewt * pa.Msun)  # Msol h^2 / Mpc^3, for use with M in Msol / h (comoving distances)
     rho_m = (pa.OmC_t + pa.OmB) * rho_crit # units of Msol h^2 / Mpc^3 (comoving distances)
     
     # Import z-list
-    zL = np.loadtxt('./txtfiles/z_list_DESY1.txt')
+    zL_temp = np.loadtxt('./txtfiles/z_list_DESY1.txt')
+    zL = np.asarray(zL_temp)
+    print('zL=', zL)
     
     DeltaSigma_centbins = np.zeros((len(theta_radians), len(zL)))
-    for zi in range(len(zL)):
+    for zi in range(0,len(zL)):
+        print('zi=', zi)
+        print('zL=', zL[zi])
         print("Delta_Sig_theory, zi=", zL[zi])
         zload=str('{:1.12f}'.format(zL[zi]))
         # Import the appropriate correlation function
-        r_hf, corr_hf_2h = np.loadtxt('./txtfiles/halofit_xi/xi2h_z='+zload+'_DESHoD.txt', unpack=True)
-        r_hf, corr_1h = np.loadtxt('./txtfiles/xi_1h_terms/xi1h_ls_z='+zload+'_DESHoD.txt', unpack=True)
+        r_hf, corr_hf_2h = np.loadtxt('./txtfiles/halofit_xi/xi2h_z='+zload+'_DESHoD.txt', unpack=True) # 2-halo matter-matter correlation function from halofit
+        r_hf, corr_1h = np.loadtxt('./txtfiles/xi_1h_terms/xi1h_ldm_z='+zload+'_DESHoD.txt', unpack=True) # 1-halo galaxy-matter correlation function from DES Y3 HOD.
         for ri in range(0,len(r_hf)):
             if r_hf[ri]>3:
                 corr_1h[ri] = 0.
-        corr_hf = corr_hf_2h + corr_1h	
-	
+        print('r_hf=', r_hf)
+        corr_1h2h = pa.bd*corr_hf_2h + corr_1h # Multiply 2 halo term by the linear bias
+        #print('corr_1h=', corr_1h)
+        #print('corr 2h=', corr_hf_2h)
         # Interpolate in 2D separations
-        corr_hf_interp = scipy.interpolate.interp1d(r_hf, corr_hf)
-        corr_2D_hf = np.zeros((len(rpvec), len(Pivec)))
+        corr_1h2h_interp = scipy.interpolate.interp1d(r_hf, corr_1h2h)
+        corr_2D_1h2h = np.zeros((len(rpvec), len(Pivec)))
         for ri in range(0, len(rpvec)):
             for pi in range(0, len(Pivec)):
-                corr_2D_hf[ri, pi] = corr_hf_interp(np.sqrt(rpvec[ri]**2 + Pivec[pi]**2))
+                corr_2D_1h2h[ri, pi] = corr_1h2h_interp(np.sqrt(rpvec[ri]**2 + Pivec[pi]**2))
 		
-        # Get Sigma(r_p) for the 2halo term.
-        Sigma_HF = np.zeros(len(rpvec))
+        # Get Sigma(r_p).
+        Sigma_1h2h = np.zeros(len(rpvec))
         for ri in range(0,len(rpvec)):
             # This will have units Msol h / Mpc^2 in comoving distances.
-            Sigma_HF[ri] = rho_m * scipy.integrate.simps(corr_2D_hf[ri, :], Pivec) 
+            Sigma_1h2h[ri] = rho_m * scipy.integrate.simps(corr_2D_1h2h[ri, :], Pivec)
         
-        # Now average Sigma_HF(R) over R to get the first averaged term in Delta Sigma
-        barSigma_HF = np.zeros(len(rpvec))
+        #save_Sigma = np.column_stack((rpvec,Sigma_1h2h))    
+        #np.savetxt('./txtfiles/Sigma_1h2h_fix1halo_z[0]_fastPTxi.txt', save_Sigma) 
+        
+        # Now average Sigma(R) over R to get the first averaged term in Delta Sigma
+        barSigma_1h2h = np.zeros(len(rpvec))
         for ri in range(0,len(rpvec)):
-             barSigma_HF[ri] = 2. / rpvec[ri]**2 * scipy.integrate.simps(rpvec[0:ri+1]**2*Sigma_HF[0:ri+1], np.log(rpvec[0:ri+1]))
-	
+             barSigma_1h2h[ri] = 2. / rpvec[ri]**2 * scipy.integrate.simps(rpvec[0:ri+1]**2*Sigma_1h2h[0:ri+1], np.log(rpvec[0:ri+1]))
+             
+        #save_avgSigma = np.column_stack((rpvec,barSigma_1h2h))    
+        #np.savetxt('./txtfiles/barSigma_1h2h_fix1halo_z[0]_fastPTxi.txt', save_avgSigma) 
+
         # Units Msol h / Mpc^2 (comoving distances).
-        DeltaSigma_HF = pa.bd*(barSigma_HF - Sigma_HF)
+        DeltaSigma_1h2h = barSigma_1h2h - Sigma_1h2h
+        
+        #save_DeltaSigma = np.column_stack((rpvec,DeltaSigma_1h2h))    
+        #np.savetxt('./txtfiles/DeltaSigma_1h2h_z[0]_fix1halo_fastPTxi.txt', save_DeltaSigma) 
+        
+        #exit()
 			
-        ans_interp = scipy.interpolate.interp1d(rpvec, (DeltaSigma_HF) / (10**12))
+        ans_interp = scipy.interpolate.interp1d(rpvec, (DeltaSigma_1h2h) / (10**12))
         
         chi = ccl.comoving_radial_distance(cosmo_t, 1./(1.+zL[zi])) * (pa.HH0_t / 100.) # CCL returns in Mpc but we want Mpc/h
         # Now use theta instead of rp.
@@ -309,6 +331,7 @@ def get_DeltaSig_theory_zavg(rp_bins, rp_bins_c):
 
     # Get a more well sampled rp, and Pi	
     rpvec 	= np.logspace(np.log10(0.00002), np.log10(rp_bins[-1]), 300)
+    print('rpvec=', rpvec)
     # Pivec a little more complicated because we want it log-spaced about zero
     Pi_neg = -np.logspace(np.log10(rpvec[0]), np.log10(500), 250)
     Pi_pos = np.logspace(np.log10(rpvec[0]), np.log10(500), 250)
@@ -316,6 +339,7 @@ def get_DeltaSig_theory_zavg(rp_bins, rp_bins_c):
     Pi_neg_list.reverse()
     Pi_neg_rev = np.asarray(Pi_neg_list)
     Pivec = np.append(Pi_neg_rev, Pi_pos)
+    print('Pivec=', Pivec)
 	
     # Get rho_m in comoving coordinates (independent of redshift)
     rho_crit = 3. * 10**10 * pa.mperMpc / (8. * np.pi * pa.Gnewt * pa.Msun)  # Msol h^2 / Mpc^3, for use with M in Msol / h (comoving distances)
@@ -588,6 +612,8 @@ def get_gammaIA_estimator(sigmaz, deltaz_A, deltaz_B, Aia):
     # Get F factors
     #F_a = get_F('A', sigmaz, deltaz_A)
     
+    #exit()
+    
     #F_b = get_F('B', sigmaz, deltaz_B)
     
     # Write to file:
@@ -598,8 +624,8 @@ def get_gammaIA_estimator(sigmaz, deltaz_A, deltaz_B, Aia):
     F_a = np.loadtxt('./txtfiles/photo_z_test/F_a_'+SURVEY+'_'+endfile+'_sigz='+str(sigmaz)+'_delzA='+str(deltaz_A)+'.txt')
     F_b = np.loadtxt('./txtfiles/photo_z_test/F_b_'+SURVEY+'_'+endfile+'_sigz='+str(sigmaz)+'_delzB='+str(deltaz_B)+'.txt')
 
-    #print("F_a=", F_a)
-    #print("F_b=", F_b)
+    print("F_a=", F_a)
+    print("F_b=", F_b)
 
     # Load boosts
     B_a = get_boost(theta_vec, 'A')
@@ -614,8 +640,8 @@ def get_gammaIA_estimator(sigmaz, deltaz_A, deltaz_B, Aia):
     #np.savetxt('./txtfiles/photo_z_test/B_b_'+SURVEY+'_'+endfile+'.txt', B_b)
     
     # Get SigmaC
-    #SigA = get_SigmaC_avg('A', sigmaz, deltaz_A)
-    #SigB = get_SigmaC_avg('B', sigmaz, deltaz_B)
+    SigA = get_SigmaC_avg('A', sigmaz, deltaz_A)
+    SigB = get_SigmaC_avg('B', sigmaz, deltaz_B)
 
     
     # Write to file:
@@ -629,14 +655,14 @@ def get_gammaIA_estimator(sigmaz, deltaz_A, deltaz_B, Aia):
     print("Sigma_c_inv_avg_inv A=", SigA)
     print("Sigma_c_inv_avg_inv B=", SigB)
     
-    #print("before delta sigma theory")
+    #print("before delta sigma theory")"""
     # First get Delta Sigma, this is the same for all source samples
     #DeltaSigma = get_DeltaSig_theory()
     #print("after delta sigma theory")
-    #np.savetxt('./txtfiles/DeltaSigma_with1halo_DESHoD.txt', DeltaSigma)
+    #np.savetxt('./txtfiles/DeltaSigma_with1halo_fastptFFT_DESHoD.txt', DeltaSigma)
     #exit()
-    """print("Loading Delta Sigma from previous run")
-    DeltaSigma = np.loadtxt('./txtfiles/DeltaSigma_with1halo_DESHoD.txt')
+    print("Loading Delta Sigma from previous run")
+    DeltaSigma = np.loadtxt('./txtfiles/DeltaSigma_with1halo_fastptFFT_DESHoD.txt')
     
     # Get theoretical lensing-only gammat
     gammat_a_lens = get_gammat_purelensing(DeltaSigma, 'A', limtype='truez')
@@ -644,13 +670,13 @@ def get_gammaIA_estimator(sigmaz, deltaz_A, deltaz_B, Aia):
 
     # save answer
     save_gammat_a = np.column_stack((theta_vec, gammat_a_lens))
-    np.savetxt('./txtfiles/photo_z_test/gammat_lens_A_'+SURVEY+'_'+endfile+'.dat', save_gammat_a)
+    np.savetxt('./txtfiles/photo_z_test/gammat_lens_A_'+SURVEY+'_'+endfile+'_fastptFFT.dat', save_gammat_a)
     save_gammat_b = np.column_stack((theta_vec, gammat_b_lens))
-    np.savetxt('./txtfiles/photo_z_test/gammat_lens_B_'+SURVEY+'_'+endfile+'.dat', save_gammat_b)"""
+    np.savetxt('./txtfiles/photo_z_test/gammat_lens_B_'+SURVEY+'_'+endfile+'_fastptFFT.dat', save_gammat_b)
     
     # Load answer if we've already calculated it:
-    theta, gammat_a_lens = np.loadtxt('./txtfiles/photo_z_test/gammat_lens_A_'+SURVEY+'_'+endfile+'.dat', unpack=True)
-    theta, gammat_b_lens = np.loadtxt('./txtfiles/photo_z_test/gammat_lens_B_'+SURVEY+'_'+endfile+'.dat', unpack=True)
+    #theta, gammat_a_lens = np.loadtxt('./txtfiles/photo_z_test/gammat_lens_A_'+SURVEY+'_'+endfile+'.dat', unpack=True)
+    #theta, gammat_b_lens = np.loadtxt('./txtfiles/photo_z_test/gammat_lens_B_'+SURVEY+'_'+endfile+'.dat', unpack=True)
 
     print("Get gamma IA for fiducial")
     #These are different only because of the difference in F and B
@@ -694,7 +720,7 @@ def get_gammaIA_estimator(sigmaz, deltaz_A, deltaz_B, Aia):
     
     # Stack rp or theta with gamma_IA_est to output
     save_gammaIA = np.column_stack((theta_vec, gamma_IA_est))
-    np.savetxt('./txtfiles/photo_z_test/gamma_IA_est_'+SURVEY+'_'+endfile+'_measuredboosts_sigz='+str(sigmaz)+'_delzA='+str(deltaz_A)+'_delzB='+str(deltaz_B)+'_Aia='+str(Aia)+'.txt', save_gammaIA)
+    np.savetxt('./txtfiles/photo_z_test/gamma_IA_est_'+SURVEY+'_'+endfile+'_measuredboosts_fastptFFT_sigz='+str(sigmaz)+'_delzA='+str(deltaz_A)+'_delzB='+str(deltaz_B)+'_Aia='+str(Aia)+'.txt', save_gammaIA)
     
     """# Load the version with the true dNdzL for our distribution to see the difference:
     #rp_load, gamma_IA_load = np.loadtxt('./txtfiles/photo_z_test/gamma_IA_est_DESY1_test.txt', unpack=True)
@@ -729,9 +755,12 @@ else:
 #          -0.05, -0.04, -0.03, -0.02, -0.01, 0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 
 #         0.07, 0.08, 0.09, 0.1])
 
-delza = ([-0.019, -0.018, -0.017, -0.016, -0.015, -0.014, -0.013, -0.012, -0.011, -0.009, -0.008, -0.007, -0.006, -0.005, -0.004, -0.003, -0.002, -0.001, 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.011, 0.012, 0.013, 0.014, 0.015, 0.016, 0.017, 0.018, 0.019])
+#delza = ([-0.019, -0.018, -0.017, -0.016, -0.015, -0.014, -0.013, -0.012, -0.011, -0.009, -0.008, -0.007, -0.006, -0.005, -0.004, -0.003, -0.002, -0.001, 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.011, 0.012, 0.013, 0.014, 0.015, 0.016, 0.017, 0.018, 0.019])
 
-delzb = ([-0.019, -0.018, -0.017, -0.016, -0.015, -0.014, -0.013, -0.012, -0.011, -0.009, -0.008, -0.007, -0.006, -0.005, -0.004, -0.003, -0.002, -0.001, 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.011, 0.012, 0.013, 0.014, 0.015, 0.016, 0.017, 0.018, 0.019])
+#delzb = ([-0.019, -0.018, -0.017, -0.016, -0.015, -0.014, -0.013, -0.012, -0.011, -0.009, -0.008, -0.007, -0.006, -0.005, -0.004, -0.003, -0.002, -0.001, 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.011, 0.012, 0.013, 0.014, 0.015, 0.016, 0.017, 0.018, 0.019])
+
+delza = ([0.02])
+delzb = ([0.02])
 
 #delza = ([0.019])
 #delzb = ([0.019])
@@ -802,8 +831,8 @@ exit()"""
 
 sigz= [0.0]
 
-#AIA = [0.0]
-AIA = [-0.1, -0.08, -0.06, -0.04, -0.02, 0.0, 0.02, 0.04, 0.06, 0.08, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.22, 0.24, 0.26, 0.28, 0.3, 0.32, 0.34, 0.36]
+AIA = [0.0]
+#AIA = [-0.1, -0.08, -0.06, -0.04, -0.02, 0.0, 0.02, 0.04, 0.06, 0.08, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.22, 0.24, 0.26, 0.28, 0.3, 0.32, 0.34, 0.36]
 
 for si in range(0,len(sigz)):
     for ai in range(0,len(AIA)):

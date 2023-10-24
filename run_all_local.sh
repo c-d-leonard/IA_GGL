@@ -18,6 +18,7 @@ make test_gg_1h_multifile.out
 make test_gm_1h.out
 make test_gm_2h.out
 make test_gg_2h_multifile.out
+make test_gm_1h_multifile.out
 make clean
 
 cd ~/Research/IA_measurement_GGL/IA_GGL/

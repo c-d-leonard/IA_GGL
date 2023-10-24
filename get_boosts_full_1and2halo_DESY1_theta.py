@@ -64,6 +64,8 @@ Boost_file_b = './txtfiles/boosts/Boost_B_survey='+SURVEY+'_'+endfile+'.txt'
 zLvec = np.loadtxt('./txtfiles/z_list_DESY1.txt')
 #print("zLvec=", zLvec)
 
+#zLvec = np.asarray([0.300150963095])
+
 # Import the correlation function
 xi_1h = np.zeros((40000, len(zLvec)))
 xi_2h_mm = np.zeros((40000, len(zLvec)))

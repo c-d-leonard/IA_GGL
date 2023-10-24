@@ -9,6 +9,8 @@ import numpy as np
 import shared_functions_setup as setup
 import os.path
 import pyccl as ccl
+import fastpt as fpt
+import fastpt.HT as HT
 #from halotools.empirical_models import PrebuiltHodModelFactory
 
 # Functions shared between w_{l+} and w_{ls}
@@ -433,7 +435,8 @@ def Rhalo(M_insol, survey):
     
     print('OmegaM=', (pa.OmC_s + pa.OmB_s))
 	
-    return rho_m, Rvir
+    #return rho_m, Rvir
+    return Rvir
 
 def cvir_ls(M_insol):
 	""" Returns the concentration parameter of the NFW profile, c_{vir}. """
@@ -541,7 +544,8 @@ def get_Pkgg_2h_multiz(k, endfile, survey):
 	elif (survey=='DESY1'):
 		import params_DESY1_testpz as pa
 		#z = np.loadtxt('/home/danielle/Research/IA_measurement_GGL/IA_GGL/txtfiles/DESY1_quantities_fromSara/lenz_subbin_cent.dat')
-		z = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/10KsourceBins_1KlensBins/planck2018_params/lenz_cent.dat')
+		#z = np.loadtxt('./txtfiles/DESY1_quantities_fromSara/10KsourceBins_1KlensBins/planck2018_params/lenz_cent.dat')
+		z, dndlraw = np.loadtxt('./txtfiles/'+pa.dNdzL_file, unpack=True) 
 	else:
 		print("We don't have support for that survey yet. Exiting.")
 		exit()
@@ -850,7 +854,7 @@ def get_Pkgm_1halo(kvec_FT, Mhalo, kvec_short, y, endfile, survey):
         Ncen_lens = get_Ncen_More(Mhalo, survey)
         Nsat_lens = get_Nsat_More(Mhalo, survey)
     elif (survey == 'DESY1'):
-        Ncen_lens = get_Ncen_redmagic(Mhalo, survey) # We use the LRG model for the lenses from Reid & Spergel 2008
+        Ncen_lens = get_Ncen_redmagic(Mhalo, survey) 
         Nsat_lens = get_Nsat_redmagic(Mhalo, survey)
         #print("Ncen_lens=", Ncen_lens)
         #print("Nsat_lens=", Nsat_lens)
@@ -896,11 +900,27 @@ def get_Pkgm_1halo(kvec_FT, Mhalo, kvec_short, y, endfile, survey):
     for ki in range(0,len(kvec_short)):
         for zi in range(0, len(zLvec)):
             Pkgm[ki, zi] = scipy.integrate.simps( HMF[:, zi] * (Mhalo / rho_m) * (Ncen_lens * y[ki, :] + Nsat_lens * y[ki, :]**2), np.log10(Mhalo / (pa.HH0_l/ 100.))) / (tot_ng[zi]) / (pa.HH0_l / 100.)**3
+    for zi in range(0,len(zLvec)):
+        save_Pkgm_preinterp = np.column_stack((kvec_short, Pkgm[:,zi]))
+        #np.savetxt('./txtfiles/1halo_terms/Pkgm_preinterp_z='+str(zLvec[zi])+'.dat', save_Pkgm_preinterp)
         #Pkgm[ki] = (10**14 / rho_m) * y[ki, 23] 
     #print("here")   
     #Pkgm_save = np.column_stack((kvec_short, Pkgm))
     #np.savetxt('./txtfiles/1halo_terms/Pkgm_1h_debug_Jonathan.txt', Pkgm_save)
     #exit()
+    
+    zsave = [0]*len(zLvec)
+    for i in range(0,len(zLvec)):
+        zsave[i]=str('{:1.12f}'.format(zLvec[i]))
+    
+    # Save the g x m 1halo as a function of redshift
+    for zi in range(0,len(zLvec)):
+        Pkgm_interp = scipy.interpolate.interp1d(np.log(kvec_short), np.log(Pkgm[:, zi]))
+        logPkgm = Pkgm_interp(np.log(kvec_FT))
+        Pkgm_longk = np.exp(logPkgm)
+        save_P1h = np.column_stack((kvec_FT, Pkgm_longk))
+        np.savetxt('./txtfiles/1halo_terms/Pk1h_ldm_z='+zsave[zi]+'_'+endfile+'.txt', save_P1h)
+        
 		
     # Now integrate this over the appropriate lens redshift distribution:
 
@@ -1150,15 +1170,27 @@ def gety_ldm(Mvec, kvec_gety, survey):
     rvec = [0]*len(Mvec)
     rho = [0]*len(Mvec)
     for Mi in range(0,len(Mvec)):
-        Rvir = Rhalod(Mvec[Mi], survey)
-        rvec[Mi] = np.logspace(-8, np.log10(Rvir), 10**6)
+        Rvir = Rhalo(Mvec[Mi], survey)
+        #print('Rvir=', Rvir)
+        rvec[Mi] = np.logspace(-10, np.log10(Rvir), 10**7)
         rho[Mi] = rho_NFW_ldm(rvec[Mi], Mvec[Mi], survey)  # Units Msol h^2 / Mpc^3, comoving. 
 
     # This should be an FFT really.
     u_ = np.zeros((len(kvec_gety), len(Mvec)))
     for ki in range(0,len(kvec_gety)):
         for mi in range(0,len(Mvec)):
-            u_[ki, mi] = 4. * np.pi / Mvec[mi] * scipy.integrate.simps( rvec[mi] * np.sin(kvec_gety[ki]*rvec[mi])/ kvec_gety[ki] * rho[mi], rvec[mi]) # unitless / dimensionless.
+            integral = scipy.integrate.simps( rvec[mi] * np.sin(kvec_gety[ki]*rvec[mi])/ kvec_gety[ki] * rho[mi], rvec[mi])
+            #print('integral=', integral)
+            #print('kvec=', kvec_gety[ki])
+            #print('rvec=', rvec[mi])
+            #print('rho=', rho[mi])
+            #print('integrand=', rvec[mi] * np.sin(kvec_gety[ki]*rvec[mi])/ kvec_gety[ki] * rho[mi])
+            #print('M=', Mvec[mi])
+            u_[ki, mi] = 4. * np.pi / Mvec[mi] * integral  # unitless / dimensionless.
+    
+    for mi in range(0,len(Mvec)):
+        save_u = np.column_stack((kvec_gety, u_[:,mi]))
+        np.savetxt('./txtfiles/1halo_terms/yldm_M='+str(Mvec[mi])+'.txt', save_u)
 	
     return u_
 
@@ -1783,3 +1815,62 @@ def wgg_full(rp_c, fsky, bd, bs, savefile_1h, savefile_2h, endfile, survey):
 	wgg_tot = wgg_1h + wgg_2h 
 
 	return wgg_tot
+	
+	
+def Pk_to_xi(k, Pk):
+    """ Use FFT functionality within FastPT to do the transform between P(k) and a correlation function. """
+ 
+    r,xi = HT.k_to_r(k,Pk,1.5,-1.5,.5, (2.*np.pi)**(-1.5))
+    
+    return r, xi
+    
+def xi_ldm_1halo(survey,endfile):
+    
+    if(survey=='DESY1'):
+        import params_DESY1_testpz as pa
+        zLvec, dndzl_raw = np.loadtxt('./txtfiles/'+pa.dNdzL_file, unpack=True) 
+    else:
+        "In xi_ldm_1halo - we don't support that survey yet."
+        
+    zsave = [0]*len(zLvec)
+    for i in range(0,len(zLvec)):
+        zsave[i]=str('{:1.12f}'.format(zLvec[i]))
+    
+    for zi in range(0,len(zLvec)):
+        print('z=', zLvec[zi])
+        k, Pk = np.loadtxt('./txtfiles/1halo_terms/Pk1h_ldm_z='+zsave[zi]+'_'+endfile+'.txt', unpack=True)
+        
+        r, xi = Pk_to_xi(k, Pk)
+        
+        xi_save = np.column_stack((r,xi))
+        
+        np.savetxt('./txtfiles/xi_1h_terms/xi1h_ldm_z='+zsave[zi]+'_'+endfile+'.txt', xi_save)
+        
+    return
+    
+def xi_2h(survey,endfile):
+    
+    if(survey=='DESY1'):
+        import params_DESY1_testpz as pa
+        zLvec, dndzl_raw = np.loadtxt('./txtfiles/'+pa.dNdzL_file, unpack=True) 
+    else:
+        "In xi_ldm_1halo - we don't support that survey yet."
+        
+    zsave = [0]*len(zLvec)
+    for i in range(0,len(zLvec)):
+        zsave[i]=str('{:1.12f}'.format(zLvec[i]))
+    
+    for zi in range(0,len(zLvec)):
+        print('z=', zLvec[zi])
+        k, Pk = np.loadtxt('./txtfiles/halofit_Pk/Pk_nonlin_z='+zsave[zi]+'_'+endfile+'.txt', unpack=True)
+        
+        r, xi = Pk_to_xi(k, Pk)
+        
+        xi_save = np.column_stack((r,xi))
+        
+        np.savetxt('./txtfiles/halofit_xi/xi2h_z='+zsave[zi]+'_'+endfile+'.txt', xi_save)
+        
+    return
+        
+        
+    

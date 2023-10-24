@@ -374,7 +374,13 @@ def dNdz_perturbed(sample, F_or_SigC, sigma, deltaz):
             
     norm_original = scipy.integrate.simps(dNdz_mc, z_mc)
     dNdz_mc_orig = dNdz_mc
-            
+    
+    plt.figure()
+    plt.plot(z_mc, dNdz_mc_orig)
+    plt.savefig('./dNdz_test.pdf')
+    
+    print('in setup, dNdz_mc=', dNdz_mc_orig)
+    print('sigma=', sigma)
     if (np.abs(sigma)>10**(-12)):
         
         # Define a new redshift vector exactly the same as z_mc just to facilitate the convolution
@@ -407,7 +413,8 @@ def dNdz_perturbed(sample, F_or_SigC, sigma, deltaz):
         
     else:
         # In the case where we only have a mean shift, we don't need to do the full integral and it's faster so just do that.
-        
+        print('sigma=0 case')
+        print('deltaz=', deltaz)
         # Shift all the redshifts 
         z_new_temp = z_mc + deltaz 
         
@@ -425,7 +432,6 @@ def dNdz_perturbed(sample, F_or_SigC, sigma, deltaz):
             
             # Get number of z's we want:
             numz_pad = np.int(z_new_temp[0] / (z_new_temp[1]-z_new_temp[0]))
-            #print('numz pad=', numz_pad)
             
             padding_z = np.linspace(0,z_new_temp[0], numz_pad)
             
@@ -434,6 +440,7 @@ def dNdz_perturbed(sample, F_or_SigC, sigma, deltaz):
         
         if any(z_new_temp<0):
             # Make sure that if this makes the redshifts negative we cut those.
+            print('cutting any negative redshifts?')
             ind = next(j[0] for j in enumerate(z_new_temp) if j[1]>=0)
             z_new = z_new_temp[ind:]
             dNdz_new_temp = dNdz_mc[ind:]
@@ -441,18 +448,20 @@ def dNdz_perturbed(sample, F_or_SigC, sigma, deltaz):
             # Nothing to do here but just rename so we have uniformity outside this loop
             z_new = z_new_temp
             dNdz_new_temp = dNdz_mc
-        
+          
         # Normalise
-        norm = scipy.integrate.simps(dNdz_new_temp, z_new)
+        print('before norm integral')
+        
+        norm = scipy.integrate.trapz(dNdz_new_temp, z_new)
         
         dNdz_new = dNdz_new_temp / norm
         
         
-        """plt.figure()
+        plt.figure()
         plt.plot(z_mc, dNdz_mc_orig / norm_original, label='original')
         plt.plot(z_new, dNdz_new, label='perturbed')
         plt.legend()
         plt.savefig('./perturbed_dNdz_sample='+sample+'_shift.png')
-        plt.close()"""
+        plt.close()
    
     return z_new, dNdz_new
