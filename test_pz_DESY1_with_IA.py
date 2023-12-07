@@ -109,7 +109,7 @@ def sum_weights_DESY1(source_sample, z_cut, sigmaz, deltaz):
 def get_boost(theta_vec, sample):
 	"""Returns the boost factor in radial bins. propfact is a tunable parameter giving the proportionality constant by which boost goes like projected correlation function (= value at 1 Mpc/h). """
 
-	#Boost = np.loadtxt('./txtfiles/boosts/Boost_'+str(sample)+'_survey='+str(SURVEY)+'_'+endfile+'.txt') + np.ones((len(theta_vec)))
+	#Boost = np.loadtxt('./txtfiles/boosts/Boost_'+str(sample)+'_survey='+str(SURVEY)+'_DESHoD.txt') + np.ones((len(theta_vec)))
 	
 	#print("Loading boost from previous run")
 	#Boost = np.loadtxt('./txtfiles/boosts/Boost_'+str(sample)+'_survey='+str(SURVEY)+'_true-redshifts-different_sigma='+str(pa.sigma)+'deltaz='+str(pa.del_z)+'.txt') + np.ones((len(theta_vec)))
@@ -640,8 +640,8 @@ def get_gammaIA_estimator(sigmaz, deltaz_A, deltaz_B, Aia):
     #np.savetxt('./txtfiles/photo_z_test/B_b_'+SURVEY+'_'+endfile+'.txt', B_b)
     
     # Get SigmaC
-    SigA = get_SigmaC_avg('A', sigmaz, deltaz_A)
-    SigB = get_SigmaC_avg('B', sigmaz, deltaz_B)
+    #SigA = get_SigmaC_avg('A', sigmaz, deltaz_A)
+    #SigB = get_SigmaC_avg('B', sigmaz, deltaz_B)
 
     
     # Write to file:
@@ -661,7 +661,7 @@ def get_gammaIA_estimator(sigmaz, deltaz_A, deltaz_B, Aia):
     #print("after delta sigma theory")
     #np.savetxt('./txtfiles/DeltaSigma_with1halo_fastptFFT_DESHoD.txt', DeltaSigma)
     #exit()
-    print("Loading Delta Sigma from previous run")
+    """print("Loading Delta Sigma from previous run")
     DeltaSigma = np.loadtxt('./txtfiles/DeltaSigma_with1halo_fastptFFT_DESHoD.txt')
     
     # Get theoretical lensing-only gammat
@@ -672,11 +672,12 @@ def get_gammaIA_estimator(sigmaz, deltaz_A, deltaz_B, Aia):
     save_gammat_a = np.column_stack((theta_vec, gammat_a_lens))
     np.savetxt('./txtfiles/photo_z_test/gammat_lens_A_'+SURVEY+'_'+endfile+'_fastptFFT.dat', save_gammat_a)
     save_gammat_b = np.column_stack((theta_vec, gammat_b_lens))
-    np.savetxt('./txtfiles/photo_z_test/gammat_lens_B_'+SURVEY+'_'+endfile+'_fastptFFT.dat', save_gammat_b)
+    np.savetxt('./txtfiles/photo_z_test/gammat_lens_B_'+SURVEY+'_'+endfile+'_fastptFFT.dat', save_gammat_b)"""
+
     
     # Load answer if we've already calculated it:
-    #theta, gammat_a_lens = np.loadtxt('./txtfiles/photo_z_test/gammat_lens_A_'+SURVEY+'_'+endfile+'.dat', unpack=True)
-    #theta, gammat_b_lens = np.loadtxt('./txtfiles/photo_z_test/gammat_lens_B_'+SURVEY+'_'+endfile+'.dat', unpack=True)
+    theta, gammat_a_lens = np.loadtxt('./txtfiles/photo_z_test/gammat_lens_A_'+SURVEY+'_'+endfile+'.dat', unpack=True)
+    theta, gammat_b_lens = np.loadtxt('./txtfiles/photo_z_test/gammat_lens_B_'+SURVEY+'_'+endfile+'.dat', unpack=True)
 
     print("Get gamma IA for fiducial")
     #These are different only because of the difference in F and B
@@ -759,8 +760,11 @@ else:
 
 #delzb = ([-0.019, -0.018, -0.017, -0.016, -0.015, -0.014, -0.013, -0.012, -0.011, -0.009, -0.008, -0.007, -0.006, -0.005, -0.004, -0.003, -0.002, -0.001, 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.011, 0.012, 0.013, 0.014, 0.015, 0.016, 0.017, 0.018, 0.019])
 
-delza = ([0.02])
-delzb = ([0.02])
+delza = ([-0.08, -0.07, -0.06, -0.05, -0.04, -0.03, -0.02, -0.01, 0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 
+       0.07, 0.08])
+       
+delzb = ([-0.08, -0.07, -0.06, -0.05, -0.04, -0.03, -0.02, -0.01, 0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08])
+
 
 #delza = ([0.019])
 #delzb = ([0.019])
@@ -831,8 +835,8 @@ exit()"""
 
 sigz= [0.0]
 
-AIA = [0.0]
-#AIA = [-0.1, -0.08, -0.06, -0.04, -0.02, 0.0, 0.02, 0.04, 0.06, 0.08, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.22, 0.24, 0.26, 0.28, 0.3, 0.32, 0.34, 0.36]
+#AIA = [0.0]
+AIA = [-0.1, -0.08, -0.06, -0.04, -0.02, 0.0, 0.02, 0.04, 0.06, 0.08, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.22, 0.24, 0.26, 0.28, 0.3, 0.32, 0.34, 0.36]
 
 for si in range(0,len(sigz)):
     for ai in range(0,len(AIA)):
